@@ -3,6 +3,7 @@ CheckVersion("0.5")
 Import("configure.lua")
 Import("other/sdl/sdl.lua")
 Import("other/freetype/freetype.lua")
+Import("other/luajit/luajit.lua")
 
 --- Setup Config -------
 config = NewConfig()
