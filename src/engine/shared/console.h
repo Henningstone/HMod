@@ -177,6 +177,7 @@ public:
 	virtual int RegisterPrintCallback(int OutputLevel, FPrintCallback pfnPrintCallback, void *pUserData);
 	virtual void SetPrintOutputLevel(int Index, int OutputLevel);
 	virtual void Print(int Level, const char *pFrom, const char *pStr);
+	virtual void Printf(int Level, const char *pFrom, const char *pFmt, ...);
 
 	void SetAccessLevel(int AccessLevel) { m_AccessLevel = clamp(AccessLevel, (int)(ACCESS_LEVEL_ADMIN), (int)(ACCESS_LEVEL_MOD)); }
 };

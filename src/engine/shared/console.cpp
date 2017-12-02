@@ -7,6 +7,8 @@
 
 #include <engine/storage.h>
 #include <engine/shared/protocol.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include "config.h"
 #include "console.h"
@@ -201,6 +203,34 @@ void CConsole::Print(int Level, const char *pFrom, const char *pStr)
 		{
 			char aBuf[1024];
 			str_format(aBuf, sizeof(aBuf), "[%s]: %s", pFrom, pStr);
+			m_aPrintCB[i].m_pfnPrintCallback(aBuf, m_aPrintCB[i].m_pPrintCallbackUserdata);
+		}
+	}
+}
+
+void CConsole::Printf(int Level, const char *pFrom, const char *format, ...)
+{
+	char buffer[1024];
+#if defined(CONF_FAMILY_WINDOWS)
+	va_list ap;
+	va_start(ap, format);
+	_vsnprintf(buffer, sizeof(buffer), format, ap);
+	va_end(ap);
+#else
+	va_list ap;
+	va_start(ap, format);
+	vsnprintf(buffer, sizeof(buffer), format, ap);
+	va_end(ap);
+#endif
+	buffer[sizeof(buffer)-1] = 0; // null termination
+
+	dbg_msg(pFrom ,"%s", buffer);
+	for(int i = 0; i < m_NumPrintCB; ++i)
+	{
+		if(Level <= m_aPrintCB[i].m_OutputLevel && m_aPrintCB[i].m_pfnPrintCallback)
+		{
+			char aBuf[1024];
+			str_format(aBuf, sizeof(aBuf), "[%s]: %s", pFrom, buffer);
 			m_aPrintCB[i].m_pfnPrintCallback(aBuf, m_aPrintCB[i].m_pPrintCallbackUserdata);
 		}
 	}

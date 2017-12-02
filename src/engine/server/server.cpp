@@ -26,6 +26,7 @@
 #include <engine/shared/snapshot.h>
 
 #include <mastersrv/mastersrv.h>
+#include <engine/lua.h>
 
 #include "register.h"
 #include "server.h"
@@ -1298,11 +1299,8 @@ int CServer::Run()
 		m_Lastheartbeat = 0;
 		m_GameStartTime = time_get();
 
-		if(g_Config.m_Debug)
-		{
-			str_format(aBuf, sizeof(aBuf), "baseline memory usage %dk", mem_stats()->allocated/1024);
-			Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "server", aBuf);
-		}
+		str_format(aBuf, sizeof(aBuf), "baseline memory usage %dk", mem_stats()->allocated/1024);
+		Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "server", aBuf);
 
 		while(m_RunServer)
 		{
@@ -1675,6 +1673,7 @@ int main(int argc, const char **argv) // ignore_convention
 	IEngineMasterServer *pEngineMasterServer = CreateEngineMasterServer();
 	IStorage *pStorage = CreateStorage("Teeworlds", IStorage::STORAGETYPE_SERVER, argc, argv); // ignore_convention
 	IConfig *pConfig = CreateConfig();
+	ILua *pLua = CreateLua();
 
 	pServer->InitRegister(&pServer->m_NetServer, pEngineMasterServer, pConsole);
 
@@ -1689,6 +1688,7 @@ int main(int argc, const char **argv) // ignore_convention
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pConsole);
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pStorage);
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pConfig);
+		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pLua);
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IEngineMasterServer*>(pEngineMasterServer)); // register as both
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IMasterServer*>(pEngineMasterServer));
 
@@ -1704,6 +1704,9 @@ int main(int argc, const char **argv) // ignore_convention
 	// register all console commands
 	pServer->RegisterCommands();
 
+	// init lua
+	pLua->Init();
+
 	// execute autoexec file
 	pConsole->ExecuteFile("autoexec.cfg");
 
@@ -1718,6 +1721,7 @@ int main(int argc, const char **argv) // ignore_convention
 
 	// run the server
 	dbg_msg("server", "starting...");
+	pLua->LoadGametype();
 	pServer->Run();
 
 	// free

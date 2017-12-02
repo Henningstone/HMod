@@ -114,6 +114,7 @@ nethash = CHash("src/game/generated/nethash.cpp", "src/engine/shared/protocol.h"
 client_link_other = {}
 client_depends = {}
 server_link_other = {}
+lua_modules = {}
 
 if family == "windows" then
 	if platform == "win32" then
@@ -203,6 +204,9 @@ function build(settings)
 	wavpack = Compile(settings, Collect("src/engine/external/wavpack/*.c"))
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
 
+	-- build the lua modules
+	table.insert(lua_modules, Compile(settings, Collect("src/engine/external/lua_modules/luafilesystem/lfs.c")))
+
 	-- build game components
 	engine_settings = settings:Copy()
 	server_settings = engine_settings:Copy()
@@ -266,7 +270,7 @@ function build(settings)
 		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "teeworlds_srv", engine, server,
-		game_shared, game_server, zlib, server_link_other)
+		game_shared, game_server, zlib, server_link_other, lua_modules)
 
 	serverlaunch = {}
 	if platform == "macosx" then
