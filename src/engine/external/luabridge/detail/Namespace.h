@@ -27,6 +27,18 @@
 */
 //==============================================================================
 
+#ifdef DO_NOT_COMPILE_THIS
+#include <lua.hpp>
+#include <stdexcept>
+#include <cassert>
+#include "LuaHelpers.h"
+#include "Userdata.h"
+#include "CFunctions.h"
+#include "ClassInfo.h"
+#include "FuncTraits.h"
+#include "Constructor.h"
+#endif
+
 /** Provides C++ to Lua registration capabilities.
 
     This class is not instantiated directly, call `getGlobalNamespace` to start

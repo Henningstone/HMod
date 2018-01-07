@@ -40,7 +40,7 @@ void CPlayers::RenderHand(CTeeRenderInfo *pInfo, vec2 CenterPos, vec2 Dir, float
 	vec2 DirY(-Dir.y,Dir.x);
 
 	if (Dir.x < 0)
-		DirY = -DirY;
+		DirY = DirY.negate();
 
 	HandPos += DirX * PostRotOffset.x;
 	HandPos += DirY * PostRotOffset.y;

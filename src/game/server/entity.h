@@ -7,21 +7,23 @@
 #include <base/vmath.h>
 #include <game/server/gameworld.h>
 
-#define MACRO_ALLOC_HEAP() \
-	public: \
-	void *operator new(size_t Size) \
-	{ \
-		void *p = mem_alloc(Size, 1); \
-		/*dbg_msg("", "++ %p %d", p, size);*/ \
-		mem_zero(p, Size); \
-		return p; \
-	} \
-	void operator delete(void *pPtr) \
-	{ \
-		/*dbg_msg("", "-- %p", p);*/ \
-		mem_free(pPtr); \
-	} \
-	private:
+//#define MACRO_ALLOC_HEAP() \
+//	public: \
+//	void *operator new(size_t Size) \
+//	{ \
+//		void *p = mem_alloc(Size, 1); \
+//		/*dbg_msg("", "++ %p %d", p, size);*/ \
+//		mem_zero(p, Size); \
+//		return p; \
+//	} \
+//	void operator delete(void *pPtr) \
+//	{ \
+//		/*dbg_msg("", "-- %p", p);*/ \
+//		mem_free(pPtr); \
+//	} \
+//	private:
+#define MACRO_ALLOC_HEAP() ;;
+
 
 #define MACRO_ALLOC_POOL_ID() \
 	public: \
@@ -140,6 +142,12 @@ public:
 	*/
 	int NetworkClipped(int SnappingClient);
 	int NetworkClipped(int SnappingClient, vec2 CheckPos);
+	int NetworkClippedLua(int SnappingClient, vec2 *pCheckPos)
+	{
+		if(pCheckPos)
+			return NetworkClipped(SnappingClient, *pCheckPos);
+		return NetworkClipped(SnappingClient);
+	}
 
 	bool GameLayerClipped(vec2 CheckPos);
 

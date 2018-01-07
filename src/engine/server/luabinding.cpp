@@ -44,10 +44,11 @@ int CLuaBinding::Throw(lua_State *L)
 	// add the exception
 	char aMsg[512];
 	str_format(aMsg, sizeof(aMsg), "%s:%i: Custom Exception: %s", ar.short_src, ar.currentline, lua_tostring(L, nargs));
-	int result = CLua::m_pClient->Lua()->HandleException(aMsg, pLF);
+	lua_pushstring(L, aMsg);
+	int result = CLua::ErrorFunc(L);
 
 	// pop argument
 	lua_pop(L, nargs);
 
-	return 0;
+	return result;
 }

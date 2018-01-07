@@ -51,7 +51,7 @@ public:
 	bool TakeDamage(vec2 Force, int Dmg, int From, int Weapon);
 
 	bool Spawn(class CPlayer *pPlayer, vec2 Pos);
-	bool Remove();
+	//bool Remove();
 
 	bool IncreaseHealth(int Amount);
 	bool IncreaseArmor(int Amount);

@@ -32,6 +32,11 @@
   LUABRIDGE_THROWSPEC macro controls whether we use the 'throw ()' form, or
   'noexcept' (if C++11 is available) to distinguish the functions.
 */
+
+#ifdef DO_NOT_COMPILE_THIS
+#include "TypeList.h"
+#endif
+
 #if defined (__APPLE_CPP__) || defined(__APPLE_CC__) || defined(__clang__) || defined(__GNUC__) || \
     (defined (_MSC_VER) && (_MSC_VER >= 1700))
 // Do not define LUABRIDGE_THROWSPEC since the Xcode and gcc  compilers do not

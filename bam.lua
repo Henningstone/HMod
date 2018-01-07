@@ -14,6 +14,7 @@ config:Add(OptTestCompileC("macosxppc", "int main(){return 0;}", "-arch ppc"))
 config:Add(OptLibrary("zlib", "zlib.h", false))
 config:Add(SDL.OptFind("sdl", true))
 config:Add(FreeType.OptFind("freetype", true))
+config:Add(luajit.OptFind("luajit", true))
 config:Finalize("config.lua")
 
 -- data compiler
@@ -111,8 +112,9 @@ AddDependency(server_content_source, server_content_header)
 
 nethash = CHash("src/game/generated/nethash.cpp", "src/engine/shared/protocol.h", "src/game/generated/protocol.h", "src/game/tuning.h", "src/game/gamecore.cpp", network_header)
 
-client_link_other = {}
 client_depends = {}
+server_depends = {}
+client_link_other = {}
 server_link_other = {}
 lua_modules = {}
 
@@ -120,9 +122,11 @@ if family == "windows" then
 	if platform == "win32" then
 		table.insert(client_depends, CopyToDirectory(".", "other\\freetype\\lib32\\freetype.dll"))
 		table.insert(client_depends, CopyToDirectory(".", "other\\sdl\\lib32\\SDL.dll"))
+		table.insert(server_depends, CopyToDirectory(".", "other\\luajit\\windows\\lib32\\lua51.dll"))
 	else
 		table.insert(client_depends, CopyToDirectory(".", "other\\freetype\\lib64\\freetype.dll"))
 		table.insert(client_depends, CopyToDirectory(".", "other\\sdl\\lib64\\SDL.dll"))
+		table.insert(server_depends, CopyToDirectory(".", "other\\luajit\\windows\\lib64\\lua51.dll"))
 	end
 
 	if config.compiler.driver == "cl" then
@@ -148,7 +152,7 @@ function build(settings)
 	if config.compiler.driver == "cl" then
 		settings.cc.flags:Add("/wd4244", "/wd4577")
 	else
-		settings.cc.flags:Add("-Wall", "-fno-exceptions")
+		settings.cc.flags:Add("-Wall", "-Wno-comment")
 		if family == "windows" then
 			-- disable visibility attribute support for gcc on windows
 			settings.cc.defines:Add("NO_VIZ")
@@ -204,9 +208,6 @@ function build(settings)
 	wavpack = Compile(settings, Collect("src/engine/external/wavpack/*.c"))
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
 
-	-- build the lua modules
-	table.insert(lua_modules, Compile(settings, Collect("src/engine/external/lua_modules/luafilesystem/lfs.c")))
-
 	-- build game components
 	engine_settings = settings:Copy()
 	server_settings = engine_settings:Copy()
@@ -236,6 +237,13 @@ function build(settings)
 	config.sdl:Apply(client_settings)
 	-- apply freetype settings
 	config.freetype:Apply(client_settings)
+	-- apply luajit settings
+	config.luajit:Apply(server_settings)
+
+	-- build the lua modules
+	server_settings.link.libs:Add("dl")
+	table.insert(lua_modules, Compile(server_settings, Collect("src/engine/external/lua_modules/luafilesystem/lfs.c")))
+
 
 	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
@@ -270,7 +278,7 @@ function build(settings)
 		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "teeworlds_srv", engine, server,
-		game_shared, game_server, zlib, server_link_other, lua_modules)
+		game_shared, game_server, zlib, server_link_other, lua_modules, server_depends)
 
 	serverlaunch = {}
 	if platform == "macosx" then

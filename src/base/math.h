@@ -3,7 +3,7 @@
 #ifndef BASE_MATH_H
 #define BASE_MATH_H
 
-#include <stdlib.h>
+#include <cstdlib>
 
 template <typename T>
 inline T clamp(T val, T min, T max)

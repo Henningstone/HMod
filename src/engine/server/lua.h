@@ -6,6 +6,8 @@
 
 class CLua : public ILua
 {
+	friend class CLuaBinding;
+
 	class IStorage *m_pStorage;
 	class IConsole *m_pConsole;
 	class IServer *m_pServer;
