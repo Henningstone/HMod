@@ -136,7 +136,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GameLayerClipped", &CEntity::GameLayerClipped)
 		.endClass()
 
-		.deriveClass<CEntity, CCharacter>("CCharacter")
+		.deriveClass<CCharacter, CEntity>("CCharacter")
 			.addFunction("IsGrounded", &CCharacter::IsGrounded)
 
 			.addFunction("SetWeapon", &CCharacter::SetWeapon)
@@ -169,6 +169,17 @@ void CLua::RegisterLuaCallbacks()
 
 			.addFunction("Player", &CCharacter::GetPlayer)
 		.endClass()
+
+		.beginClass<IConsole>("IConsole")
+			.addFunction("Print", &IConsole::Print)
+			.addFunction("LineIsValid", &IConsole::LineIsValid)
+		//	.addFunction("ExecuteLine", &IConsole::ExecuteLine)
+		.endClass()
+
+
+		.beginNamespace("Server")
+			.addVariable("Console", &CLua::ms_pSelf->m_pConsole, false)
+		.endNamespace()
 
 	; // end global namespace
 }

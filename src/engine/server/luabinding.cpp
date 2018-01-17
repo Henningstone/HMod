@@ -25,6 +25,26 @@ int CLuaBinding::Print(lua_State *L)
 	if(nargs < 1)
 		return luaL_error(L, "print expects 1 argument or more");
 
+	// construct the message from all arguments
+	char aMsg[512] = {0};
+	for(int i = 1; i <= nargs; i++)
+	{
+		argcheck(lua_isstring(L, i) || lua_isnumber(L, i), i, "string or number");
+		str_append(aMsg, lua_tostring(L, i), sizeof(aMsg));
+		str_append(aMsg, "\t", sizeof(aMsg));
+	}
+	aMsg[str_length(aMsg)-1] = '\0'; // remove the last tab character
+
+	// pop all to clean up the stack
+	lua_pop(L, nargs);
+
+	lua_Debug ar;
+	lua_getstack(L, 1, &ar);
+	lua_getinfo(L, "Sl", &ar);
+	char aSource[128];
+	str_format(aSource, sizeof(aSource), "lua:%s:%i", ar.short_src, ar.currentline);
+	dbg_msg(aSource, "%s", aMsg);
+
 	return 0;
 }
 

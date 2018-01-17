@@ -13,7 +13,7 @@
 #include "lua.h"
 #include "luabinding.h"
 
-CLua * CLua::ms_Self = NULL;
+CLua * CLua::ms_pSelf = NULL;
 
 
 CLua::CLua()
@@ -23,7 +23,7 @@ CLua::CLua()
 
 void CLua::Init()
 {
-	CLua::ms_Self = this;
+	CLua::ms_pSelf = this;
 	CLuaBinding::StaticInit(this);
 
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
@@ -45,20 +45,27 @@ void CLua::Init()
 bool CLua::LoadGametype()
 {
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "lua/%s/module.lua", g_Config.m_SvGametype);
+	str_format(aBuf, sizeof(aBuf), "lua/gamemodes/%s/init.lua", g_Config.m_SvGametype);
 
 	// check if the file exists and retrieve its full path
 	char aFullPath[512];
 	IOHANDLE f = Storage()->OpenFile(aBuf, IOFLAG_READ, IStorage::TYPE_ALL, aFullPath, sizeof(aFullPath));
 	if(!f)
 	{
-		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Failed to load gametype '%s': lua init file '%s' does not exist!", g_Config.m_SvGametype, aBuf);
+		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Failed to load gametype %s: lua init file '%s' does not exist!", g_Config.m_SvGametype, aBuf);
 		return false;
 	}
 	io_close(f);
 
 	// load the init file, it will handle the rest
-	luaL_dofile(m_pLuaState, aFullPath);
+	dbg_msg("luasrv", "loading init script for gametype %s from '%s'", g_Config.m_SvGametype, aFullPath);
+	int Status = luaL_dofile(m_pLuaState, aFullPath);
+	if(Status != 0)
+	{
+		dbg_msg("FATAL", "an error was thrown while loading file '%s', not starting!", aFullPath);
+		ErrorFunc(m_pLuaState);
+		return false;
+	}
 
 	return true;
 }
@@ -67,10 +74,10 @@ bool CLua::LoadGametype()
 int CLua::ErrorFunc(lua_State *L)
 {
 	if (!lua_isstring(L, -1))
-		CLua::ms_Self->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua/error", "unknown error");
+		CLua::ms_pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua/error", "unknown error");
 	else
 	{
-		CLua::ms_Self->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua/error", "%s", lua_tostring(ms_Self->m_pLuaState, -1));
+		CLua::ms_pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua/error", "%s", lua_tostring(ms_pSelf->m_pLuaState, -1));
 		lua_pop(L, 1); // remove error message
 	}
 
@@ -80,9 +87,10 @@ int CLua::ErrorFunc(lua_State *L)
 // for errors in unprotected calls
 int CLua::Panic(lua_State *L)
 {
-	if(g_Config.m_Debug)
-		CLua::ms_Self->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "lua/fatal", "error in unprotected call resulted in panic, throwing an exception:");
+	//if(g_Config.m_Debug)
+		CLua::ms_pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "lua/fatal", "error in unprotected call resulted in panic, throwing an exception");
 	throw luabridge::LuaException(L, 0);
+	return 0;
 }
 
 ILua *CreateLua() { return new CLua; }

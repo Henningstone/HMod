@@ -1721,8 +1721,8 @@ int main(int argc, const char **argv) // ignore_convention
 
 	// run the server
 	dbg_msg("server", "starting...");
-	pLua->LoadGametype();
-	pServer->Run();
+	if(pLua->LoadGametype())
+		pServer->Run();
 
 	// free
 	delete pServer;

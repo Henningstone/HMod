@@ -30,7 +30,7 @@ public:
 	static int Panic(lua_State *L);
 
 private:
-	static CLua *ms_Self;
+	static CLua *ms_pSelf;
 };
 
 #endif
