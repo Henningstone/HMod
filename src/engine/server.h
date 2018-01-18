@@ -4,6 +4,8 @@
 #define ENGINE_SERVER_H
 #include "kernel.h"
 #include "message.h"
+#include <base/system++/system++.h>
+#include <engine/server/lua.h>
 
 class IServer : public IInterface
 {

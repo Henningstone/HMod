@@ -26,4 +26,8 @@ public:
 	static int Throw(lua_State *L);
 };
 
+void luaX_openlibs(lua_State *L, const luaL_Reg *lualibs);
+void luaX_openlib(lua_State *L, const char *name, lua_CFunction func);
+void luaX_register_module(lua_State *L, const char *name);
+
 #endif

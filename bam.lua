@@ -208,6 +208,10 @@ function build(settings)
 	wavpack = Compile(settings, Collect("src/engine/external/wavpack/*.c"))
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
 
+	-- apply luajit settings
+	config.luajit:Apply(settings)
+
+
 	-- build game components
 	engine_settings = settings:Copy()
 	server_settings = engine_settings:Copy()
@@ -237,15 +241,13 @@ function build(settings)
 	config.sdl:Apply(client_settings)
 	-- apply freetype settings
 	config.freetype:Apply(client_settings)
-	-- apply luajit settings
-	config.luajit:Apply(server_settings)
 
 	-- build the lua modules
 	server_settings.link.libs:Add("dl")
 	table.insert(lua_modules, Compile(server_settings, Collect("src/engine/external/lua_modules/luafilesystem/lfs.c")))
 
 
-	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c"))
+	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c", "src/base/system++/*.cpp"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
 	server = Compile(server_settings, Collect("src/engine/server/*.cpp"))
 

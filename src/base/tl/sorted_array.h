@@ -12,8 +12,8 @@ class sorted_array : public array<T, ALLOCATOR>
 	typedef array<T, ALLOCATOR> parent;
 
 	// insert and size is not allowed
-	int insert(const T& item, typename parent::range r) { dbg_break(); return 0; }
-	int set_size(int new_size) { dbg_break(); return 0; }
+	int insert(const T& item, typename parent::range r) { dbg_assert_strict(false, "using insert on sorted_array not allowed"); return 0; }
+	int set_size(int new_size) { dbg_assert_strict(false, "using set_size on sorted_array not allowed"); return 0; }
 
 public:
 	typedef plain_range_sorted<T> range;

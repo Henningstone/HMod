@@ -39,6 +39,7 @@
 
 #include <mastersrv/mastersrv.h>
 #include <versionsrv/versionsrv.h>
+#include <base/system++/system++.h>
 
 #include "friends.h"
 #include "serverbrowser.h"
@@ -653,7 +654,8 @@ void *CClient::SnapFindItem(int SnapID, int Type, int ID)
 
 int CClient::SnapNumItems(int SnapID)
 {
-	dbg_assert(SnapID >= 0 && SnapID < NUM_SNAPSHOT_TYPES, "invalid SnapID");
+	if(dbg_assert_strict(SnapID >= 0 && SnapID < NUM_SNAPSHOT_TYPES, "invalid SnapID"))
+		return 0;
 	if(!m_aSnapshots[SnapID])
 		return 0;
 	return m_aSnapshots[SnapID]->m_pSnap->NumItems();

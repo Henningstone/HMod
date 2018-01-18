@@ -116,7 +116,8 @@ void CEcon::Update()
 
 	while(m_NetConsole.Recv(aBuf, (int)(sizeof(aBuf))-1, &ClientID))
 	{
-		dbg_assert(m_aClients[ClientID].m_State != CClient::STATE_EMPTY, "got message from empty slot");
+		if(dbg_assert_strict(m_aClients[ClientID].m_State != CClient::STATE_EMPTY, "got message from empty slot"))
+			continue;
 		if(m_aClients[ClientID].m_State == CClient::STATE_CONNECTED)
 		{
 			if(str_comp(aBuf, g_Config.m_EcPassword) == 0)

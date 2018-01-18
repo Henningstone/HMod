@@ -29,9 +29,11 @@ extern "C" {
 	See Also:
 		<dbg_break>
 */
-void dbg_assert(int test, const char *msg);
-#define dbg_assert(test,msg) dbg_assert_imp(__FILE__, __LINE__, test, msg)
 void dbg_assert_imp(const char *filename, int line, int test, const char *msg);
+int dbg_assert_strict_imp(const char *filename, int line, int test, const char *msg); // in release build, this returns true when the assert would have been triggered
+#define dbg_assert_legacy(test,msg) dbg_assert_imp(__FILE__, __LINE__, test, msg)
+#define dbg_assert_strict(test,msg) dbg_assert_strict_imp(__FILE__, __LINE__, test, msg)
+#define dbg_assert_lua(test,msg) if(!(test)) { luaL_error(L, "%s", msg); }
 
 
 #ifdef __clang_analyzer__
@@ -50,7 +52,7 @@ void dbg_assert_imp(const char *filename, int line, int test, const char *msg);
 	See Also:
 		<dbg_assert>
 */
-void dbg_break();
+//void dbg_break();
 
 /*
 	Function: dbg_msg
@@ -152,6 +154,8 @@ void mem_move(void *dest, const void *source, unsigned size);
 		size - Size of the block
 */
 void mem_zero(void *block, unsigned size);
+
+void mem_set(void *block, char value, unsigned size);
 
 /*
 	Function: mem_comp
@@ -747,6 +751,7 @@ void str_append(char *dst, const char *src, int dst_size);
 		- Garantees that dst string will contain zero-termination.
 */
 void str_copy(char *dst, const char *src, int dst_size);
+#define str_copyb(BUF, SRC) str_copy(BUF, SRC, sizeof(BUF))
 
 /*
 	Function: str_length
@@ -776,6 +781,7 @@ int str_length(const char *str);
 		- Garantees that dst string will contain zero-termination.
 */
 void str_format(char *buffer, int buffer_size, const char *format, ...);
+#define str_formatb(BUF, FMT, ...) str_format(BUF, sizeof(BUF), FMT, __VA_ARGS__)
 
 /*
 	Function: str_sanitize_strong

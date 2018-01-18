@@ -9,6 +9,7 @@
 #include <engine/console.h>
 #include <engine/server.h>
 #include <engine/shared/config.h>
+#include <base/math.h>
 
 #include "lua.h"
 #include "luabinding.h"
@@ -42,10 +43,22 @@ void CLua::Init()
 	RegisterLuaCallbacks();
 }
 
-bool CLua::LoadGametype()
+bool CLua::RegisterScript(const char *pScriptClass)
+{
+	luabridge::setGlobal(m_pLuaState, luabridge::newTable(m_pLuaState), pScriptClass);
+
+	if(!LoadLuaFile(pScriptClass))
+		return false;
+
+// TODO stuff
+
+	return true;
+}
+
+bool CLua::LoadLuaFile(const char *pFileName)
 {
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "lua/gamemodes/%s/init.lua", g_Config.m_SvGametype);
+	str_format(aBuf, sizeof(aBuf), "gamemodes/%s/%s.lua", g_Config.m_SvGametype, pFileName);
 
 	// check if the file exists and retrieve its full path
 	char aFullPath[512];
@@ -58,7 +71,7 @@ bool CLua::LoadGametype()
 	io_close(f);
 
 	// load the init file, it will handle the rest
-	dbg_msg("luasrv", "loading init script for gametype %s from '%s'", g_Config.m_SvGametype, aFullPath);
+	dbg_msg("luasrv", "loading script '%s' for gametype %s", aFullPath, g_Config.m_SvGametype);
 	int Status = luaL_dofile(m_pLuaState, aFullPath);
 	if(Status != 0)
 	{
@@ -68,6 +81,16 @@ bool CLua::LoadGametype()
 	}
 
 	return true;
+}
+
+bool CLua::LoadGametype()
+{
+	bool Failed = false;
+
+	Failed = Failed || !LoadLuaFile("init");
+	Failed = Failed || !RegisterScript("Character");
+
+	return !Failed;
 }
 
 // low level error handling (errors not thrown as an exception)
@@ -91,6 +114,53 @@ int CLua::Panic(lua_State *L)
 		CLua::ms_pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "lua/fatal", "error in unprotected call resulted in panic, throwing an exception");
 	throw luabridge::LuaException(L, 0);
 	return 0;
+}
+
+void CLua::DbgPrintLuaTable(LuaRef Table, int Indent)
+{
+	if(Indent > 40 || !Table.isTable())
+		return;
+
+	char aIndent[41];
+	mem_set(aIndent, ' ', sizeof(aIndent));
+	Indent = min(40, Indent*2);
+	aIndent[Indent] = '\0';
+
+	for(luabridge::Iterator it(Table); !it.isNil(); ++it)
+	{
+		const char *pKeyName = it.key().tostring().c_str();
+		const LuaRef& Value = it.value();
+		char aSpaces[21] = "               ";
+		aSpaces[max(0, 20-str_length(pKeyName))] = '\0';
+		dbg_msg("lua/debug", "%s> %s%s= %s", aIndent, pKeyName, aSpaces, Value.tostring().c_str());
+		// print subtables
+		if(Value.isTable())
+			DbgPrintLuaTable(it.value(), Indent+1);
+	}
+}
+
+void CLua::DbgPrintLuaStack(lua_State *L, const char *pNote, bool Deep)
+{
+	dbg_msg("lua/debug", "--- BEGIN LUA STACK --- %s", pNote ? pNote : "");
+	for(int i = 1; i <= lua_gettop(L); i++)
+	{
+		lua_Debug ar;
+		lua_getstack(L, 1, &ar);
+		const char *pVarName = lua_getlocal(L, &ar, i);
+		if(pVarName)
+			lua_pop(L, 1);
+
+		dbg_msg("lua/debug", "#%02i    %s    %s    %s", i, luaL_typename(L, i),
+				lua_isstring(L, i) || lua_isnumber(L, i) ? lua_tostring(L, i) :
+				lua_isboolean(L, i) ? (lua_toboolean(L, i) ? "true" : "false") :
+				"?",
+				pVarName
+		);
+
+		if(Deep && lua_istable(L, i))
+			DbgPrintLuaTable(luabridge::Stack<LuaRef>::get(L, i));
+	}
+	dbg_msg("lua/debug", "---- END LUA STACK ---- %s", pNote ? pNote : "");
 }
 
 ILua *CreateLua() { return new CLua; }

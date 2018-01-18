@@ -3,6 +3,7 @@
 #include <base/system.h>
 
 #include <engine/console.h>
+#include <base/system++/system++.h>
 
 #include "netban.h"
 #include "network.h"

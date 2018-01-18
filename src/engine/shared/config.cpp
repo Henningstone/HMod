@@ -3,6 +3,7 @@
 #include <engine/config.h>
 #include <engine/storage.h>
 #include <engine/shared/config.h>
+#include <base/system++/system++.h>
 
 CConfiguration g_Config;
 

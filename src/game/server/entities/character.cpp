@@ -516,6 +516,8 @@ void CCharacter::ResetInput()
 
 void CCharacter::Tick()
 {
+	MACRO_LUA_EVENT("Character", Tick)
+
 	if(m_pPlayer->m_ForceBalanced)
 	{
 		char Buf[128];

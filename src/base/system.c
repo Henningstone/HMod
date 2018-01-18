@@ -69,18 +69,38 @@ void dbg_logger(DBG_LOGGER logger)
 	loggers[num_loggers++] = logger;
 }
 
+static void dbg_break()
+{
+	io_flush(io_stdout());
+#if defined(CONF_FAMILY_WINDOWS)
+	*((volatile unsigned*)0) = 0x0;
+#else
+	abort();
+#endif
+}
+
+static int abort_on_assert = 1;
+void set_abort_on_assert(int enabled)
+{
+	abort_on_assert = enabled;
+}
+
 void dbg_assert_imp(const char *filename, int line, int test, const char *msg)
 {
 	if(!test)
 	{
 		dbg_msg("assert", "%s(%d): %s", filename, line, msg);
-		dbg_break();
+		if(abort_on_assert)
+			dbg_break();
 	}
 }
-
-void dbg_break()
+int dbg_assert_strict_imp(const char *filename, int line, int test, const char *msg)
 {
-	*((volatile unsigned*)0) = 0x0;
+	// strict debugging assertion: only perform the test if this is a debug build. Otherwise return adequately.
+	#if defined(CONF_DEBUG)
+	dbg_assert_imp(filename, line, test, msg);
+	#endif
+	return !test;
 }
 
 void dbg_msg(const char *sys, const char *fmt, ...)
@@ -163,9 +183,10 @@ void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned al
 {
 	/* TODO: fix alignment */
 	/* TODO: add debugging */
+	#if defined(CONF_DEBUG)
 	MEMTAIL *tail;
 	MEMHEADER *header = (struct MEMHEADER *)malloc(size+sizeof(MEMHEADER)+sizeof(MEMTAIL));
-	dbg_assert(header != 0, "mem_alloc failure");
+	dbg_assert_legacy(header != 0, "mem_alloc failure");
 	if(!header)
 		return NULL;
 	tail = (struct MEMTAIL *)(((char*)(header+1))+size);
@@ -187,12 +208,16 @@ void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned al
 
 	/*dbg_msg("mem", "++ %p", header+1); */
 	return header+1;
+	#else
+	return malloc(size);
+	#endif
 }
 
 void mem_free(void *p)
 {
 	if(p)
 	{
+		#if defined(CONF_DEBUG)
 		MEMHEADER *header = (MEMHEADER *)p - 1;
 		MEMTAIL *tail = (MEMTAIL *)(((char*)(header+1))+header->size);
 
@@ -210,6 +235,9 @@ void mem_free(void *p)
 			header->next->prev = header->prev;
 
 		free(header);
+		#else
+		free(p);
+		#endif
 	}
 }
 
@@ -248,6 +276,11 @@ void mem_move(void *dest, const void *source, unsigned size)
 void mem_zero(void *block,unsigned size)
 {
 	memset(block, 0, size);
+}
+
+void mem_set(void *block, char value, unsigned size)
+{
+	memset(block, value, size);
 }
 
 int mem_check_imp()
