@@ -49,6 +49,8 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 
 void CCharacter::Reset()
 {
+	MACRO_LUA_EVENT("Character")
+
 	Destroy();
 }
 
@@ -83,6 +85,8 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 
 void CCharacter::Destroy()
 {
+	MACRO_LUA_EVENT("Character")
+
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 	m_Alive = false;
 }
@@ -516,7 +520,7 @@ void CCharacter::ResetInput()
 
 void CCharacter::Tick()
 {
-	MACRO_LUA_EVENT("Character", Tick)
+	MACRO_LUA_EVENT("Character")
 
 	if(m_pPlayer->m_ForceBalanced)
 	{
@@ -550,6 +554,8 @@ void CCharacter::Tick()
 
 void CCharacter::TickDefered()
 {
+	MACRO_LUA_EVENT("Character")
+
 	// advance the dummy
 	{
 		CWorldCore TempWorld;
@@ -633,6 +639,8 @@ void CCharacter::TickDefered()
 
 void CCharacter::TickPaused()
 {
+	MACRO_LUA_EVENT("Character")
+
 	++m_AttackTick;
 	++m_DamageTakenTick;
 	++m_Ninja.m_ActivationTick;
@@ -789,6 +797,8 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 void CCharacter::Snap(int SnappingClient)
 {
+	MACRO_LUA_EVENT("Character", SnappingClient)
+
 	if(NetworkClipped(SnappingClient))
 		return;
 

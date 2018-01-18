@@ -5,7 +5,7 @@
 #include <lua.hpp>
 #include <engine/external/luabridge/LuaBridge.h>
 
-#define MACRO_LUA_EVENT(CLASSNAME, CALLBACK, ...) \
+#define MACRO_LUA_EVENT(CLASSNAME, ...) \
 { \
 	bool Handled = false; \
 \
@@ -13,7 +13,7 @@
 	LuaRef Table = getGlobal(CLua::Lua()->L(), CLASSNAME); \
 	if(Table.isTable()) \
 	{ \
-		LuaRef Func = Table[#CALLBACK]; \
+		LuaRef Func = Table[__func__]; \
 		if(Func.isFunction()) \
 		{ \
 			lua_State *L = Func.state(); \

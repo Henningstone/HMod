@@ -18,6 +18,8 @@ CPickup::CPickup(CGameWorld *pGameWorld, int Type, int SubType)
 
 void CPickup::Reset()
 {
+	MACRO_LUA_EVENT("Pickup")
+
 	if (g_pData->m_aPickups[m_Type].m_Spawndelay > 0)
 		m_SpawnTick = Server()->Tick() + Server()->TickSpeed() * g_pData->m_aPickups[m_Type].m_Spawndelay;
 	else
@@ -26,6 +28,8 @@ void CPickup::Reset()
 
 void CPickup::Tick()
 {
+	MACRO_LUA_EVENT("Pickup")
+
 	// wait for respawn
 	if(m_SpawnTick > 0)
 	{
@@ -119,12 +123,16 @@ void CPickup::Tick()
 
 void CPickup::TickPaused()
 {
+	MACRO_LUA_EVENT("Pickup")
+
 	if(m_SpawnTick != -1)
 		++m_SpawnTick;
 }
 
 void CPickup::Snap(int SnappingClient)
 {
+	MACRO_LUA_EVENT("Pickup", SnappingClient)
+
 	if(m_SpawnTick != -1 || NetworkClipped(SnappingClient))
 		return;
 
