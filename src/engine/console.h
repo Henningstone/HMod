@@ -3,6 +3,10 @@
 #ifndef ENGINE_CONSOLE_H
 #define ENGINE_CONSOLE_H
 
+#include <string>
+#include <lua.hpp>
+#include <engine/external/luabridge/LuaBridge.h>
+
 #include "kernel.h"
 
 class IConsole : public IInterface
@@ -70,7 +74,8 @@ public:
 	virtual void ParseArguments(int NumArgs, const char **ppArguments) = 0;
 
 	virtual void Register(const char *pName, const char *pParams, int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp) = 0;
-	virtual void RegisterTemp(const char *pName, const char *pParams, int Flags, const char *pHelp) = 0;
+	virtual void RegisterLua(const char *pName, const char *pParams, const char *pHelp, luabridge::LuaRef pfnFunc, lua_State *L) = 0;
+	virtual void RegisterTemp(const char *pName, const char *pParams, int Flags, const char *pHelp, FCommandCallback pfnCb = 0x0, void *pUser = 0x0) = 0;
 	virtual void DeregisterTemp(const char *pName) = 0;
 	virtual void DeregisterTempAll() = 0;
 	virtual void Chain(const char *pName, FChainCommandCallback pfnChainFunc, void *pUser) = 0;

@@ -20,8 +20,20 @@ class CConsole : public IConsole
 		virtual const CCommandInfo *NextCommandInfo(int AccessLevel, int FlagMask) const;
 
 		void SetAccessLevel(int AccessLevel) { m_AccessLevel = clamp(AccessLevel, (int)(ACCESS_LEVEL_ADMIN), (int)(ACCESS_LEVEL_MOD)); }
-	};
 
+		virtual bool IsLua() const { return false; }
+	};
+/*
+	class CCommandLua : public CCommand
+	{
+	public:
+		CCommandLua(lua_State *L) : m_LuaCallbackRef(luabridge::LuaRef(L)) {}
+
+		luabridge::LuaRef m_LuaCallbackRef;
+
+		virtual bool IsLua() const { return true; }
+	};
+*/
 
 	class CChain
 	{
@@ -154,6 +166,9 @@ class CConsole : public IConsole
 	void AddCommandSorted(CCommand *pCommand);
 	CCommand *FindCommand(const char *pName, int FlagMask);
 
+	// lua
+	static void LuaCommandCallback(IResult *pResult, void *pUserData);
+
 public:
 	CConsole(int FlagMask);
 
@@ -163,7 +178,8 @@ public:
 
 	virtual void ParseArguments(int NumArgs, const char **ppArguments);
 	virtual void Register(const char *pName, const char *pParams, int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp);
-	virtual void RegisterTemp(const char *pName, const char *pParams, int Flags, const char *pHelp);
+	virtual void RegisterLua(const char *pName, const char *pParams, const char *pHelp, luabridge::LuaRef pfnFunc, lua_State *L);
+	virtual void RegisterTemp(const char *pName, const char *pParams, int Flags, const char *pHelp, FCommandCallback pfnCb = 0x0, void *pUser = 0x0);
 	virtual void DeregisterTemp(const char *pName);
 	virtual void DeregisterTempAll();
 	virtual void Chain(const char *pName, FChainCommandCallback pfnChainFunc, void *pUser);

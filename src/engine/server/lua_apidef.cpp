@@ -170,10 +170,19 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("Player", &CCharacter::GetPlayer)
 		.endClass()
 
+		.beginClass<IConsole::IResult>("CConsole_IResult")
+			.addFunction("GetInteger", &IConsole::IResult::GetInteger)
+			.addFunction("GetFloat", &IConsole::IResult::GetFloat)
+			.addFunction("GetString", &IConsole::IResult::GetString)
+			.addFunction("NumArguments", &IConsole::IResult::NumArguments)
+		.endClass()
+
+		// Server.Console
 		.beginClass<IConsole>("IConsole")
 			.addFunction("Print", &IConsole::Print)
 			.addFunction("LineIsValid", &IConsole::LineIsValid)
-		//	.addFunction("ExecuteLine", &IConsole::ExecuteLine)
+			.addFunction("Register", &IConsole::RegisterLua)
+			.addFunction("ExecuteLine", &IConsole::ExecuteLine)
 		.endClass()
 
 

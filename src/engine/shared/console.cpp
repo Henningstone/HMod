@@ -9,6 +9,7 @@
 #include <engine/shared/protocol.h>
 #include <cstdarg>
 #include <cstdio>
+#include <engine/server/lua.h>
 
 #include "config.h"
 #include "console.h"
@@ -791,7 +792,33 @@ void CConsole::Register(const char *pName, const char *pParams,
 		AddCommandSorted(pCommand);
 }
 
-void CConsole::RegisterTemp(const char *pName, const char *pParams,	int Flags, const char *pHelp)
+void CConsole::RegisterLua(const char *pName, const char *pParams, const char *pHelp, luabridge::LuaRef LuaFunc, lua_State *L)
+{
+	if(!LuaFunc.isFunction())
+		luaL_error(L, "parameter 3 must be a function");
+
+	if(FindCommand(pName, CFGFLAG_SERVER))
+		luaL_error(L, "the command '%s' can't be overwritten!", pName);
+
+	LuaRef *pCbRef = new luabridge::LuaRef(L);
+	*pCbRef = LuaFunc;
+
+	RegisterTemp(pName, pParams, CFGFLAG_SERVER, pHelp, CConsole::LuaCommandCallback, pCbRef);
+
+}
+
+void CConsole::LuaCommandCallback(IResult *pResult, void *pUserData)
+{
+	LuaRef *pCbRef = static_cast<LuaRef *>(pUserData);
+	try
+	{
+		(*pCbRef)(pResult);
+	} catch(luabridge::LuaException& e) {
+		CLua::HandleException(e);
+	}
+}
+
+void CConsole::RegisterTemp(const char *pName, const char *pParams,	int Flags, const char *pHelp, FCommandCallback pfnCb, void *pUser)
 {
 	CCommand *pCommand;
 	if(m_pRecycleList)
@@ -817,8 +844,8 @@ void CConsole::RegisterTemp(const char *pName, const char *pParams,	int Flags, c
 		pCommand->m_pParams = pMem;
 	}
 
-	pCommand->m_pfnCallback = 0;
-	pCommand->m_pUserData = 0;
+	pCommand->m_pfnCallback = pfnCb;
+	pCommand->m_pUserData = pUser;
 	pCommand->m_Flags = Flags;
 	pCommand->m_Temp = true;
 
@@ -849,9 +876,16 @@ void CConsole::DeregisterTemp(const char *pName)
 			}
 	}
 
-	// add to recycle list
 	if(pRemoved)
 	{
+		if(pRemoved->m_pUserData)
+		{
+			// userdata for temp commands is only set for commands registered by lua
+			delete static_cast<LuaRef *>(pRemoved->m_pUserData);
+			pRemoved->m_pUserData = NULL;
+		}
+
+		// add to recycle list
 		pRemoved->m_pNext = m_pRecycleList;
 		m_pRecycleList = pRemoved;
 	}

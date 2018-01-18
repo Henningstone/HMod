@@ -282,6 +282,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	m_CurrentMapSize = 0;
 
 	m_MapReload = 0;
+	m_LuaReinit = 0;
 
 	m_RconClientID = IServer::RCON_CID_SERV;
 	m_RconAuthLevel = AUTHED_ADMIN;
@@ -1307,8 +1308,8 @@ int CServer::Run()
 			int64 t = time_get();
 			int NewTicks = 0;
 
-			// load new map TODO: don't poll this
-			if(str_comp(g_Config.m_SvMap, m_aCurrentMap) != 0 || m_MapReload)
+			// load new map
+			if(m_MapReload)
 			{
 				m_MapReload = 0;
 
@@ -1340,6 +1341,12 @@ int CServer::Run()
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
 					str_copy(g_Config.m_SvMap, m_aCurrentMap, sizeof(g_Config.m_SvMap));
 				}
+			}
+
+			if(m_LuaReinit)
+			{
+				CLua::Lua()->ReloadClass(m_LuaReinit-1);
+				m_LuaReinit = 0;
 			}
 
 			while(t > TickStartTime(m_CurrentGameTick+1))
@@ -1518,6 +1525,37 @@ void CServer::ConMapReload(IConsole::IResult *pResult, void *pUser)
 	((CServer *)pUser)->m_MapReload = 1;
 }
 
+void CServer::ConLuaReinit(IConsole::IResult *pResult, void *pUser)
+{
+	CServer *pSelf = ((CServer *)pUser);
+
+	int What = -1; // everything
+	if(pResult->NumArguments())
+		What = pResult->GetInteger(0);
+
+	if(What <= CLua::Lua()->NumLoadedClasses())
+		((CServer *)pUser)->m_LuaReinit = What;
+	else
+		pSelf->Console()->Printf(0, "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedClasses());
+
+}
+
+void CServer::ConLuaListClasses(IConsole::IResult *pResult, void *pUser)
+{
+	CServer *pSelf = ((CServer *)pUser);
+
+	pSelf->Console()->Print(0, "lua_listclasses", "----- Begin Loaded User Classes -----");
+
+	int Num = CLua::Lua()->NumLoadedClasses();
+	for(int i = 0; i < Num; i++)
+	{
+		const char *pClassName = CLua::Lua()->GetClassName(i);
+		pSelf->Console()->Printf(0, "lua_listclasses", "%i: %s", i, pClassName);
+	}
+
+	pSelf->Console()->Print(0, "lua_listclasses", "-----  End Loaded User Classes  -----");
+}
+
 void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
@@ -1545,6 +1583,13 @@ void CServer::ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserD
 	pfnCallback(pResult, pCallbackUserData);
 	if(pResult->NumArguments())
 		((CServer *)pUserData)->UpdateServerInfo();
+}
+
+void CServer::ConchainMapChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
+{
+	pfnCallback(pResult, pCallbackUserData);
+	if(pResult->NumArguments())
+		((CServer *)pUserData)->m_MapReload = 1;
 }
 
 void CServer::ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
@@ -1611,8 +1656,13 @@ void CServer::RegisterCommands()
 
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
 
+	Console()->Register("lua_reload", "?i", CFGFLAG_SERVER, ConLuaReinit, this, "Reload the specified lua class (or all if none given) - see lua_listclasses");
+	Console()->Register("lua_listclasses", "", CFGFLAG_SERVER, ConLuaListClasses, this, "View all loaded lua classes with their IDs");
+
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
+
+	Console()->Chain("sv_map", ConchainMapChange, this);
 
 	Console()->Chain("sv_max_clients_per_ip", ConchainMaxclientsperipUpdate, this);
 	Console()->Chain("mod_command", ConchainModCommandUpdate, this);

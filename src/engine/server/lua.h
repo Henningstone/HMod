@@ -4,6 +4,7 @@
 #include <engine/lua.h>
 #include <lua.hpp>
 #include <engine/external/luabridge/LuaBridge.h>
+#include <base/tl/array.h>
 
 #define MACRO_LUA_EVENT(CLASSNAME, ...) \
 { \
@@ -34,7 +35,7 @@
 				/* prepare */ \
 				setGlobal(L, Table, "self"); \
 				setGlobal(L, this, "this"); \
-				Func(__VA_ARGS__); \
+				try { Func(__VA_ARGS__); } catch(luabridge::LuaException& e) { CLua::HandleException(e); } \
 				Handled = true; \
 \
 				/* unset from-lua marker */ \
@@ -70,9 +71,11 @@ class CLua : public ILua
 
 	lua_State *m_pLuaState;
 	void RegisterLuaCallbacks();
-	bool RegisterScript(const char *pScriptClass);
+	bool RegisterScript(const char *pScriptClass, bool Reloading = false);
 
-	bool LoadLuaFile(const char *pFileName);
+	array<const char*> m_lpLoadedClasses;
+
+	bool LoadLuaFile(const char *pClassName);
 
 public:
 	CLua();
@@ -80,6 +83,11 @@ public:
 	bool LoadGametype();
 	lua_State *L() { return m_pLuaState; }
 
+	void ReloadClass(int i);
+	int NumLoadedClasses() const { return m_lpLoadedClasses.size(); }
+	const char *GetClassName(int i) const { return m_lpLoadedClasses[i]; }
+
+	static void HandleException(luabridge::LuaException& e);
 	static int ErrorFunc(lua_State *L);
 	static int Panic(lua_State *L);
 

@@ -43,31 +43,30 @@ void CLua::Init()
 	RegisterLuaCallbacks();
 }
 
-bool CLua::RegisterScript(const char *pScriptClass)
+bool CLua::RegisterScript(const char *pScriptClass, bool Reloading)
 {
 	luabridge::setGlobal(m_pLuaState, luabridge::newTable(m_pLuaState), pScriptClass);
 
 	if(!LoadLuaFile(pScriptClass))
 		return false;
 
-// TODO stuff
+	if(!Reloading)
+		m_lpLoadedClasses.add(pScriptClass);
 
 	return true;
 }
 
-bool CLua::LoadLuaFile(const char *pFileName)
+bool CLua::LoadLuaFile(const char *pClassName)
 {
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "gamemodes/%s/%s.lua", g_Config.m_SvGametype, pFileName);
+	str_format(aBuf, sizeof(aBuf), "gamemodes/%s/%s.lua", g_Config.m_SvGametype, pClassName);
 
 	// check if the file exists and retrieve its full path
 	char aFullPath[512];
 	IOHANDLE f = Storage()->OpenFile(aBuf, IOFLAG_READ, IStorage::TYPE_ALL, aFullPath, sizeof(aFullPath));
 	if(!f)
-	{
-		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Failed to load gametype %s: lua init file '%s' does not exist!", g_Config.m_SvGametype, aBuf);
 		return false;
-	}
+
 	io_close(f);
 
 	// load the init file, it will handle the rest
@@ -85,12 +84,32 @@ bool CLua::LoadLuaFile(const char *pFileName)
 
 bool CLua::LoadGametype()
 {
-	bool Failed = false;
+	if(!LoadLuaFile("init"))
+	{
+		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Failed to load gametype %s: lua init file does not exist!", g_Config.m_SvGametype);
+		return false;
+	}
 
-	Failed = Failed || !LoadLuaFile("init");
-	Failed = Failed || !RegisterScript("Character");
+	RegisterScript("Character");
+	RegisterScript("Projectile");
+	RegisterScript("Laser");
+	RegisterScript("Pickup");
+	RegisterScript("Flag");
 
-	return !Failed;
+	return true;
+}
+
+void CLua::ReloadClass(int ID)
+{
+	if(ID < 0)
+	{
+		// reload all
+		int Num = NumLoadedClasses();
+		for(int i = 0; i < Num; i++)
+			RegisterScript(GetClassName(i), true);
+	}
+	else
+		RegisterScript(GetClassName(ID), true);
 }
 
 // low level error handling (errors not thrown as an exception)
@@ -114,6 +133,11 @@ int CLua::Panic(lua_State *L)
 		CLua::ms_pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "lua/fatal", "error in unprotected call resulted in panic, throwing an exception");
 	throw luabridge::LuaException(L, 0);
 	return 0;
+}
+
+void CLua::HandleException(luabridge::LuaException& e)
+{
+	CLua::Lua()->Console()->Print(0, "lua/ERROR", e.what());
 }
 
 void CLua::DbgPrintLuaTable(LuaRef Table, int Indent)
