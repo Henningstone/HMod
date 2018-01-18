@@ -55,7 +55,7 @@ bool CEntity::GameLayerClipped(vec2 CheckPos)
 			round_to_int(CheckPos.y)/32 < -200 || round_to_int(CheckPos.y)/32 > GameServer()->Collision()->GetHeight()+200 ? true : false;
 }
 
-//void CEntity::AttachLuaObject(const char *pObjName)
-//{
-//	m_pLuaObject = CLua::Lua()->FindObject(pObjName);
-//}
+void CEntity::AttachLuaObject(const char *pObjName)
+{
+	m_pLuaObject = CLua::Lua()->FindObject(pObjName);
+}

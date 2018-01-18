@@ -9,6 +9,10 @@
 #include <game/version.h>
 #include <game/collision.h>
 #include <game/gamecore.h>
+#include <game/server/entities/flag.h>
+#include <game/server/entities/laser.h>
+#include <game/server/entities/pickup.h>
+#include <game/server/entities/projectile.h>
 #include "gamemodes/dm.h"
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
@@ -1591,5 +1595,31 @@ bool CGameContext::IsClientPlayer(int ClientID)
 const char *CGameContext::GameType() { return m_pController && m_pController->m_pGameType ? m_pController->m_pGameType : ""; }
 const char *CGameContext::Version() { return GAME_VERSION; }
 const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
+
+CCharacter *CGameContext::CreateEntityCharacter(int ClientID)
+{
+	return new(ClientID) CCharacter(&m_World);
+}
+
+CFlag *CGameContext::CreateEntityFlag(int Team)
+{
+	return new CFlag(&m_World, Team);
+}
+
+CLaser *CGameContext::CreateEntityLaser(vec2 Pos, vec2 Direction, float StartEnergy, int Owner)
+{
+	return new CLaser(&m_World, Pos, Direction, StartEnergy, Owner);
+}
+
+CPickup *CGameContext::CreateEntityPickup(int Type, int SubType)
+{
+	return new CPickup(&m_World, Type, SubType);
+}
+
+CProjectile *CGameContext::CreateEntityProjectile(int Type, int Owner, vec2 Pos, vec2 Dir, CProjectileProperties Props, int SoundImpact, int Weapon)
+{
+	return new CProjectile(&m_World, Type, Owner, Pos, Dir, Props.LifeSpan, Props.Damage, Props.Explosive, Props.Force, SoundImpact, Weapon);
+}
+
 
 IGameServer *CreateGameServer() { return new CGameContext; }

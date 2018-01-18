@@ -27,13 +27,15 @@
 			lua_getregistry(L); \
 			lua_rawgetp(L, -1, &s_Sentinel); \
 			bool NotFromLua = lua_isnil(L, -1); \
-			lua_pop(L, 1); /* pop the result */ \
+			lua_pop(L, 2); /* pop result and registry */ \
 			if(NotFromLua) \
 			{ \
 				/* set from-lua marker */ \
+				lua_getregistry(L); \
 				lua_pushlightuserdata(L, &s_Sentinel); \
 				lua_pushboolean(L, 1); \
 				lua_rawset(L, -3); \
+				lua_pop(L, 1); /* pop the registry table */ \
 \
 				/* prepare */ \
 				setGlobal(L, Table, "self"); \
@@ -42,11 +44,12 @@
 				Handled = true; \
 \
 				/* unset from-lua marker */ \
+				lua_getregistry(L); \
 				lua_pushlightuserdata(L, &s_Sentinel); \
 				lua_pushnil(L); \
 				lua_rawset(L, -3); \
+				lua_pop(L, 1); /* pop the registry table */ \
 			} \
-			lua_pop(L, 1); /* pop the registry table */ \
 		} \
 	} \
 \
@@ -75,12 +78,12 @@ private:
 	class IStorage *m_pStorage;
 	class IConsole *m_pConsole;
 	class IServer *m_pServer;
-	class IGameServer *m_pGameServer;
+	class CGameContext *m_pGameServer;
 
 	IStorage *Storage() { return m_pStorage; }
 	IConsole *Console() { return m_pConsole; }
 	IServer *Server() { return m_pServer; }
-	IGameServer *GameServer() { return m_pGameServer; }
+	CGameContext *GameServer() { return m_pGameServer; }
 
 	lua_State *m_pLuaState;
 	void RegisterLuaCallbacks();

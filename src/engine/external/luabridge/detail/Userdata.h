@@ -409,7 +409,9 @@ private:
       new (lua_newuserdata (L, sizeof (UserdataPtr))) UserdataPtr (p);
       lua_rawgetp (L, LUA_REGISTRYINDEX, key);
       // If this goes off it means you forgot to register the class!
-      assert (lua_istable (L, -1));
+      //assert (lua_istable (L, -1));
+      if(!lua_istable (L, -1))
+        luaL_error(L, "Dude forgot to register the class!!");
       lua_setmetatable (L, -2);
     }
     else

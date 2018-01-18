@@ -3,8 +3,11 @@
 
 #include <game/server/gamecontroller.h>
 #include <game/server/gamecontext.h>
+#include <game/collision.h>
+#include <game/server/entities/projectile.h>
 
 #include <game/generated/protocol.h>
+#include <game/server/entities/pickup.h>
 
 #include "luabinding.h"
 #include "lua.h"
@@ -74,11 +77,71 @@ void CLua::RegisterLuaCallbacks()
 			.addData("v", &vector4_base<float>::v)
 		.endClass()
 
+//		.beginClass<CProjectileProperties>("CProjectileProperties")
+//			.addConstructor <void (*) (int, int, bool, float)> ()
+//			.addData("LifeSpan", &CProjectileProperties::LifeSpan)
+//			.addData("Damage", &CProjectileProperties::Damage)
+//			.addData("Explosive", &CProjectileProperties::Explosive)
+//			.addData("Force", &CProjectileProperties::Force)
+//		.endClass
+
 		.beginClass<IGameController>("IGameController")
 		.endClass()
 
+		.beginClass<CCollision>("CCollision")
+		.endClass()
+
+		.beginClass<CTuningParams>("CTuningParams")
+		.endClass()
+
+		.beginClass<CGameWorld>("CGameWorld")
+		.endClass()
+
+		.beginClass<CPlayer>("CPlayer")
+		.endClass()
+
 		.beginClass<CGameContext>("CGameContext")
+			.addFunction("Collision", &CGameContext::Collision)
+			.addFunction("Tuning", &CGameContext::Tuning)
+			.addFunction("GetPlayer", &CGameContext::GetPlayer)
+			.addFunction("GetPlayerChar", &CGameContext::GetPlayerChar)
+
+			.addFunction("StartVote", &CGameContext::StartVote)
+			.addFunction("EndVote", &CGameContext::EndVote)
+			.addFunction("SendVoteSet", &CGameContext::SendVoteSet)
+			.addFunction("SendVoteStatus", &CGameContext::SendVoteStatus)
+			.addFunction("AbortVoteKickOnDisconnect", &CGameContext::AbortVoteKickOnDisconnect)
+
 			.addFunction("CreateDamageInd", &CGameContext::CreateDamageInd)
+			.addFunction("CreateSound", &CGameContext::CreateSound)
+			.addFunction("CreateDamageInd", &CGameContext::CreateDamageInd)
+			.addFunction("CreateExplosion", &CGameContext::CreateExplosion)
+			.addFunction("CreateHammerHit", &CGameContext::CreateHammerHit)
+			.addFunction("CreatePlayerSpawn", &CGameContext::CreatePlayerSpawn)
+			.addFunction("CreateDeath", &CGameContext::CreateDeath)
+			.addFunction("CreateSound", &CGameContext::CreateSound)
+			.addFunction("CreateSoundGlobal", &CGameContext::CreateSoundGlobal)
+
+			.addFunction("SendChatTarget", &CGameContext::SendChatTarget)
+			.addFunction("SendChat", &CGameContext::SendChat)
+			.addFunction("SendEmoticon", &CGameContext::SendEmoticon)
+			.addFunction("SendWeaponPickup", &CGameContext::SendWeaponPickup)
+			.addFunction("SendBroadcast", &CGameContext::SendBroadcast)
+
+			.addFunction("SwapTeams", &CGameContext::SwapTeams)
+
+			.addFunction("IsClientReady", &CGameContext::IsClientReady)
+			.addFunction("IsClientPlayer", &CGameContext::IsClientPlayer)
+			
+			.addFunction("CreateEntityCharacter", &CGameContext::CreateEntityCharacter)
+			.addFunction("CreateEntityFlag", &CGameContext::CreateEntityFlag)
+			.addFunction("CreateEntityLaser", &CGameContext::CreateEntityLaser)
+			.addFunction("CreateEntityPickup", &CGameContext::CreateEntityPickup)
+			.addFunction("CreateEntityProjectile", &CGameContext::CreateEntityProjectile)
+
+			.addFunction("GameType", &CGameContext::GameType)
+			.addFunction("Version", &CGameContext::Version)
+			.addFunction("NetVersion", &CGameContext::NetVersion)
 		.endClass()
 
 		.beginClass<IServer>("IServer")
@@ -91,12 +154,6 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("ClientIngame", &IServer::ClientIngame)
 			.addFunction("GetClientInfo", &IServer::GetClientInfo)
 			.addFunction("GetClientAddr", &IServer::GetClientAddr)
-		.endClass()
-
-		.beginClass<CGameWorld>("CGameWorld")
-		.endClass()
-
-		.beginClass<CPlayer>("CPlayer")
 		.endClass()
 
 		.beginClass<CNetObj_PlayerInput>("CNetObj_PlayerInput")
@@ -125,7 +182,10 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("TypeNext", &CEntity::TypeNext)
 			.addFunction("TypePrev", &CEntity::TypePrev)
 
+			.addProperty("Type", &CEntity::GetType)
+
 			.addFunction("Destroy", &CEntity::Destroy)
+
 			.addFunction("Reset", &CEntity::Reset)
 			.addFunction("Tick", &CEntity::Tick)
 			.addFunction("TickDefered", &CEntity::TickDefered)
@@ -135,6 +195,10 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("NetworkClipped", &CEntity::NetworkClippedLua)
 			.addFunction("GameLayerClipped", &CEntity::GameLayerClipped)
 		.endClass()
+
+		.deriveClass<CPickup, CEntity>("CPickup")
+		.endClass()
+
 
 		.deriveClass<CCharacter, CEntity>("CCharacter")
 			.addFunction("IsGrounded", &CCharacter::IsGrounded)
@@ -146,8 +210,6 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("HandleWeapons", &CCharacter::HandleWeapons)
 			.addFunction("HandleNinja", &CCharacter::HandleNinja)
 
-			.addFunction("OnPredictedInput", &CCharacter::OnPredictedInput)
-			.addFunction("OnDirectInput", &CCharacter::OnDirectInput)
 			.addFunction("ResetInput", &CCharacter::ResetInput)
 			.addFunction("FireWeapon", &CCharacter::FireWeapon)
 
@@ -194,6 +256,7 @@ void CLua::RegisterLuaCallbacks()
 		.beginNamespace("Server")
 			.addVariable("Console", &CLua::ms_pSelf->m_pConsole, false)
 			.addVariable("Lua", &CLua::ms_pSelf, false)
+			.addVariable("Game", &CLua::ms_pSelf->m_pGameServer, false)
 		.endNamespace()
 
 	; // end global namespace

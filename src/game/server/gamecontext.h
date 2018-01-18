@@ -9,6 +9,7 @@
 
 #include <game/layers.h>
 #include <game/voting.h>
+#include <game/server/entities/projectile.h>
 
 #include "eventhandler.h"
 #include "gamecontroller.h"
@@ -88,6 +89,7 @@ public:
 
 	// helper functions
 	class CCharacter *GetPlayerChar(int ClientID);
+	CPlayer *GetPlayer(int ClientID) { return m_apPlayers[ClientID]; };
 
 	int m_LockTeams;
 
@@ -174,6 +176,14 @@ public:
 	virtual const char *GameType();
 	virtual const char *Version();
 	virtual const char *NetVersion();
+
+	// lua
+	class CCharacter *CreateEntityCharacter(int ClientID);
+	class CFlag *CreateEntityFlag(int Team);
+	class CLaser *CreateEntityLaser(vec2 Pos, vec2 Direction, float StartEnergy, int Owner);
+	class CPickup *CreateEntityPickup(int Type, int SubType);
+	class CProjectile *CreateEntityProjectile(int Type, int Owner, vec2 Pos, vec2 Dir, CProjectileProperties Props, int SoundImpact, int Weapon);
+
 };
 
 inline int CmaskAll() { return -1; }

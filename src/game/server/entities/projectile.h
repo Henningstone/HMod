@@ -3,6 +3,19 @@
 #ifndef GAME_SERVER_ENTITIES_PROJECTILE_H
 #define GAME_SERVER_ENTITIES_PROJECTILE_H
 
+#include <game/server/entity.h>
+
+class CProjectileProperties
+{
+public:
+	CProjectileProperties(int LifeSpan, int Damage, bool Explosive, float Force) : LifeSpan(LifeSpan), Damage(Damage), Explosive(Explosive), Force(Force){}
+
+	int LifeSpan;
+	int Damage;
+	bool Explosive;
+	float Force;
+};
+
 class CProjectile : public CEntity
 {
 public:

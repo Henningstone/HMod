@@ -11,6 +11,8 @@
 #include <engine/shared/config.h>
 #include <base/math.h>
 
+#include <game/server/gamecontext.h>
+
 #include "lua.h"
 #include "luabinding.h"
 
@@ -30,7 +32,7 @@ void CLua::Init()
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	m_pServer = Kernel()->RequestInterface<IServer>();
-	m_pGameServer = Kernel()->RequestInterface<IGameServer>();
+	m_pGameServer = dynamic_cast<CGameContext *>(Kernel()->RequestInterface<IGameServer>());
 
 	// basic lua initialization
 	m_pLuaState = luaL_newstate();
