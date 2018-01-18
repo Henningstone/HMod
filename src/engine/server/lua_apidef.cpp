@@ -185,9 +185,15 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("ExecuteLine", &IConsole::ExecuteLine)
 		.endClass()
 
+		// Server.Lua
+		.beginClass<CLua>("CLua")
+			.addFunction("AddClass", &CLua::AddClass)
+		.endClass()
+
 
 		.beginNamespace("Server")
 			.addVariable("Console", &CLua::ms_pSelf->m_pConsole, false)
+			.addVariable("Lua", &CLua::ms_pSelf, false)
 		.endNamespace()
 
 	; // end global namespace

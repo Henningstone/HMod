@@ -6,6 +6,7 @@
 #include <new>
 #include <base/vmath.h>
 #include <game/server/gameworld.h>
+#include <engine/server/lua.h>
 
 //#define MACRO_ALLOC_HEAP() \
 //	public: \
@@ -64,11 +65,16 @@ class CEntity
 	CEntity *m_pPrevTypeEntity;
 	CEntity *m_pNextTypeEntity;
 
+	//const CLua::LuaObject *m_pLuaObject;
+
 	class CGameWorld *m_pGameWorld;
+
 protected:
 	bool m_MarkedForDestroy;
 	int m_ID;
 	int m_ObjType;
+	//const CLua::LuaObject *LuaObject() const { return m_pLuaObject; }
+
 public:
 	CEntity(CGameWorld *pGameWorld, int Objtype);
 	virtual ~CEntity();
@@ -77,6 +83,7 @@ public:
 	class CGameContext *GameServer() { return GameWorld()->GameServer(); }
 	class IServer *Server() { return GameWorld()->Server(); }
 
+	//void AttachLuaObject(const char *pObjName);
 
 	CEntity *TypeNext() { return m_pNextTypeEntity; }
 	CEntity *TypePrev() { return m_pPrevTypeEntity; }

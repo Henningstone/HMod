@@ -43,15 +43,39 @@ void CLua::Init()
 	RegisterLuaCallbacks();
 }
 
-bool CLua::RegisterScript(const char *pScriptClass, bool Reloading)
+bool CLua::RegisterScript(const char *pObjName, bool Reloading, const char *pRegisterAs)
 {
-	luabridge::setGlobal(m_pLuaState, luabridge::newTable(m_pLuaState), pScriptClass);
+	if(!pRegisterAs)
+		pRegisterAs = pObjName;
+	luabridge::setGlobal(m_pLuaState, luabridge::newTable(m_pLuaState), pRegisterAs);
 
-	if(!LoadLuaFile(pScriptClass))
+	if(!LoadLuaFile(pObjName))
 		return false;
 
 	if(!Reloading)
-		m_lpLoadedClasses.add(pScriptClass);
+	{
+		m_lLoadedClasses[std::string(pRegisterAs)].push_back(LuaObject((int)m_lpAllObjects.size(), std::string(pRegisterAs), std::string(pObjName)));
+
+	/*	TLoadedClassesMap::iterator it;
+		for(it = m_lLoadedClasses.begin(); it != m_lLoadedClasses.end(); ++it)
+		{
+			if(it->first == RegisterAs)
+				break;
+		}
+
+		// insert new key if not found
+		if(it == m_lLoadedClasses.end())
+		{
+			m_lLoadedClasses.emplace_back(std::make_pair(RegisterAs, std::vector<std::string>()));
+			m_lLoadedClasses.back().second.emplace_back(std::string(pObjName));
+		}
+		else
+		{
+			it->second.emplace_back(std::string(pObjName));
+		}*/
+
+		dbg_msg("lua/objectmgr", "object '%s' registered as instance of class '%s'", pObjName, pRegisterAs);
+	}
 
 	return true;
 }
@@ -86,30 +110,46 @@ bool CLua::LoadGametype()
 {
 	if(!LoadLuaFile("init"))
 	{
-		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Failed to load gametype %s: lua init file does not exist!", g_Config.m_SvGametype);
+		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Error while loading init file of gametype %s, aborting!", g_Config.m_SvGametype);
 		return false;
 	}
 
-	RegisterScript("Character");
-	RegisterScript("Projectile");
-	RegisterScript("Laser");
-	RegisterScript("Pickup");
-	RegisterScript("Flag");
+	// auto-add standard classes
+	RegisterScript("entities/Character",  false, "Character");
+	RegisterScript("entities/Projectile", false, "Projectile");
+	RegisterScript("entities/Laser",      false, "Laser");
+	RegisterScript("entities/Pickup",     false, "Pickup");
+	RegisterScript("entities/Flag",       false, "Flag");
 
 	return true;
 }
 
-void CLua::ReloadClass(int ID)
+void CLua::ReloadSingleObject(int ObjectID)
 {
-	if(ID < 0)
+	if(ObjectID < 0)
 	{
 		// reload all
-		int Num = NumLoadedClasses();
+		int Num = NumLoadedObjects();
 		for(int i = 0; i < Num; i++)
-			RegisterScript(GetClassName(i), true);
+			RegisterScript(m_lpAllObjects[i]->objname.c_str(), true, m_lpAllObjects[i]->classname.c_str());
 	}
 	else
-		RegisterScript(GetClassName(ID), true);
+		RegisterScript(m_lpAllObjects[ObjectID]->objname.c_str(), true, m_lpAllObjects[ObjectID]->classname.c_str());
+}
+
+bool CLua::AddClass(const char *pClassPath, const char *pRegisterAs)
+{
+	return RegisterScript(pClassPath, false, pRegisterAs);
+}
+
+const CLua::LuaObject *CLua::FindObject(const std::string& ObjName)
+{
+	for(std::vector<LuaObject*>::iterator it = m_lpAllObjects.begin(); it != m_lpAllObjects.end(); ++it)
+	{
+		if((*it)->objname == ObjName)
+			return (*it);
+	}
+	return NULL;
 }
 
 // low level error handling (errors not thrown as an exception)

@@ -1345,7 +1345,7 @@ int CServer::Run()
 
 			if(m_LuaReinit)
 			{
-				CLua::Lua()->ReloadClass(m_LuaReinit-1);
+				CLua::Lua()->ReloadSingleObject(m_LuaReinit-1);
 				m_LuaReinit = 0;
 			}
 
@@ -1533,10 +1533,10 @@ void CServer::ConLuaReinit(IConsole::IResult *pResult, void *pUser)
 	if(pResult->NumArguments())
 		What = pResult->GetInteger(0);
 
-	if(What <= CLua::Lua()->NumLoadedClasses())
+	if(What <= CLua::Lua()->NumLoadedObjects())
 		((CServer *)pUser)->m_LuaReinit = What;
 	else
-		pSelf->Console()->Printf(0, "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedClasses());
+		pSelf->Console()->Printf(0, "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedObjects());
 
 }
 
@@ -1546,11 +1546,12 @@ void CServer::ConLuaListClasses(IConsole::IResult *pResult, void *pUser)
 
 	pSelf->Console()->Print(0, "lua_listclasses", "----- Begin Loaded User Classes -----");
 
-	int Num = CLua::Lua()->NumLoadedClasses();
+	int Num = CLua::Lua()->NumLoadedObjects();
 	for(int i = 0; i < Num; i++)
 	{
-		const char *pClassName = CLua::Lua()->GetClassName(i);
-		pSelf->Console()->Printf(0, "lua_listclasses", "%i: %s", i, pClassName);
+		const char *pObjName = CLua::Lua()->GetObjectName(i);
+		const char *pClassName = CLua::Lua()->GetObjectClass(i);
+		pSelf->Console()->Printf(0, "lua_listclasses", "%i: %s as %s", i+1, pObjName, pClassName);
 	}
 
 	pSelf->Console()->Print(0, "lua_listclasses", "-----  End Loaded User Classes  -----");

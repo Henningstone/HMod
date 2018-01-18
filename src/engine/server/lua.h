@@ -1,10 +1,13 @@
 #ifndef ENGINE_SERVER_LUA_H
 #define ENGINE_SERVER_LUA_H
 
-#include <engine/lua.h>
+#include <vector>
+#include <string>
 #include <lua.hpp>
 #include <engine/external/luabridge/LuaBridge.h>
+#include <engine/lua.h>
 #include <base/tl/array.h>
+#include <map>
 
 #define MACRO_LUA_EVENT(CLASSNAME, ...) \
 { \
@@ -58,7 +61,17 @@ using luabridge::LuaRef;
 class CLua : public ILua
 {
 	friend class CLuaBinding;
+public:
+	struct LuaObject
+	{
+		LuaObject(int id, const std::string& classname, const std::string& objname) : id(id), classname(classname), objname(objname){}
 
+		int id;
+		std::string classname;
+		std::string objname;
+	};
+
+private:
 	class IStorage *m_pStorage;
 	class IConsole *m_pConsole;
 	class IServer *m_pServer;
@@ -71,11 +84,13 @@ class CLua : public ILua
 
 	lua_State *m_pLuaState;
 	void RegisterLuaCallbacks();
-	bool RegisterScript(const char *pScriptClass, bool Reloading = false);
-
-	array<const char*> m_lpLoadedClasses;
-
+	bool RegisterScript(const char *pObjName, bool Reloading = false, const char *pRegisterAs = NULL);
 	bool LoadLuaFile(const char *pClassName);
+
+	typedef std::vector<LuaObject> TLuaObjectVector;
+
+	std::map<std::string, TLuaObjectVector> m_lLoadedClasses; // 1 Class -> 1..* Object
+	std::vector<LuaObject*> m_lpAllObjects;
 
 public:
 	CLua();
@@ -83,9 +98,14 @@ public:
 	bool LoadGametype();
 	lua_State *L() { return m_pLuaState; }
 
-	void ReloadClass(int i);
-	int NumLoadedClasses() const { return m_lpLoadedClasses.size(); }
-	const char *GetClassName(int i) const { return m_lpLoadedClasses[i]; }
+	void ReloadSingleObject(int ObjectID);
+	int NumLoadedObjects() const { return (int)m_lpAllObjects.size(); }
+	const char *GetObjectName(int ID) const { return m_lpAllObjects[ID]->objname.c_str(); }
+	const char *GetObjectClass(int ID) const { return m_lpAllObjects[ID]->classname.c_str(); }
+	const LuaObject *FindObject(const std::string& ObjName);
+
+	// api
+	bool AddClass(const char *pClassPath, const char *pRegisterAss);
 
 	static void HandleException(luabridge::LuaException& e);
 	static int ErrorFunc(lua_State *L);
