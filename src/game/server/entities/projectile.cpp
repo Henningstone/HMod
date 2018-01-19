@@ -105,7 +105,7 @@ void CProjectile::FillInfo(CNetObj_Projectile *pProj)
 
 void CProjectile::Snap(int SnappingClient)
 {
-	MACRO_LUA_EVENT("Projectile", SnappingClient)
+	MACRO_LUA_EVENT(GetLuaObjectName(), SnappingClient)
 
 	float Ct = (Server()->Tick()-m_StartTick)/(float)Server()->TickSpeed();
 

@@ -1398,6 +1398,62 @@ int fs_listdir(const char *dir, FS_LISTDIR_CALLBACK cb, int type, void *user)
 #endif
 }
 
+int fs_listdir_verbose(const char *dir, FS_LISTDIR_CALLBACK_VERBOSE cb, int type, void *user)
+{
+#if defined(CONF_FAMILY_WINDOWS)
+	WIN32_FIND_DATA finddata;
+	HANDLE handle;
+	int result;
+	char buffer[1024*2];
+	int length;
+	str_format(buffer, sizeof(buffer), "%s/*", dir);
+
+	handle = FindFirstFileA(buffer, &finddata);
+
+	if (handle == INVALID_HANDLE_VALUE)
+		return 0;
+
+	str_format(buffer, sizeof(buffer), "%s/", dir);
+	length = str_length(buffer);
+	result = 0;
+
+	/* add all the entries */
+	do
+	{
+		str_copy(buffer+length, finddata.cFileName, (int)sizeof(buffer)-length);
+		if((result = cb(finddata.cFileName, buffer, fs_is_dir(buffer), type, user)))
+			break;
+	}
+	while (FindNextFileA(handle, &finddata));
+
+	FindClose(handle);
+	return result;
+#else
+	struct dirent *entry;
+	char buffer[1024*2];
+	int length;
+	DIR *d = opendir(dir);
+
+	if(!d)
+		return 0;
+
+	str_format(buffer, sizeof(buffer), "%s/", dir);
+	length = str_length(buffer);
+	int result = 0;
+
+	while((entry = readdir(d)) != NULL)
+	{
+		str_copy(buffer+length, entry->d_name, (int)sizeof(buffer)-length);
+		if((result = cb(entry->d_name, buffer, fs_is_dir(buffer), type, user)))
+			break;
+	}
+
+	/* close the directory and return */
+	closedir(d);
+	return result;
+#endif
+}
+
 int fs_storage_path(const char *appname, char *path, int max)
 {
 #if defined(CONF_FAMILY_WINDOWS)
@@ -1781,6 +1837,26 @@ const char *str_find(const char *haystack, const char *needle)
 		if(!(*b))
 			return haystack;
 		haystack++;
+	}
+
+	return 0;
+}
+
+const char *str_find_rev(const char *haystack, const char *needle)
+{
+	haystack = haystack + str_length(haystack) - 1;
+	while(*haystack) /* native implementation */
+	{
+		const char *a = haystack;
+		const char *b = needle;
+		while(*a && *b && *a == *b)
+		{
+			a++;
+			b++;
+		}
+		if(!(*b))
+			return haystack + 1;
+		haystack--;
 	}
 
 	return 0;

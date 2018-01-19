@@ -797,7 +797,8 @@ void CConsole::RegisterLua(const char *pName, const char *pParams, const char *p
 	if(!LuaFunc.isFunction())
 		luaL_error(L, "parameter 3 must be a function");
 
-	if(FindCommand(pName, CFGFLAG_SERVER))
+	CCommand *pCommand = FindCommand(pName, CFGFLAG_SERVER);
+	if(pCommand && !pCommand->m_Temp)
 		luaL_error(L, "the command '%s' can't be overwritten!", pName);
 
 	LuaRef *pCbRef = new luabridge::LuaRef(L);

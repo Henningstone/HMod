@@ -981,6 +981,8 @@ const char *str_find_nocase(const char *haystack, const char *needle);
 */
 const char *str_find(const char *haystack, const char *needle);
 
+const char *str_find_rev(const char *haystack, const char *needle);
+
 /*
 	Function: str_hex
 		Takes a datablock and generates a hexstring of it.
@@ -1026,6 +1028,9 @@ void str_timestamp(char *buffer, int buffer_size);
 */
 typedef int (*FS_LISTDIR_CALLBACK)(const char *name, int is_dir, int dir_type, void *user);
 int fs_listdir(const char *dir, FS_LISTDIR_CALLBACK cb, int type, void *user);
+
+typedef int (*FS_LISTDIR_CALLBACK_VERBOSE)(const char *name, const char *full_path, int is_dir, int dir_type, void *user);
+int fs_listdir_verbose(const char *dir, FS_LISTDIR_CALLBACK_VERBOSE cb, int type, void *user);
 
 /*
 	Function: fs_makedir

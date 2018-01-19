@@ -34,6 +34,11 @@ void CLua::Init()
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pGameServer = dynamic_cast<CGameContext *>(Kernel()->RequestInterface<IGameServer>());
 
+	OpenLua();
+}
+
+void CLua::OpenLua()
+{
 	// basic lua initialization
 	m_pLuaState = luaL_newstate();
 	lua_atpanic(m_pLuaState, CLua::Panic);
@@ -45,57 +50,42 @@ void CLua::Init()
 	RegisterLuaCallbacks();
 }
 
-bool CLua::RegisterScript(const char *pObjName, bool Reloading, const char *pRegisterAs)
+bool CLua::Reload()
 {
-	if(!pRegisterAs)
-		pRegisterAs = pObjName;
-	luabridge::setGlobal(m_pLuaState, luabridge::newTable(m_pLuaState), pRegisterAs);
+	lua_close(m_pLuaState);
+	OpenLua();
 
-	if(!LoadLuaFile(pObjName))
+	return LoadGametype();
+}
+
+bool CLua::RegisterScript(const char *pFullPath, const char *pObjName, bool Reloading)
+{
+	luabridge::setGlobal(m_pLuaState, luabridge::newTable(m_pLuaState), pObjName);
+
+	if(!LoadLuaFile(pFullPath))
 		return false;
 
 	if(!Reloading)
 	{
-		m_lLoadedClasses[std::string(pRegisterAs)].push_back(LuaObject((int)m_lpAllObjects.size(), std::string(pRegisterAs), std::string(pObjName)));
+		m_lLuaObjects.push_back(LuaObject(pFullPath, pObjName));
 
-	/*	TLoadedClassesMap::iterator it;
-		for(it = m_lLoadedClasses.begin(); it != m_lLoadedClasses.end(); ++it)
-		{
-			if(it->first == RegisterAs)
-				break;
-		}
-
-		// insert new key if not found
-		if(it == m_lLoadedClasses.end())
-		{
-			m_lLoadedClasses.emplace_back(std::make_pair(RegisterAs, std::vector<std::string>()));
-			m_lLoadedClasses.back().second.emplace_back(std::string(pObjName));
-		}
-		else
-		{
-			it->second.emplace_back(std::string(pObjName));
-		}*/
-
-		dbg_msg("lua/objectmgr", "object '%s' registered as instance of class '%s'", pObjName, pRegisterAs);
+		dbg_msg("lua/objectmgr", "loaded object '%s' from file '%s'", pObjName, pFullPath);
 	}
 
 	return true;
 }
 
-bool CLua::LoadLuaFile(const char *pClassName)
+bool CLua::LoadLuaFile(const char *pFilePath)
 {
-	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "gamemodes/%s/%s.lua", g_Config.m_SvGametype, pClassName);
-
 	// check if the file exists and retrieve its full path
 	char aFullPath[512];
-	IOHANDLE f = Storage()->OpenFile(aBuf, IOFLAG_READ, IStorage::TYPE_ALL, aFullPath, sizeof(aFullPath));
+	IOHANDLE f = Storage()->OpenFile(pFilePath, IOFLAG_READ, IStorage::TYPE_ALL, aFullPath, sizeof(aFullPath));
 	if(!f)
 		return false;
 
 	io_close(f);
 
-	// load the init file, it will handle the rest
+	// load the file
 	dbg_msg("luasrv", "loading script '%s' for gametype %s", aFullPath, g_Config.m_SvGametype);
 	int Status = luaL_dofile(m_pLuaState, aFullPath);
 	if(Status != 0)
@@ -108,22 +98,46 @@ bool CLua::LoadLuaFile(const char *pClassName)
 	return true;
 }
 
+int CLua::ListdirCallback(const char *name, const char *full_path, int is_dir, int dir_type, void *user)
+{
+	if(name[0] == '.')
+		return 0;
+
+	if(str_length(name) <= 4)
+		return 0;
+
+	if(str_comp_filenames(name, "init.lua") == 0)
+		return 0;
+
+	CLua *pSelf = static_cast<CLua *>(user);
+	if(is_dir)
+		return fs_listdir_verbose(full_path, CLua::ListdirCallback, dir_type, user);
+	else
+	{
+		char aObjName[64];
+		str_copyb(aObjName, name);
+		aObjName[str_length(name)-4] = '\0';
+		return pSelf->RegisterScript(full_path, aObjName) ? 0 : 1;
+	}
+}
+
 bool CLua::LoadGametype()
 {
-	if(!LoadLuaFile("init"))
+	// load the init file
+	char aDir[128];
+	str_formatb(aDir, "gamemodes/%s/init.lua", g_Config.m_SvGametype);
+
+	if(!LoadLuaFile(aDir))
 	{
 		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Error while loading init file of gametype %s, aborting!", g_Config.m_SvGametype);
 		return false;
 	}
 
-	// auto-add standard classes
-	RegisterScript("entities/Character",  false, "Character");
-	RegisterScript("entities/Projectile", false, "Projectile");
-	RegisterScript("entities/Laser",      false, "Laser");
-	RegisterScript("entities/Pickup",     false, "Pickup");
-	RegisterScript("entities/Flag",       false, "Flag");
+	// load everything else
+	str_formatb(aDir, "gamemodes/%s", g_Config.m_SvGametype);
+	bool Success = fs_listdir_verbose(aDir, ListdirCallback, 0, this) == 0;
 
-	return true;
+	return Success;
 }
 
 void CLua::ReloadSingleObject(int ObjectID)
@@ -131,27 +145,18 @@ void CLua::ReloadSingleObject(int ObjectID)
 	if(ObjectID < 0)
 	{
 		// reload all
-		int Num = NumLoadedObjects();
+		int Num = NumLoadedClasses();
 		for(int i = 0; i < Num; i++)
-			RegisterScript(m_lpAllObjects[i]->objname.c_str(), true, m_lpAllObjects[i]->classname.c_str());
+		{
+			RegisterScript(m_lLuaObjects[i].path.c_str(), m_lLuaObjects[i].name.c_str(), true);
+			Console()->Printf(0, "luaserver", "reloading %s", m_lLuaObjects[i].GetIdent().c_str());
+		}
 	}
 	else
-		RegisterScript(m_lpAllObjects[ObjectID]->objname.c_str(), true, m_lpAllObjects[ObjectID]->classname.c_str());
-}
-
-bool CLua::AddClass(const char *pClassPath, const char *pRegisterAs)
-{
-	return RegisterScript(pClassPath, false, pRegisterAs);
-}
-
-const CLua::LuaObject *CLua::FindObject(const std::string& ObjName)
-{
-	for(std::vector<LuaObject*>::iterator it = m_lpAllObjects.begin(); it != m_lpAllObjects.end(); ++it)
 	{
-		if((*it)->objname == ObjName)
-			return (*it);
+		RegisterScript(m_lLuaObjects[ObjectID].path.c_str(), m_lLuaObjects[ObjectID].name.c_str(), true);
+		Console()->Printf(0, "luaserver", "reloading %s", m_lLuaObjects[ObjectID].GetIdent().c_str());
 	}
-	return NULL;
 }
 
 // low level error handling (errors not thrown as an exception)

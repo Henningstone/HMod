@@ -283,6 +283,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 
 	m_MapReload = 0;
 	m_LuaReinit = 0;
+	m_GametypeReloaded = false;
 
 	m_RconClientID = IServer::RCON_CID_SERV;
 	m_RconAuthLevel = AUTHED_ADMIN;
@@ -1345,8 +1346,19 @@ int CServer::Run()
 
 			if(m_LuaReinit)
 			{
-				CLua::Lua()->ReloadSingleObject(m_LuaReinit-1);
+				int ID = m_LuaReinit-1;
 				m_LuaReinit = 0;
+				CLua::Lua()->ReloadSingleObject(ID);
+			}
+
+			if(m_GametypeReloaded)
+			{
+				m_GametypeReloaded = false;
+				if(!CLua::Lua()->Reload())
+				{
+					dbg_msg("server", "failde to load new gametype, aborting");
+					break;
+				}
 			}
 
 			while(t > TickStartTime(m_CurrentGameTick+1))
@@ -1533,10 +1545,10 @@ void CServer::ConLuaReinit(IConsole::IResult *pResult, void *pUser)
 	if(pResult->NumArguments())
 		What = pResult->GetInteger(0);
 
-	if(What <= CLua::Lua()->NumLoadedObjects())
+	if(What <= CLua::Lua()->NumLoadedClasses())
 		((CServer *)pUser)->m_LuaReinit = What;
 	else
-		pSelf->Console()->Printf(0, "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedObjects());
+		pSelf->Console()->Printf(0, "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedClasses());
 
 }
 
@@ -1546,12 +1558,11 @@ void CServer::ConLuaListClasses(IConsole::IResult *pResult, void *pUser)
 
 	pSelf->Console()->Print(0, "lua_listclasses", "----- Begin Loaded User Classes -----");
 
-	int Num = CLua::Lua()->NumLoadedObjects();
+	int Num = CLua::Lua()->NumLoadedClasses();
 	for(int i = 0; i < Num; i++)
 	{
-		const char *pObjName = CLua::Lua()->GetObjectName(i);
-		const char *pClassName = CLua::Lua()->GetObjectClass(i);
-		pSelf->Console()->Printf(0, "lua_listclasses", "%i: %s as %s", i+1, pObjName, pClassName);
+		std::string ObjIdent = CLua::Lua()->GetObjectIdentifier(i);
+		pSelf->Console()->Printf(0, "lua_listclasses", "%i: %s", i+1, ObjIdent.c_str());
 	}
 
 	pSelf->Console()->Print(0, "lua_listclasses", "-----  End Loaded User Classes  -----");
@@ -1591,6 +1602,13 @@ void CServer::ConchainMapChange(IConsole::IResult *pResult, void *pUserData, ICo
 	pfnCallback(pResult, pCallbackUserData);
 	if(pResult->NumArguments())
 		((CServer *)pUserData)->m_MapReload = 1;
+}
+
+void CServer::ConchainGametypeChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
+{
+	pfnCallback(pResult, pCallbackUserData);
+	if(pResult->NumArguments())
+		((CServer *)pUserData)->m_GametypeReloaded = 1;
 }
 
 void CServer::ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
@@ -1664,6 +1682,7 @@ void CServer::RegisterCommands()
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
 
 	Console()->Chain("sv_map", ConchainMapChange, this);
+	Console()->Chain("sv_gametype", ConchainGametypeChange, this);
 
 	Console()->Chain("sv_max_clients_per_ip", ConchainMaxclientsperipUpdate, this);
 	Console()->Chain("mod_command", ConchainModCommandUpdate, this);
