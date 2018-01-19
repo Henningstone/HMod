@@ -7,11 +7,12 @@
 //////////////////////////////////////////////////
 // Entity
 //////////////////////////////////////////////////
-CEntity::CEntity(CGameWorld *pGameWorld, int ObjType)
+CEntity::CEntity(CGameWorld *pGameWorld, int ObjType, const char *pLuaClassName)
 {
 	m_pGameWorld = pGameWorld;
 
 	m_ObjType = ObjType;
+	m_LuaClass = std::string(pLuaClassName);
 	m_Pos = vec2(0,0);
 	m_ProximityRadius = 0;
 

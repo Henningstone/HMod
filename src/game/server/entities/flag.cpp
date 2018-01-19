@@ -4,7 +4,7 @@
 #include "flag.h"
 
 CFlag::CFlag(CGameWorld *pGameWorld, int Team)
-: CEntity(pGameWorld, CGameWorld::ENTTYPE_FLAG)
+: CEntity(pGameWorld, CGameWorld::ENTTYPE_FLAG, "Flag")
 {
 	m_Team = Team;
 	m_ProximityRadius = ms_PhysSize;
@@ -16,7 +16,7 @@ CFlag::CFlag(CGameWorld *pGameWorld, int Team)
 
 void CFlag::Reset()
 {
-	MACRO_LUA_EVENT("Flag");
+	MACRO_LUA_EVENT(GetLuaClassName());
 
 	m_pCarryingCharacter = NULL;
 	m_AtStand = 1;
@@ -27,7 +27,7 @@ void CFlag::Reset()
 
 void CFlag::TickPaused()
 {
-	MACRO_LUA_EVENT("Flag");
+	MACRO_LUA_EVENT(GetLuaClassName());
 
 	++m_DropTick;
 	if(m_GrabTick)
@@ -36,7 +36,7 @@ void CFlag::TickPaused()
 
 void CFlag::Snap(int SnappingClient)
 {
-	MACRO_LUA_EVENT("Flag", SnappingClient);
+	MACRO_LUA_EVENT(GetLuaClassName(), SnappingClient);
 
 	if(NetworkClipped(SnappingClient))
 		return;

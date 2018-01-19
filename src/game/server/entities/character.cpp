@@ -40,7 +40,7 @@ MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
 // Character, "physical" player's part
 CCharacter::CCharacter(CGameWorld *pWorld)
-: CEntity(pWorld, CGameWorld::ENTTYPE_CHARACTER)
+: CEntity(pWorld, CGameWorld::ENTTYPE_CHARACTER, "Character")
 {
 	m_ProximityRadius = ms_PhysSize;
 	m_Health = 0;
@@ -49,7 +49,7 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 
 void CCharacter::Reset()
 {
-	MACRO_LUA_EVENT("Character")
+	MACRO_LUA_EVENT(GetLuaClassName())
 
 	Destroy();
 }
@@ -85,7 +85,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 
 void CCharacter::Destroy()
 {
-	MACRO_LUA_EVENT("Character")
+	MACRO_LUA_EVENT(GetLuaClassName())
 
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 	m_Alive = false;
@@ -520,7 +520,7 @@ void CCharacter::ResetInput()
 
 void CCharacter::Tick()
 {
-	MACRO_LUA_EVENT("Character")
+	MACRO_LUA_EVENT(GetLuaClassName())
 
 	if(m_pPlayer->m_ForceBalanced)
 	{
@@ -554,7 +554,7 @@ void CCharacter::Tick()
 
 void CCharacter::TickDefered()
 {
-	MACRO_LUA_EVENT("Character")
+	MACRO_LUA_EVENT(GetLuaClassName())
 
 	// advance the dummy
 	{
@@ -639,7 +639,7 @@ void CCharacter::TickDefered()
 
 void CCharacter::TickPaused()
 {
-	MACRO_LUA_EVENT("Character")
+	MACRO_LUA_EVENT(GetLuaClassName())
 
 	++m_AttackTick;
 	++m_DamageTakenTick;
@@ -797,7 +797,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 void CCharacter::Snap(int SnappingClient)
 {
-	MACRO_LUA_EVENT("Character", SnappingClient)
+	MACRO_LUA_EVENT(GetLuaClassName(), SnappingClient)
 
 	if(NetworkClipped(SnappingClient))
 		return;

@@ -60,6 +60,16 @@ bool CLua::Reload()
 
 bool CLua::RegisterScript(const char *pFullPath, const char *pObjName, bool Reloading)
 {
+	// make sure we don't have duplicate classes
+	for(std::vector<LuaObject>::iterator it = m_lLuaObjects.begin(); it != m_lLuaObjects.end(); ++it)
+	{
+		if(it->name == pObjName && it->path != pFullPath)
+		{
+			dbg_msg("lua", "ERROR: duplicate declaraction of class '%s' in '%s' and '%s'", pObjName, pFullPath, it->path.c_str());
+			return false;
+		}
+	}
+
 	luabridge::setGlobal(m_pLuaState, luabridge::newTable(m_pLuaState), pObjName);
 
 	if(!LoadLuaFile(pFullPath))
@@ -86,11 +96,11 @@ bool CLua::LoadLuaFile(const char *pFilePath)
 	io_close(f);
 
 	// load the file
-	dbg_msg("luasrv", "loading script '%s' for gametype %s", aFullPath, g_Config.m_SvGametype);
+	dbg_msg("lua", "loading script '%s' for gametype %s", aFullPath, g_Config.m_SvGametype);
 	int Status = luaL_dofile(m_pLuaState, aFullPath);
 	if(Status != 0)
 	{
-		dbg_msg("FATAL", "an error was thrown while loading file '%s', not starting!", aFullPath);
+		dbg_msg("lua", "FATAL: an error was thrown while loading file '%s', not starting!", aFullPath);
 		ErrorFunc(m_pLuaState);
 		return false;
 	}

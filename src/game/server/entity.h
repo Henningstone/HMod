@@ -65,7 +65,7 @@ class CEntity
 	CEntity *m_pPrevTypeEntity;
 	CEntity *m_pNextTypeEntity;
 
-	const char *m_pLuaObject;
+	std::string m_LuaClass;
 
 	class CGameWorld *m_pGameWorld;
 
@@ -73,20 +73,20 @@ protected:
 	bool m_MarkedForDestroy;
 	int m_ID;
 	int m_ObjType;
-	inline const char *GetLuaObjectName() const { return m_pLuaObject; }
+	inline const char *GetLuaClassName() const { return m_LuaClass.c_str(); }
 
 public:
-	CEntity(CGameWorld *pGameWorld, int Objtype);
+	CEntity(CGameWorld *pGameWorld, int Objtype, const char *m_pLuaClass);
 	virtual ~CEntity();
 
 	class CGameWorld *GameWorld() { return m_pGameWorld; }
 	class CGameContext *GameServer() { return GameWorld()->GameServer(); }
 	class IServer *Server() { return GameWorld()->Server(); }
 
-	void AttachLuaObject(const char *pObjName) { m_pLuaObject = pObjName; }
-
 	CEntity *TypeNext() { return m_pNextTypeEntity; }
 	CEntity *TypePrev() { return m_pPrevTypeEntity; }
+
+	void LuaBindClass(const char *pClassName) { m_LuaClass = std::string(pClassName); }
 
 	int GetType() const { return m_ObjType; }
 

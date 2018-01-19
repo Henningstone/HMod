@@ -170,7 +170,7 @@ void CLua::RegisterLuaCallbacks()
 		.endClass()
 
 		.beginClass<CEntity>("CEntity")
-			.addConstructor<void (*) (CGameWorld*, int) > ()
+			//.addConstructor<void (*) (CGameWorld*, int, const char*) > ()
 
 			.addData("m_ProximityRadius", &CEntity::m_ProximityRadius)
 			.addData("m_Pos", &CEntity::m_Pos)
@@ -178,6 +178,8 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GameWorld", &CEntity::GameWorld)
 			.addFunction("GameServer", &CEntity::GameServer)
 			.addFunction("Server", &CEntity::Server)
+
+			.addFunction("BindClass", &CEntity::LuaBindClass)
 
 			.addFunction("TypeNext", &CEntity::TypeNext)
 			.addFunction("TypePrev", &CEntity::TypePrev)
