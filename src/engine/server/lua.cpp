@@ -133,21 +133,22 @@ int CLua::ListdirCallback(const char *name, const char *full_path, int is_dir, i
 
 bool CLua::LoadGametype()
 {
-	// load the init file
 	char aDir[128];
-	str_formatb(aDir, "gamemodes/%s/init.lua", g_Config.m_SvGametype);
 
+	// load all the lua files
+	str_formatb(aDir, "gamemodes/%s", g_Config.m_SvGametype);
+	if(fs_listdir_verbose(aDir, ListdirCallback, 0, this) != 0)
+		return false;
+
+	// load the init file
+	str_formatb(aDir, "gamemodes/%s/init.lua", g_Config.m_SvGametype);
 	if(!LoadLuaFile(aDir))
 	{
 		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", "Error while loading init file of gametype %s, aborting!", g_Config.m_SvGametype);
 		return false;
 	}
 
-	// load everything else
-	str_formatb(aDir, "gamemodes/%s", g_Config.m_SvGametype);
-	bool Success = fs_listdir_verbose(aDir, ListdirCallback, 0, this) == 0;
-
-	return Success;
+	return true;
 }
 
 void CLua::ReloadSingleObject(int ObjectID)
