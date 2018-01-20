@@ -16,6 +16,13 @@ public:
 	virtual void Tick();
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
+	
+	int GetType() const { return m_Type; }
+	void SetType(int Type) { m_Type = Type; }
+	int GetSubtype() const { return m_Subtype; }
+	void SetSubtype(int Type) { m_Subtype = Type; }
+	int GetSpawnTick() const { return m_SpawnTick; }
+	void SetSpawnTick(int Tick) { m_SpawnTick = Tick; }
 
 private:
 	int m_Type;
