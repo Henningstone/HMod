@@ -1338,7 +1338,7 @@ int net_init()
 #if defined(CONF_FAMILY_WINDOWS)
 	WSADATA wsaData;
 	int err = WSAStartup(MAKEWORD(1, 1), &wsaData);
-	dbg_assert(err == 0, "network initialization failed.");
+	dbg_assert_legacy(err == 0, "network initialization failed.");
 	return err==0?0:1;
 #endif
 
