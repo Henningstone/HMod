@@ -116,7 +116,6 @@ client_depends = {}
 server_depends = {}
 client_link_other = {}
 server_link_other = {}
-lua_modules = {}
 
 if family == "windows" then
 	if platform == "win32" then
@@ -242,11 +241,6 @@ function build(settings)
 	-- apply freetype settings
 	config.freetype:Apply(client_settings)
 
-	-- build the lua modules
-	server_settings.link.libs:Add("dl")
-	table.insert(lua_modules, Compile(server_settings, Collect("src/engine/external/lua_modules/luafilesystem/lfs.c")))
-
-
 	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c", "src/base/system++/*.cpp"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
 	server = Compile(server_settings, Collect("src/engine/server/*.cpp"))
@@ -280,7 +274,7 @@ function build(settings)
 		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "teeworlds_srv", engine, server,
-		game_shared, game_server, zlib, server_link_other, lua_modules, server_depends)
+		game_shared, game_server, zlib, server_link_other, server_depends)
 
 	serverlaunch = {}
 	if platform == "macosx" then

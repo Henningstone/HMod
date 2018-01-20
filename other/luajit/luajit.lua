@@ -28,13 +28,14 @@ luajit = {
             if option.use_winlib > 0 then
                 settings.link.libpath:Add(luajit.basepath .. "/windows/lib" .. option.use_winlib)
                 settings.link.libs:Add("lua51")
-            elseif option.value == true then
+			elseif option.value == true then
 		        if arch == "amd64" then
 		            settings.link.libpath:Add(luajit.basepath .. "/unix/lib64")
 		        else
 		        	settings.link.libpath:Add(luajit.basepath .. "/unix/lib32")
 		        end
 				settings.link.libs:Add("luajit")
+				settings.link.libs:Add("dl")
 			end
 		end
 

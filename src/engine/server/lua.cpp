@@ -1,7 +1,6 @@
 #include <lua.hpp>
 
 #include <engine/external/luabridge/LuaBridge.h>
-#include <engine/external/lua_modules/luafilesystem/lfs.h>
 
 #include <base/system.h>
 
@@ -45,7 +44,6 @@ void CLua::OpenLua()
 	lua_register(m_pLuaState, "errorfunc", CLua::ErrorFunc);
 
 	luaL_openlibs(m_pLuaState);
-	luaopen_lfs(m_pLuaState);
 
 	RegisterLuaCallbacks();
 }
