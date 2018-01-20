@@ -21,12 +21,19 @@ CEntity::CEntity(CGameWorld *pGameWorld, int ObjType, const char *pLuaClassName)
 
 	m_pPrevTypeEntity = 0;
 	m_pNextTypeEntity = 0;
+
+	OnCreate();
 }
 
 CEntity::~CEntity()
 {
 	GameWorld()->RemoveEntity(this);
 	Server()->SnapFreeID(m_ID);
+}
+
+void CEntity::OnCreate()
+{
+	MACRO_LUA_EVENT(GetLuaClassName())
 }
 
 int CEntity::NetworkClipped(int SnappingClient)

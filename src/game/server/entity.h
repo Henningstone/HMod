@@ -74,6 +74,7 @@ protected:
 	int m_ID;
 	int m_ObjType;
 	inline const char *GetLuaClassName() const { return m_LuaClass.c_str(); }
+	void OnCreate();
 
 public:
 	CEntity(CGameWorld *pGameWorld, int Objtype, const char *m_pLuaClass);

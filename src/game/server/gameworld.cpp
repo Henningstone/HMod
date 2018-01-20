@@ -63,7 +63,10 @@ void CGameWorld::InsertEntity(CEntity *pEnt)
 {
 #ifdef CONF_DEBUG
 	for(CEntity *pCur = m_apFirstEntityTypes[pEnt->m_ObjType]; pCur; pCur = pCur->m_pNextTypeEntity)
-		dbg_assert(pCur != pEnt, "err");
+	{
+		if(pCur == pEnt) dbg_msg("world/error", "pEnt = %p, pEnt->m_ObjType = %i", pEnt, pEnt->m_ObjType);
+		dbg_assert(pCur != pEnt, "entity inserted twice");
+	}
 #endif
 
 	// insert it

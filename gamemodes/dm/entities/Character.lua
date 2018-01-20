@@ -1,20 +1,16 @@
 
 print("character loaded")
 
-Character.ents = {}
+function Character.OnCreate()
+	print(tostring(this), "has been created")
 
-function Character.Tick()
-	--print("char tick", tostring(this), tostring(self))
-	this:Tick()
-	this:Tick()
-
-	for i,_ in ipairs(Character.ents) do
-		self.ents[i].m_Pos = this.m_Pos + vec2(0, -50)
-
-		--print(i, tostring(Character.ents), tostring(self.ents[i].m_Pos))
-	end
+	local dennis = Srv.Game:CreateEntityCustom("Dennis")
+	dennis:GetSelf():attachTo(this)
+	Srv.Game:GetWorld():InsertEntity(dennis)
 end
 
-function Character.Snap(SnappingClient)
-	this:Snap(SnappingClient)
+function Character.Tick()
+	-- doubletime confirmed!!!11!1
+	this:Tick()
+	this:Tick()
 end

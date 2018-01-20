@@ -23,29 +23,44 @@
 			lua_State *L = Func.state(); \
 \
 			/* make sure we don't end up in infinite recursion */ \
-			static int s_Sentinel = 0; \
 			lua_getregistry(L); \
-			lua_rawgetp(L, -1, &s_Sentinel); \
+			lua_rawgetp(L, -1, this); \
 			bool NotFromLua = lua_isnil(L, -1); \
 			lua_pop(L, 2); /* pop result and registry */ \
 			if(NotFromLua) \
 			{ \
 				/* set from-lua marker */ \
 				lua_getregistry(L); \
-				lua_pushlightuserdata(L, &s_Sentinel); \
+				lua_pushlightuserdata(L, this); \
 				lua_pushboolean(L, 1); \
 				lua_rawset(L, -3); \
 				lua_pop(L, 1); /* pop the registry table */ \
 \
 				/* prepare */ \
-				setGlobal(L, Table, "self"); \
-				setGlobal(L, this, "this"); \
-				try { Func(__VA_ARGS__); } catch(luabridge::LuaException& e) { CLua::HandleException(e); } \
+				char aSelfVarName[32]; \
+				str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", this); \
+				LuaRef Self = getGlobal(L, aSelfVarName); \
+				if(!Self.isTable()) \
+				{ \
+					Self = CLua::CopyTable(Table); \
+					Self["__dbgId"] = LuaRef(L, std::string(aSelfVarName)); \
+					setGlobal(L, Self, aSelfVarName); \
+				} \
+				LuaRef env = CLua::CopyTable(getGlobal(L, "_G")); \
+				env["self"] = Self; \
+				env["this"] = this; \
+				Func.push(L); \
+				env.push(L); \
+				lua_setfenv(L, -2); \
+				Func = Stack<LuaRef>::get(L, -1); \
+				/*setGlobal(L, Self, "self");*/ \
+				/*setGlobal(L, this, "this");*/ \
+				try { Func(__VA_ARGS__); } catch(LuaException& e) { CLua::HandleException(e); } \
 				Handled = true; \
 \
 				/* unset from-lua marker */ \
 				lua_getregistry(L); \
-				lua_pushlightuserdata(L, &s_Sentinel); \
+				lua_pushlightuserdata(L, this); \
 				lua_pushnil(L); \
 				lua_rawset(L, -3); \
 				lua_pop(L, 1); /* pop the registry table */ \
@@ -108,6 +123,8 @@ public:
 	static void HandleException(luabridge::LuaException& e);
 	static int ErrorFunc(lua_State *L);
 	static int Panic(lua_State *L);
+
+	static LuaRef CopyTable(const LuaRef& Src);
 
 private:
 	static CLua *ms_pSelf;

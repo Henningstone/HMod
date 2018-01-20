@@ -3,11 +3,16 @@
 
 #include <game/server/gamecontroller.h>
 #include <game/server/gamecontext.h>
+#include <game/server/gameworld.h>
 #include <game/collision.h>
-#include <game/server/entities/projectile.h>
 
 #include <game/generated/protocol.h>
+
+#include <game/server/entities/character.h>
 #include <game/server/entities/pickup.h>
+#include <game/server/entities/projectile.h>
+#include <game/server/entities/flag.h>
+#include <game/server/entities/lua_entity.h>
 
 #include "luabinding.h"
 #include "lua.h"
@@ -94,17 +99,31 @@ void CLua::RegisterLuaCallbacks()
 		.beginClass<CTuningParams>("CTuningParams")
 		.endClass()
 
+		// Server.Game.GetWorld()
 		.beginClass<CGameWorld>("CGameWorld")
+			.addData("m_ResetRequested", &CGameWorld::m_ResetRequested)
+			.addData("m_Paused", &CGameWorld::m_Paused)
+			.addFunction("FindFirst", &CGameWorld::FindFirst)
+			.addFunction("IntersectCharacter", &CGameWorld::IntersectCharacter)
+			.addFunction("ClosestCharacter", &CGameWorld::ClosestCharacter)
+			.addFunction("InsertEntity", &CGameWorld::InsertEntity)
+			.addFunction("RemoveEntity", &CGameWorld::RemoveEntity)
+			.addFunction("DestroyEntity", &CGameWorld::DestroyEntity)
+			.addFunction("Snap", &CGameWorld::Snap)
+			.addFunction("Tick", &CGameWorld::Tick)
 		.endClass()
 
 		.beginClass<CPlayer>("CPlayer")
 		.endClass()
 
+		// Server.Game
 		.beginClass<CGameContext>("CGameContext")
 			.addFunction("Collision", &CGameContext::Collision)
 			.addFunction("Tuning", &CGameContext::Tuning)
 			.addFunction("GetPlayer", &CGameContext::GetPlayer)
 			.addFunction("GetPlayerChar", &CGameContext::GetPlayerChar)
+			.addFunction("GetWorld", &CGameContext::GetGameWorld)
+			//.addProperty("World", &CGameContext::GetGameWorld)
 
 			.addFunction("StartVote", &CGameContext::StartVote)
 			.addFunction("EndVote", &CGameContext::EndVote)
@@ -138,6 +157,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("CreateEntityLaser", &CGameContext::CreateEntityLaser)
 			.addFunction("CreateEntityPickup", &CGameContext::CreateEntityPickup)
 			.addFunction("CreateEntityProjectile", &CGameContext::CreateEntityProjectile)
+			.addFunction("CreateEntityCustom", &CGameContext::CreateEntityCustom)
 
 			.addFunction("GameType", &CGameContext::GameType)
 			.addFunction("Version", &CGameContext::Version)
@@ -201,6 +221,16 @@ void CLua::RegisterLuaCallbacks()
 		.deriveClass<CPickup, CEntity>("CPickup")
 		.endClass()
 
+		.deriveClass<CFlag, CEntity>("CFlag")
+		.endClass()
+
+		.deriveClass<CProjectile, CEntity>("CProjectile")
+		.endClass()
+
+		.deriveClass<CLuaEntity, CEntity>("CLuaEntity")
+			.addFunction("GetSelf", &CLuaEntity::GetSelf)
+		.endClass()
+
 
 		.deriveClass<CCharacter, CEntity>("CCharacter")
 			.addFunction("IsGrounded", &CCharacter::IsGrounded)
@@ -250,10 +280,11 @@ void CLua::RegisterLuaCallbacks()
 		.endClass()
 
 
-		.beginNamespace("Server")
+		.beginNamespace("Srv")
 			.addVariable("Console", &CLua::ms_pSelf->m_pConsole, false)
 			.addVariable("Lua", &CLua::ms_pSelf, false)
 			.addVariable("Game", &CLua::ms_pSelf->m_pGameServer, false)
+			.addVariable("Server", &CLua::ms_pSelf->m_pServer, false)
 		.endNamespace()
 
 	; // end global namespace

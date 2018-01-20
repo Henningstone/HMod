@@ -177,7 +177,11 @@ int CLua::ErrorFunc(lua_State *L)
 		CLua::ms_pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua/error", "unknown error");
 	else
 	{
-		CLua::ms_pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua/error", "%s", lua_tostring(ms_pSelf->m_pLuaState, -1));
+		lua_Debug ar;
+		lua_getstack(L, 0, &ar);
+		lua_getinfo(L, "nSl", &ar);
+
+		CLua::ms_pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua/error", "%s:%i: %s", ar.short_src, ar.currentline, lua_tostring(ms_pSelf->m_pLuaState, -1));
 		lua_pop(L, 1); // remove error message
 	}
 
@@ -196,6 +200,22 @@ int CLua::Panic(lua_State *L)
 void CLua::HandleException(luabridge::LuaException& e)
 {
 	CLua::Lua()->Console()->Print(0, "lua/ERROR", e.what());
+}
+
+LuaRef CLua::CopyTable(const LuaRef& Src)
+{
+	lua_State *L = Src.state();
+	if(!Src.isTable())
+		luaL_error(L, "given variable is not a table");
+
+	LuaRef Copy = luabridge::newTable(L);
+
+	for(luabridge::Iterator it(Src); !it.isNil(); ++it)
+	{
+		const LuaRef& val = it.value();
+		Copy[it.key()] = val;
+	}
+	return Copy;
 }
 
 void CLua::DbgPrintLuaTable(LuaRef Table, int Indent)

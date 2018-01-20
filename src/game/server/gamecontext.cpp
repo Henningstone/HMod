@@ -13,6 +13,7 @@
 #include <game/server/entities/laser.h>
 #include <game/server/entities/pickup.h>
 #include <game/server/entities/projectile.h>
+#include <game/server/entities/lua_entity.h>
 #include "gamemodes/dm.h"
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
@@ -1619,6 +1620,11 @@ CPickup *CGameContext::CreateEntityPickup(int Type, int SubType)
 CProjectile *CGameContext::CreateEntityProjectile(int Type, int Owner, vec2 Pos, vec2 Dir, CProjectileProperties Props, int SoundImpact, int Weapon)
 {
 	return new CProjectile(&m_World, Type, Owner, Pos, Dir, Props.LifeSpan, Props.Damage, Props.Explosive, Props.Force, SoundImpact, Weapon);
+}
+
+CLuaEntity *CGameContext::CreateEntityCustom(const char *pClass)
+{
+	return new CLuaEntity(&m_World, pClass);
 }
 
 
