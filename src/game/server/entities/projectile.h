@@ -8,8 +8,8 @@
 class CProjectileProperties
 {
 public:
-	CProjectileProperties(int _LifeSpan, int _Damage, bool _Explosive, float _Force) : LifeSpan(_LifeSpan), Damage(_Damage), Explosive(_Explosive), Force(_Force){}
-	
+	CProjectileProperties(int LifeSpan, int Damage, bool Explosive, float Force) : LifeSpan(LifeSpan), Damage(Damage), Explosive(Explosive), Force(Force){}
+
 	int LifeSpan;
 	int Damage;
 	bool Explosive;
