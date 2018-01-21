@@ -15,6 +15,21 @@ public:
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
 
+	vec2 GetFrom() const { return m_From; }
+	void SetFrom(vec2 Pos) { m_From = Pos; }
+	vec2 GetTo() const { return m_Pos; }
+	void SetTo(vec2 Pos) { m_Pos = Pos; }
+	vec2 GetDir() const { return m_Dir; }
+	void SetDir(vec2 Dir) { m_Dir = Dir; }
+	float GetEnergy() const { return m_Energy; }
+	void SetEnergy(float Energy) { m_Energy = Energy; }
+	int GetBounces() const { return m_Bounces; }
+	void SetBounces(int Bounces) { m_Bounces = Bounces; }
+	int GetEvalTick() const { return m_EvalTick; }
+	void SetEvalTick(int EvalTick) { m_EvalTick = EvalTick; }
+	int GetOwner() const { return m_Owner; }
+	void SetOwner(int Owner) { m_Owner = Owner; }
+
 protected:
 	bool HitCharacter(vec2 From, vec2 To);
 	void DoBounce();
