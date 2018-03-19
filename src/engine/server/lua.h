@@ -14,10 +14,10 @@
 	bool Handled = false; \
 \
 	using namespace luabridge; \
-	LuaRef Table = getGlobal(CLua::Lua()->L(), CLASSNAME); \
-	if(Table.isTable()) \
+	LuaRef ClassTable = getGlobal(CLua::Lua()->L(), CLASSNAME); \
+	if(ClassTable.isTable()) \
 	{ \
-		LuaRef Func = Table[__func__]; \
+		LuaRef Func = ClassTable[__func__]; \
 		if(Func.isFunction()) \
 		{ \
 			lua_State *L = Func.state(); \
@@ -42,20 +42,26 @@
 				LuaRef Self = getGlobal(L, aSelfVarName); \
 				if(!Self.isTable()) \
 				{ \
-					Self = CLua::CopyTable(Table); \
+					Self = CLua::CopyTable(ClassTable); /* create an 'object' from the lua-class*/ \
 					Self["__dbgId"] = LuaRef(L, std::string(aSelfVarName)); \
 					setGlobal(L, Self, aSelfVarName); \
 				} \
-				LuaRef env = CLua::CopyTable(getGlobal(L, "_G")); \
+				/*LuaRef env = CLua::CopyTable(getGlobal(L, "_G")); \
 				env["self"] = Self; \
 				env["this"] = this; \
 				Func.push(L); \
 				env.push(L); \
 				lua_setfenv(L, -2); \
-				Func = Stack<LuaRef>::get(L, -1); \
-				/*setGlobal(L, Self, "self");*/ \
-				/*setGlobal(L, this, "this");*/ \
+				Func = Stack<LuaRef>::get(L, -1);*/ \
+				/* store the execution environment */ \
+				LuaRef PrevSelf = getGlobal(L, "self"); \
+				LuaRef PrevThis = getGlobal(L, "this"); \
+				setGlobal(L, Self, "self"); \
+				setGlobal(L, this, "this"); \
 				try { Func(__VA_ARGS__); } catch(LuaException& e) { CLua::HandleException(e); } \
+				/* restore previous environment */ \
+				setGlobal(L, PrevSelf, "self"); \
+				setGlobal(L, PrevThis, "this"); \
 				Handled = true; \
 \
 				/* unset from-lua marker */ \
@@ -124,7 +130,13 @@ public:
 	static int ErrorFunc(lua_State *L);
 	static int Panic(lua_State *L);
 
-	static LuaRef CopyTable(const LuaRef& Src);
+	/**
+	 * Deep-copy a table (with self-reference detection)
+	 * @param Src Table to copy
+	 * @param pSeenTables used internally; ignore it.
+	 * @return A complete deep-copy of the given table
+	 */
+	static LuaRef CopyTable(const LuaRef& Src, LuaRef *pSeenTables = NULL);
 
 private:
 	static CLua *ms_pSelf;

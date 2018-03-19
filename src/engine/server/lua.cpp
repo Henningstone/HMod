@@ -200,19 +200,58 @@ void CLua::HandleException(luabridge::LuaException& e)
 	CLua::Lua()->Console()->Print(0, "lua/ERROR", e.what());
 }
 
-LuaRef CLua::CopyTable(const LuaRef& Src)
+LuaRef CLua::CopyTable(const LuaRef& Src, LuaRef *pSeenTables)
 {
 	lua_State *L = Src.state();
 	if(!Src.isTable())
 		luaL_error(L, "given variable is not a table");
 
 	LuaRef Copy = luabridge::newTable(L);
+	LuaRef SeenTables = luabridge::newTable(L);
+	if(!pSeenTables)
+	{
+		pSeenTables = &SeenTables;
+		// we are just starting off, initialize with certain things we'll never want to copy
+		SeenTables.append(Src);
+		SeenTables.append(luabridge::getGlobal(L, "_G"));
+	}
 
 	for(luabridge::Iterator it(Src); !it.isNil(); ++it)
 	{
 		const LuaRef& val = it.value();
-		Copy[it.key()] = val;
+
+		// tables are tricky!
+		if(val.isTable())
+		{
+			// check for self-referencing tables
+			bool Found = false;
+			for(luabridge::Iterator it2(*pSeenTables); !it2.isNil(); ++it2)
+			{
+				if(it2.value().rawequal(val))
+				{
+					Found = true;
+					break;
+				}
+			}
+
+			if(Found)
+			{
+				// we have already seen this reference, so don't copy the table behind it again. Just assign the reference.
+				Copy[it.key()] = val; // think of this as a weak reference - we know there has already been another reference to this
+				continue;
+			}
+
+			// haven't had this reference so far? copy what's behind it.
+			LuaRef valCopy = CopyTable(val, pSeenTables);
+			pSeenTables->append(val);
+			pSeenTables->append(valCopy);
+			Copy[it.key()] = valCopy;
+
+		}
+		else
+			Copy[it.key()] = val; // everything but a table can just be thrown in as is (actually userdata might make problems still, but let's not care.)
 	}
+
 	return Copy;
 }
 

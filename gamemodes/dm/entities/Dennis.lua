@@ -1,16 +1,30 @@
 
 local NUM_ITEMS = 6
 
+-- tables defined at class level will be copied into each object created from this class
+Dennis.myTable = {
+	tbl={
+		a=1,
+		b=2
+	},
+	c=3
+}
+
 function Dennis.OnCreate()
 	self.ents = {}
 	print("ASDONASODJASJIODAJIOSDJIOASJIODJIOASJIOD", self.__dbgId, tostring(self.ents))
 	for i = 1, NUM_ITEMS do
-		print("before", tostring(self))
+		--print("before", tostring(self))
 		local ent = Srv.Game:CreateEntityPickup(i%2, 0) -- armor
-		print("after", tostring(self))
+		--print("after", tostring(self))
 		self.ents[i] = ent
+		print("num: " .. #self.ents)
 	end
 	print("Dennis alive", self.__dbgId, tostring(this))
+
+	print(self.myTable.tbl.a, self.myTable.tbl.b, self.myTable.c)
+	self.myTable.tbl.a, self.myTable.tbl.b, self.myTable.c = 10, 11, 12
+
 end
 
 function Dennis.Tick()
@@ -27,6 +41,8 @@ function Dennis.Tick()
 		local y = Pos.y + 40*math.sin(Tick/30 + s)
 		ent.m_Pos = vec2(x, y)
 	end
+
+	--print(tostring(self), tostring(this))
 
 	this:Tick()
 
