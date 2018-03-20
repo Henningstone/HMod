@@ -152,6 +152,7 @@ function build(settings)
 		settings.cc.flags:Add("/wd4244", "/wd4577")
 	else
 		settings.cc.flags:Add("-Wall", "-Wno-comment")
+		settings.link.flags:Add("-no-pie")
 		if family == "windows" then
 			-- disable visibility attribute support for gcc on windows
 			settings.cc.defines:Add("NO_VIZ")
