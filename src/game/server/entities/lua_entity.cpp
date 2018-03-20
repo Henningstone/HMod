@@ -40,7 +40,6 @@ LuaRef CLuaEntity::GetSelf(lua_State *L)
 	{
 		LuaRef Table = luabridge::getGlobal(CLua::Lua()->L(), GetLuaClassName());
 		Self = CLua::CopyTable(Table);
-		setGlobal(L, Self, aSelfVarName);
 	}
 	return Self;
 }

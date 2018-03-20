@@ -195,6 +195,98 @@ int CLua::Panic(lua_State *L)
 	return 0;
 }
 
+/// hook for __newindex on lua-classes
+int CLua::LuaHook_NewIndex(lua_State *L)
+{
+	const char *pKey = lua_tostring(L, -2);
+
+	// allow only static-type variables to be assigned to on the class
+	if(pKey[0] != '_')
+	{
+		luaL_error(L, "Can not assign to field '%s': not a static member (hint: prefix field names with an underscore '_' to make them static-compliant)", pKey);
+	}
+
+	LuaRef Tbl = luabridge::LuaRef::fromStack(L, 1);
+	LuaRef Key = luabridge::LuaRef::fromStack(L, 2);
+	LuaRef Val = luabridge::LuaRef::fromStack(L, 3);
+
+	dbg_msg("NEWINDEX HOOK", "%i elements in table; k = %s, v = %s (pKey: %s)", Tbl.length(), Key.tostring().c_str(), Val.tostring().c_str(), pKey);
+
+	return 0;
+}
+
+int CLua::LuaHook_Index(lua_State *L)
+{
+	LuaRef Tbl = luabridge::LuaRef::fromStack(L, 1);
+	LuaRef Val = luabridge::LuaRef::fromStack(L, 1);
+	dbg_msg("INDEX HOOK", "%i elements in table; v = %s", Tbl.length(), Val.tostring().c_str());
+
+	return 0;
+}
+
+int CLua::LuaHook_ToString(lua_State *L)
+{
+	if(lua_getmetatable(L, 1) == 0)
+		return luaL_error(L, "interal error: failed to getmetatable @ LuaHook_ToString");
+
+	lua_pushstring(L, LUACLASS_MT_TYPE);
+	lua_rawget(L, -2);
+	const char *pClassName = lua_tostring(L, -1);
+
+	lua_pushstring(L, LUACLASS_MT_UID);
+	lua_rawget(L, -2);
+	const void *pUid = lua_touserdata(L, -1);
+
+	lua_pushfstring(L, "%s[%p]", pClassName, pUid);
+	return 1;
+}
+
+int CLua::RegisterMeta(lua_State *L)
+{
+	// only do something if we haven't done it yet
+	if(lua_getmetatable(L, 1) != 0)
+	{
+		lua_pop(L, 1); // pop the metatable again
+		return 0;
+	}
+
+	// create the new metatable for it
+	lua_newtable(L); // t (-3)
+
+	// assign newindex event
+	lua_pushstring(L, "__newindex"); // k (-2)
+	lua_pushcfunction(L, CLua::LuaHook_NewIndex); // v (-1)
+	lua_rawset(L, -3); // pops 2 (k,v) - metatable and classtable remain
+
+	// assign index event
+	lua_pushstring(L, "__index");
+	lua_pushcfunction(L, CLua::LuaHook_Index);
+	lua_rawset(L, -3);
+
+	// assign tostring event
+	lua_pushstring(L, "__tostring");
+	lua_pushcfunction(L, CLua::LuaHook_ToString);
+	lua_rawset(L, -3);
+
+	// hide metatables
+	lua_pushstring(L, "__metatable");
+	lua_pushboolean(L, true);
+	lua_rawset(L, -3);
+
+	// remember what type this lua class is of
+	char aTypename[128];
+	str_formatb(aTypename, "LC:%s", lua_tostring(L, 2));
+	lua_pushstring(L, LUACLASS_MT_TYPE); // k (-2)
+	lua_pushstring(L, aTypename); // v (-1)
+	lua_rawset(L, -3); // pops 2 (k,v) - metatable and classtable still remain
+
+	lua_setmetatable(L, -1); // our class table is on top of the stack (this pops the new metatable)
+
+	lua_pop(L, 2); // the args
+
+	return 0;
+}
+
 void CLua::HandleException(luabridge::LuaException& e)
 {
 	CLua::Lua()->Console()->Print(0, "lua/ERROR", e.what());
@@ -248,14 +340,19 @@ LuaRef CLua::CopyTable(const LuaRef& Src, LuaRef *pSeenTables)
 			Copy[it.key()] = valCopy;
 
 		}
-		else
-			Copy[it.key()] = val; // everything but a table can just be thrown in as is (actually userdata might make problems still, but let's not care.)
+		else // non-table value
+		{
+			if(it.key().tostring().c_str()[0] == '_')
+				/* ignore */; // emulate the behavior of static variables (they are not part of objects!)
+			else
+				Copy[it.key()] = val; // everything but a table can just be thrown in as is (actually userdata might make problems still, but let's not care.)
+		}
 	}
 
 	return Copy;
 }
 
-void CLua::DbgPrintLuaTable(LuaRef Table, int Indent)
+void CLua::DbgPrintLuaTable(const LuaRef& Table, int Indent)
 {
 	if(Indent > 40 || !Table.isTable())
 		return;

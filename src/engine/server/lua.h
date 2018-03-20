@@ -17,10 +17,15 @@
 	LuaRef ClassTable = getGlobal(CLua::Lua()->L(), CLASSNAME); \
 	if(ClassTable.isTable()) \
 	{ \
+		lua_State *L = ClassTable.state(); \
+		lua_pushcfunction(L, CLua::RegisterMeta); \
+		ClassTable.push(L); \
+		lua_pushstring(L, CLASSNAME); \
+		lua_call(L, 2, 0); \
 		LuaRef Func = ClassTable[__func__]; \
 		if(Func.isFunction()) \
 		{ \
-			lua_State *L = Func.state(); \
+			/*lua_State *L = Func.state();*/ \
 \
 			/* make sure we don't end up in infinite recursion */ \
 			lua_getregistry(L); \
@@ -42,7 +47,8 @@
 				LuaRef Self = getGlobal(L, aSelfVarName); \
 				if(!Self.isTable()) \
 				{ \
-					Self = CLua::CopyTable(ClassTable); /* create an 'object' from the lua-class*/ \
+					/* create an "object" from the lua-class*/ \
+					Self = CLua::CopyTable(ClassTable); \
 					Self["__dbgId"] = LuaRef(L, std::string(aSelfVarName)); \
 					setGlobal(L, Self, aSelfVarName); \
 				} \
@@ -80,6 +86,10 @@
 
 
 using luabridge::LuaRef;
+
+#define LUACLASS_MT_TYPE "_type"
+#define LUACLASS_MT_UID "_ident"
+#define LUACLASS_MT_SELF "_self"
 
 
 class CLua : public ILua
@@ -130,6 +140,20 @@ public:
 	static int ErrorFunc(lua_State *L);
 	static int Panic(lua_State *L);
 
+	static int LuaHook_NewIndex(lua_State *L);
+	static int LuaHook_Index(lua_State *L);
+	static int LuaHook_ToString(lua_State *L);
+
+	/**
+	 * Must be called as a C-function via the lua enviroment
+	 * - Expected arguments:
+	 *     - first: the class table
+	 *     - second: a string telling the class name
+	 * - pops both arguments off the stack
+	 * - does not return anything on the lua stack
+	 */
+	static int RegisterMeta(lua_State *L);
+
 	/**
 	 * Deep-copy a table (with self-reference detection)
 	 * @param Src Table to copy
@@ -141,7 +165,7 @@ public:
 private:
 	static CLua *ms_pSelf;
 
-	static void DbgPrintLuaTable(LuaRef Table, int Indent = 1);
+	static void DbgPrintLuaTable(const LuaRef& Table, int Indent = 1);
 
 public:
 	static CLua *Lua() { return ms_pSelf; }
