@@ -1,5 +1,4 @@
 -- set all the info
-print("++++++++++LUA ALIVE!++++++++++++++++")
 
 Srv.Console:Print(0, "dennis", "blub")
 
@@ -14,3 +13,6 @@ Srv.Console:Register("make_dennis", "", "dew it!", function(result)
 	print(#Character.ents, tostring(ninjadude))
 	Srv.Console:Print(0, "make_dennis", "made a dennis!")
 end)
+
+
+print("++++++++++LUA INIT DONE++++++++++++++++")

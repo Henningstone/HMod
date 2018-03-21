@@ -16,9 +16,10 @@ public:
 	virtual void Tick();
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
-	
-	int GetType() const { return m_Type; }
-	void SetType(int Type) { m_Type = Type; }
+
+	// for lua
+	int GetPickupType() const { return m_Type; }
+	void SetPickupType(int Type) { m_Type = Type; }
 	int GetSubtype() const { return m_Subtype; }
 	void SetSubtype(int Type) { m_Subtype = Type; }
 	int GetSpawnTick() const { return m_SpawnTick; }

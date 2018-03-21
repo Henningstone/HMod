@@ -29,15 +29,16 @@ public:
 	virtual void Tick();
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
-	
+
+	// for lua
 	vec2 GetDirection() const { return m_Direction; }
 	void SetDirection(vec2 Dir) { m_Direction = Dir; }
 	int GetLifeSpan() const { return m_LifeSpan; }
 	void SetLifeSpan(int LifeSpan) { m_LifeSpan = LifeSpan; }
 	int GetOwner() const { return m_Owner; }
 	void SetOwner(int Owner) { m_Owner = Owner; }
-	int GetType() const { return m_Type; }
-	void SetType(int Type) { m_Type = Type; }
+	int GetProjectileType() const { return m_Type; }
+	void SetProjectileType(int Type) { m_Type = Type; }
 	int GetDamage() const { return m_Damage; }
 	void SetDamage(int Damage) { m_Damage = Damage; }
 	int GetSoundImpact() const { return m_SoundImpact; }

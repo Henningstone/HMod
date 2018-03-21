@@ -105,8 +105,9 @@ client_content_source = ContentCompile("client_content_source", "src/game/genera
 client_content_header = ContentCompile("client_content_header", "src/game/generated/client_data.h")
 server_content_source = ContentCompile("server_content_source", "src/game/generated/server_data.cpp")
 server_content_header = ContentCompile("server_content_header", "src/game/generated/server_data.h")
+lua_constants = ContentCompile("lua_constants", "gamemodes/generated/net_constants.lua")
 
-AddDependency(network_source, network_header)
+AddDependency(network_source, network_header, lua_constants)
 AddDependency(client_content_source, client_content_header)
 AddDependency(server_content_source, server_content_header)
 
@@ -380,22 +381,22 @@ if platform == "macosx" then
 			PseudoTarget("debug", ppc_d, x86_d)
 			PseudoTarget("server_release", "server_release_ppc", "server_release_x86")
 			PseudoTarget("server_debug", "server_debug_ppc", "server_debug_x86")
-			PseudoTarget("client_release", "client_release_ppc", "client_release_x86")
-			PseudoTarget("client_debug", "client_debug_ppc", "client_debug_x86")
+			--PseudoTarget("client_release", "client_release_ppc", "client_release_x86")
+			--PseudoTarget("client_debug", "client_debug_ppc", "client_debug_x86")
 		elseif arch == "amd64" then
 			PseudoTarget("release", ppc_r, x86_r, x86_64_r)
 			PseudoTarget("debug", ppc_d, x86_d, x86_64_d)
 			PseudoTarget("server_release", "server_release_ppc", "server_release_x86", "server_release_x86_64")
 			PseudoTarget("server_debug", "server_debug_ppc", "server_debug_x86", "server_debug_x86_64")
-			PseudoTarget("client_release", "client_release_ppc", "client_release_x86", "client_release_x86_64")
-			PseudoTarget("client_debug", "client_debug_ppc", "client_debug_x86", "client_debug_x86_64")
+			--PseudoTarget("client_release", "client_release_ppc", "client_release_x86", "client_release_x86_64")
+			--PseudoTarget("client_debug", "client_debug_ppc", "client_debug_x86", "client_debug_x86_64")
 		else
 			PseudoTarget("release", ppc_r)
 			PseudoTarget("debug", ppc_d)
 			PseudoTarget("server_release", "server_release_ppc")
 			PseudoTarget("server_debug", "server_debug_ppc")
-			PseudoTarget("client_release", "client_release_ppc")
-			PseudoTarget("client_debug", "client_debug_ppc")
+			--PseudoTarget("client_release", "client_release_ppc")
+			--PseudoTarget("client_debug", "client_debug_ppc")
 		end
 	else
 		if arch == "ia32" then
@@ -403,15 +404,15 @@ if platform == "macosx" then
 			PseudoTarget("debug", x86_d)
 			PseudoTarget("server_release", "server_release_x86")
 			PseudoTarget("server_debug", "server_debug_x86")
-			PseudoTarget("client_release", "client_release_x86")
-			PseudoTarget("client_debug", "client_debug_x86")
+			--PseudoTarget("client_release", "client_release_x86")
+			--PseudoTarget("client_debug", "client_debug_x86")
 		elseif arch == "amd64" then
 			PseudoTarget("release", x86_r, x86_64_r)
 			PseudoTarget("debug", x86_d, x86_64_d)
 			PseudoTarget("server_release", "server_release_x86", "server_release_x86_64")
 			PseudoTarget("server_debug", "server_debug_x86", "server_debug_x86_64")
-			PseudoTarget("client_release", "client_release_x86", "client_release_x86_64")
-			PseudoTarget("client_debug", "client_debug_x86", "client_debug_x86_64")
+			--PseudoTarget("client_release", "client_release_x86", "client_release_x86_64")
+			--PseudoTarget("client_debug", "client_debug_x86", "client_debug_x86_64")
 		end
 	end
 else

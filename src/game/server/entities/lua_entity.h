@@ -9,12 +9,11 @@ public:
 	CLuaEntity(CGameWorld *pGameWorld, const char *pLuaClass);
 
 	void Reset();
+	void Destroy();
 	void Tick();
 	void TickDefered();
 	void TickPaused();
 	void Snap(int SnappingClient);
-
-	LuaRef GetSelf(lua_State *L);
 };
 
 #endif

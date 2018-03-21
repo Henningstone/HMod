@@ -7,6 +7,7 @@
 #include <base/vmath.h>
 #include <game/server/gameworld.h>
 #include <engine/server/lua.h>
+#include <engine/server/lua_class.h>
 
 //#define MACRO_ALLOC_HEAP() \
 //	public: \
@@ -57,7 +58,7 @@
 	Class: Entity
 		Basic entity class.
 */
-class CEntity
+class CEntity : protected CLuaClass
 {
 	MACRO_ALLOC_HEAP()
 
@@ -65,15 +66,12 @@ class CEntity
 	CEntity *m_pPrevTypeEntity;
 	CEntity *m_pNextTypeEntity;
 
-	std::string m_LuaClass;
-
 	class CGameWorld *m_pGameWorld;
 
 protected:
 	bool m_MarkedForDestroy;
 	int m_ID;
 	int m_ObjType;
-	inline const char *GetLuaClassName() const { return m_LuaClass.c_str(); }
 	void OnCreate();
 
 public:
@@ -86,8 +84,6 @@ public:
 
 	CEntity *TypeNext() { return m_pNextTypeEntity; }
 	CEntity *TypePrev() { return m_pPrevTypeEntity; }
-
-	void LuaBindClass(const char *pClassName) { m_LuaClass = std::string(pClassName); }
 
 	int GetType() const { return m_ObjType; }
 

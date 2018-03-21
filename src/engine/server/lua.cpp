@@ -251,14 +251,16 @@ int CLua::RegisterMeta(lua_State *L)
 
 void CLua::HandleException(luabridge::LuaException& e)
 {
+	dbg_msg("XXX", "XXX");
 	CLua::Lua()->Console()->Print(0, "lua/ERROR", e.what());
+	dbg_msg("XXX", "XXX");
 }
 
 LuaRef CLua::CopyTable(const LuaRef& Src, LuaRef *pSeenTables)
 {
 	lua_State *L = Src.state();
 	if(!Src.isTable())
-		luaL_error(L, "given variable is not a table");
+		luaL_error(L, "given variable is not a table @ CopyTable");
 
 	LuaRef Copy = luabridge::newTable(L);
 	LuaRef SeenTables = luabridge::newTable(L);

@@ -16,6 +16,7 @@
 #include <game/server/entities/lua_entity.h>
 
 #include "luabinding.h"
+#include "lua_class.h"
 #include "lua.h"
 
 using namespace luabridge;
@@ -91,6 +92,11 @@ void CLua::RegisterLuaCallbacks()
 			.addData("Force", &CProjectileProperties::Force)
 		.endClass()
 
+		.beginClass<CLuaClass>("CLuaClass")
+			.addFunction("BindClass", &CLuaClass::LuaBindClass)
+			.addFunction("GetSelf", &CLuaClass::GetSelf)
+		.endClass()
+
 		.beginClass<IGameController>("IGameController")
 		.endClass()
 
@@ -112,9 +118,6 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("DestroyEntity", &CGameWorld::DestroyEntity)
 			.addFunction("Snap", &CGameWorld::Snap)
 			.addFunction("Tick", &CGameWorld::Tick)
-		.endClass()
-
-		.beginClass<CPlayer>("CPlayer")
 		.endClass()
 
 		// Srv.Game
@@ -165,16 +168,28 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("NetVersion", &CGameContext::NetVersion)
 		.endClass()
 
+		/// Srv.Server
 		.beginClass<IServer>("IServer")
 			.addProperty("Tick", &IServer::Tick)
 			.addProperty("TickSpeed", &IServer::TickSpeed)
+
 			.addProperty("MaxClients", &IServer::MaxClients)
-			.addFunction("ClientName", &IServer::ClientName)
-			.addFunction("ClientClan", &IServer::ClientClan)
-			.addFunction("ClientCountry", &IServer::ClientCountry)
 			.addFunction("ClientIngame", &IServer::ClientIngame)
 			.addFunction("GetClientInfo", &IServer::GetClientInfo)
 			.addFunction("GetClientAddr", &IServer::GetClientAddr)
+
+			.addFunction("GetClientName", &IServer::ClientName)
+			.addFunction("GetClientClan", &IServer::ClientClan)
+			.addFunction("GetClientCountry", &IServer::ClientCountry)
+
+			.addFunction("SetClientName", &IServer::SetClientName)
+			.addFunction("SetClientClan", &IServer::SetClientClan)
+			.addFunction("SetClientCountry", &IServer::SetClientCountry)
+			.addFunction("SetClientScore", &IServer::SetClientScore)
+
+			.addFunction("SetRconCID", &IServer::SetRconCID)
+			.addFunction("IsAuthed", &IServer::IsAuthed)
+			.addFunction("Kick", &IServer::Kick)
 		.endClass()
 
 		.beginClass<CNetObj_PlayerInput>("CNetObj_PlayerInput")
@@ -190,7 +205,89 @@ void CLua::RegisterLuaCallbacks()
 			.addData("PrevWeapon", &CNetObj_PlayerInput::m_PrevWeapon)
 		.endClass()
 
-		.beginClass<CEntity>("CEntity")
+		.deriveClass<CPlayer, CLuaClass>("CPlayer")
+			.addFunction("TryRespawn", &CPlayer::TryRespawn)
+			.addFunction("Respawn", &CPlayer::Respawn)
+			.addFunction("GetTeam", &CPlayer::GetTeam)
+			.addFunction("SetTeam", &CPlayer::SetTeam)
+			//.addProperty("Team", &CPlayer::GetTeam, &CPlayer::SetTeam)
+			.addFunction("GetCID", &CPlayer::GetCID)
+
+			.addFunction("Tick", &CPlayer::Tick)
+			.addFunction("PostTick", &CPlayer::PostTick)
+			.addFunction("Snap", &CPlayer::Snap)
+
+			.addFunction("OnDirectInput", &CPlayer::OnDirectInput)
+			.addFunction("OnPredictedInput", &CPlayer::OnPredictedInput)
+			.addFunction("OnDisconnect", &CPlayer::OnDisconnect)
+
+			.addFunction("KillCharacter", &CPlayer::KillCharacter)
+			.addFunction("GetCharacter", &CPlayer::GetCharacter)
+
+			.addData("ViewPos", &CPlayer::m_ViewPos)
+			.addData("PlayerFlags", &CPlayer::m_PlayerFlags)
+			.addData("SpectatorID", &CPlayer::m_SpectatorID)
+			.addData("IsReady", &CPlayer::m_IsReady)
+			.addFunction("GetActLatency", &CPlayer::GetActLatency)
+			.addData("SpectatorID", &CPlayer::m_SpectatorID)
+			.addData("IsReady", &CPlayer::m_IsReady)
+
+			.addData("Vote", &CPlayer::m_Vote)
+			.addData("VotePos", &CPlayer::m_VotePos)
+
+			.addData("LastVoteCall", &CPlayer::m_LastVoteCall)
+			.addData("LastVoteTry", &CPlayer::m_LastVoteTry)
+			.addData("LastChat", &CPlayer::m_LastChat)
+			.addData("LastSetTeam", &CPlayer::m_LastSetTeam)
+			.addData("LastSetSpectatorMode", &CPlayer::m_LastSetSpectatorMode)
+			.addData("LastChangeInfo", &CPlayer::m_LastChangeInfo)
+			.addData("LastEmote", &CPlayer::m_LastEmote)
+			.addData("LastKill", &CPlayer::m_LastKill)
+
+			// TODO add struct m_TeeInfos
+
+			.addData("RespawnTick", &CPlayer::m_RespawnTick)
+			.addData("DieTick", &CPlayer::m_DieTick)
+			.addData("Score", &CPlayer::m_Score)
+			.addData("ScoreStartTick", &CPlayer::m_ScoreStartTick)
+			.addData("ForceBalanced", &CPlayer::m_ForceBalanced)
+			.addData("LastActionTick", &CPlayer::m_LastActionTick)
+			.addData("TeamChangeTick", &CPlayer::m_TeamChangeTick)
+
+			// TODO add struct m_LatestActivity
+
+			// TODO add struct m_Latency
+		.endClass()
+
+		.beginClass<CCharacterCore>("CCharacterCore")
+			.addData("Pos", &CCharacterCore::m_Pos)
+			.addData("Vel", &CCharacterCore::m_Vel)
+
+			.addData("HookPos", &CCharacterCore::m_HookPos)
+			.addData("HookDir", &CCharacterCore::m_HookDir)
+			.addData("HookTick", &CCharacterCore::m_HookTick)
+			.addData("HookState", &CCharacterCore::m_HookState)
+			.addData("HookedPlayer", &CCharacterCore::m_HookedPlayer)
+
+			.addData("Jumped", &CCharacterCore::m_Jumped)
+
+			.addData("Direction", &CCharacterCore::m_Direction)
+			.addData("Angle", &CCharacterCore::m_Angle)
+			.addData("Input", &CCharacterCore::m_Input)
+
+			.addData("TriggeredEvents", &CCharacterCore::m_TriggeredEvents)
+
+			.addFunction("Init", &CCharacterCore::Init)
+			.addFunction("Reset", &CCharacterCore::Reset)
+			.addFunction("Tick", &CCharacterCore::Tick)
+			.addFunction("Move", &CCharacterCore::Move)
+
+			.addFunction("Read", &CCharacterCore::Read)
+			.addFunction("Write", &CCharacterCore::Write)
+			.addFunction("Quantize", &CCharacterCore::Quantize)
+		.endClass()
+
+		.deriveClass<CEntity, CLuaClass>("CEntity")
 			//.addConstructor<void (*) (CGameWorld*, int, const char*) > ()
 
 			.addData("ProximityRadius", &CEntity::m_ProximityRadius)
@@ -199,8 +296,6 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GameWorld", &CEntity::GameWorld)
 			.addFunction("GameServer", &CEntity::GameServer)
 			.addFunction("Server", &CEntity::Server)
-
-			.addFunction("BindClass", &CEntity::LuaBindClass)
 
 			.addFunction("TypeNext", &CEntity::TypeNext)
 			.addFunction("TypePrev", &CEntity::TypePrev)
@@ -218,76 +313,6 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("NetworkClipped", &CEntity::NetworkClippedLua)
 			.addFunction("GameLayerClipped", &CEntity::GameLayerClipped)
 		.endClass()
-
-		.deriveClass<CPickup, CEntity>("CPickup")
-			.addProperty("Type", &CPickup::GetType, &CPickup::SetType)
-			.addProperty("Subtype", &CPickup::GetSubtype, &CPickup::SetSubtype)
-			.addProperty("SpawnTick", &CPickup::GetSpawnTick, &CPickup::SetSpawnTick)
-		.endClass()
-
-		.deriveClass<CFlag, CEntity>("CFlag")
-			//.addData("ms_PhysSize", CFlag::ms_PhysSize, false)
-			.addData("CarryingCharacter", &CFlag::m_pCarryingCharacter)
-			.addData("Vel", &CFlag::m_Vel)
-			.addData("StandPos", &CFlag::m_StandPos)
-			.addData("Vel", &CFlag::m_Vel)
-			.addData("Team", &CFlag::m_Team)
-			.addData("AtStand", &CFlag::m_AtStand)
-			.addData("DropTick", &CFlag::m_DropTick)
-			.addData("GrabTick", &CFlag::m_GrabTick)
-		.endClass()
-
-		.deriveClass<CProjectile, CEntity>("CProjectile")
-			.addFunction("GetPos", &CProjectile::GetPos)
-
-			.addProperty("Direction", &CProjectile::GetDirection, &CProjectile::SetDirection)
-			.addProperty("LifeSpan", &CProjectile::GetLifeSpan, &CProjectile::SetLifeSpan)
-			.addProperty("Owner", &CProjectile::GetOwner, &CProjectile::SetOwner)
-			.addProperty("Type", &CProjectile::GetType, &CProjectile::SetType)
-			.addProperty("Damage", &CProjectile::GetDamage, &CProjectile::SetDamage)
-			.addProperty("SoundImpact", &CProjectile::GetSoundImpact, &CProjectile::SetSoundImpact)
-			.addProperty("Weapon", &CProjectile::GetWeapon, &CProjectile::SetWeapon)
-			.addProperty("Force", &CProjectile::GetForce, &CProjectile::SetForce)
-			.addProperty("StartTick", &CProjectile::GetStartTick, &CProjectile::SetStartTick)
-			.addProperty("Explosive", &CProjectile::GetExplosive, &CProjectile::SetExplosive)
-		.endClass()
-
-		.deriveClass<CLaser, CEntity>("CLaser")
-			.addProperty("To", &CLaser::GetTo, &CLaser::SetTo)
-			.addProperty("From", &CLaser::GetFrom, &CLaser::SetFrom) // Is the same like CEntity::m_Pos!
-			.addProperty("Dir", &CLaser::GetDir, &CLaser::SetDir)
-			.addProperty("Energy", &CLaser::GetEnergy, &CLaser::SetEnergy)
-			.addProperty("Bounces", &CLaser::GetBounces, &CLaser::SetBounces)
-			.addProperty("EvalTick", &CLaser::GetEvalTick, &CLaser::SetEvalTick)
-			.addProperty("Owner", &CLaser::GetOwner, &CLaser::SetOwner)
-		.endClass()
-
-		.deriveClass<CCharacter, CEntity>("CCharacter")
-			.addFunction("IsGrounded", &CCharacter::IsGrounded)
-			.addFunction("SetWeapon", &CCharacter::SetWeapon)
-			.addFunction("HandleWeaponSwitch", &CCharacter::HandleWeaponSwitch)
-			.addFunction("DoWeaponSwitch", &CCharacter::DoWeaponSwitch)
-			.addFunction("HandleWeapons", &CCharacter::HandleWeapons)
-			.addFunction("HandleNinja", &CCharacter::HandleNinja)
-			.addFunction("OnPredictedInput", &CCharacter::OnPredictedInput)
-			.addFunction("OnDirectInput", &CCharacter::OnDirectInput)
-			.addFunction("ResetInput", &CCharacter::SetWeapon)
-			.addFunction("FireWeapon", &CCharacter::SetWeapon)
-			.addFunction("Die", &CCharacter::Die)
-			.addFunction("TakeDamage", &CCharacter::TakeDamage)
-			.addFunction("Spawn", &CCharacter::Spawn)
-			.addFunction("IncreaseHealth", &CCharacter::IncreaseHealth)
-			.addFunction("IncreaseArmor", &CCharacter::IncreaseArmor)
-			.addFunction("GiveWeapon", &CCharacter::GiveWeapon)
-			.addFunction("GiveNinja", &CCharacter::GiveNinja)
-			.addFunction("SetEmote", &CCharacter::SetEmote)
-			.addFunction("IsAlive", &CCharacter::IsAlive)
-		.endClass()
-
-		.deriveClass<CLuaEntity, CEntity>("CLuaEntity")
-			.addFunction("GetSelf", &CLuaEntity::GetSelf)
-		.endClass()
-
 
 		.deriveClass<CCharacter, CEntity>("CCharacter")
 			.addFunction("IsGrounded", &CCharacter::IsGrounded)
@@ -318,7 +343,53 @@ void CLua::RegisterLuaCallbacks()
 
 			.addFunction("IsAlive", &CCharacter::IsAlive)
 
-			.addFunction("Player", &CCharacter::GetPlayer)
+			.addFunction("GetPlayer", &CCharacter::GetPlayer)
+			.addFunction("GetCore", &CCharacter::GetCore)
+		.endClass()
+
+		.deriveClass<CPickup, CEntity>("CPickup")
+			.addProperty("Type", &CPickup::GetPickupType, &CPickup::SetPickupType)
+			.addProperty("Subtype", &CPickup::GetSubtype, &CPickup::SetSubtype)
+			.addProperty("SpawnTick", &CPickup::GetSpawnTick, &CPickup::SetSpawnTick)
+		.endClass()
+
+		.deriveClass<CFlag, CEntity>("CFlag")
+			//.addData("ms_PhysSize", CFlag::ms_PhysSize, false)
+			.addData("CarryingCharacter", &CFlag::m_pCarryingCharacter)
+			.addData("StandPos", &CFlag::m_StandPos)
+			.addData("Vel", &CFlag::m_Vel)
+			.addData("Team", &CFlag::m_Team)
+			.addData("AtStand", &CFlag::m_AtStand)
+			.addData("DropTick", &CFlag::m_DropTick)
+			.addData("GrabTick", &CFlag::m_GrabTick)
+		.endClass()
+
+		.deriveClass<CProjectile, CEntity>("CProjectile")
+			.addFunction("GetPos", &CProjectile::GetPos)
+
+			.addProperty("Direction", &CProjectile::GetDirection, &CProjectile::SetDirection)
+			.addProperty("LifeSpan", &CProjectile::GetLifeSpan, &CProjectile::SetLifeSpan)
+			.addProperty("Owner", &CProjectile::GetOwner, &CProjectile::SetOwner)
+			.addProperty("Type", &CProjectile::GetProjectileType, &CProjectile::SetProjectileType)
+			.addProperty("Damage", &CProjectile::GetDamage, &CProjectile::SetDamage)
+			.addProperty("SoundImpact", &CProjectile::GetSoundImpact, &CProjectile::SetSoundImpact)
+			.addProperty("Weapon", &CProjectile::GetWeapon, &CProjectile::SetWeapon)
+			.addProperty("Force", &CProjectile::GetForce, &CProjectile::SetForce)
+			.addProperty("StartTick", &CProjectile::GetStartTick, &CProjectile::SetStartTick)
+			.addProperty("Explosive", &CProjectile::GetExplosive, &CProjectile::SetExplosive)
+		.endClass()
+
+		.deriveClass<CLaser, CEntity>("CLaser")
+			.addProperty("To", &CLaser::GetTo, &CLaser::SetTo)
+			.addProperty("From", &CLaser::GetFrom, &CLaser::SetFrom) // Is the same as CEntity::m_Pos!
+			.addProperty("Dir", &CLaser::GetDir, &CLaser::SetDir)
+			.addProperty("Energy", &CLaser::GetEnergy, &CLaser::SetEnergy)
+			.addProperty("Bounces", &CLaser::GetBounces, &CLaser::SetBounces)
+			.addProperty("EvalTick", &CLaser::GetEvalTick, &CLaser::SetEvalTick)
+			.addProperty("Owner", &CLaser::GetOwner, &CLaser::SetOwner)
+		.endClass()
+
+		.deriveClass<CLuaEntity, CEntity>("CLuaEntity")
 		.endClass()
 
 		.beginClass<IConsole::IResult>("CConsole_IResult")

@@ -8,7 +8,7 @@
 #include "gamecontext.h"
 
 // player object
-class CPlayer
+class CPlayer : protected CLuaClass
 {
 	MACRO_ALLOC_POOL_ID()
 
@@ -44,6 +44,12 @@ public:
 
 	// used for snapping to just update latency if the scoreboard is active
 	int m_aActLatency[MAX_CLIENTS];
+	int GetActLatency(int CID)
+	{
+		if(CID >= 0 && CID < MAX_CLIENTS)
+			return m_aActLatency[CID];
+		return 0;
+	}
 
 	// used for spectator mode
 	int m_SpectatorID;

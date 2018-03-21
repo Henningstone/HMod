@@ -15,6 +15,7 @@ public:
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
 
+	// for lua
 	vec2 GetFrom() const { return m_From; }
 	void SetFrom(vec2 Pos) { m_From = Pos; }
 	vec2 GetTo() const { return m_Pos; }

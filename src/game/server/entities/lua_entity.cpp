@@ -11,6 +11,13 @@ void CLuaEntity::Reset()
 	MACRO_LUA_EVENT()
 }
 
+void CLuaEntity::Destroy()
+{
+	MACRO_LUA_EVENT()
+
+	CEntity::Destroy();
+}
+
 void CLuaEntity::Tick()
 {
 	MACRO_LUA_EVENT()
@@ -29,17 +36,4 @@ void CLuaEntity::TickPaused()
 void CLuaEntity::Snap(int SnappingClient)
 {
 	MACRO_LUA_EVENT(SnappingClient)
-}
-
-LuaRef CLuaEntity::GetSelf(lua_State *L)
-{
-	char aSelfVarName[32]; \
-	str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", this);
-	LuaRef Self = luabridge::getGlobal(L, aSelfVarName);
-	if(!Self.isTable())
-	{
-		LuaRef Table = luabridge::getGlobal(CLua::Lua()->L(), GetLuaClassName());
-		Self = CLua::CopyTable(Table);
-	}
-	return Self;
 }

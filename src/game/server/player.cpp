@@ -9,7 +9,7 @@ MACRO_ALLOC_POOL_ID_IMPL(CPlayer, MAX_CLIENTS)
 
 IServer *CPlayer::Server() const { return m_pGameServer->Server(); }
 
-CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
+CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team) : CLuaClass("Player")
 {
 	m_pGameServer = pGameServer;
 	m_RespawnTick = Server()->Tick();
@@ -157,6 +157,8 @@ void CPlayer::Snap(int SnappingClient)
 
 void CPlayer::OnDisconnect(const char *pReason)
 {
+	MACRO_LUA_EVENT(pReason)
+
 	KillCharacter();
 
 	if(Server()->ClientIngame(m_ClientID))

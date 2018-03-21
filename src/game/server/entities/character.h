@@ -62,6 +62,8 @@ public:
 	void SetEmote(int Emote, int Tick);
 
 	bool IsAlive() const { return m_Alive; }
+
+	CCharacterCore *GetCore() { return &m_Core; }
 	class CPlayer *GetPlayer() { return m_pPlayer; }
 
 private:
