@@ -33,7 +33,7 @@ CEntity::~CEntity()
 
 void CEntity::OnCreate()
 {
-	MACRO_LUA_EVENT(GetLuaClassName())
+	MACRO_LUA_EVENT()
 }
 
 int CEntity::NetworkClipped(int SnappingClient)

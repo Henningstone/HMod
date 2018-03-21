@@ -8,27 +8,27 @@ CLuaEntity::CLuaEntity(CGameWorld *pGameWorld, const char *pLuaClass)
 
 void CLuaEntity::Reset()
 {
-	MACRO_LUA_EVENT(GetLuaClassName());
+	MACRO_LUA_EVENT()
 }
 
 void CLuaEntity::Tick()
 {
-	MACRO_LUA_EVENT(GetLuaClassName());
+	MACRO_LUA_EVENT()
 }
 
 void CLuaEntity::TickDefered()
 {
-	MACRO_LUA_EVENT(GetLuaClassName());
+	MACRO_LUA_EVENT()
 }
 
 void CLuaEntity::TickPaused()
 {
-	MACRO_LUA_EVENT(GetLuaClassName());
+	MACRO_LUA_EVENT()
 }
 
 void CLuaEntity::Snap(int SnappingClient)
 {
-	MACRO_LUA_EVENT(GetLuaClassName(), SnappingClient);
+	MACRO_LUA_EVENT(SnappingClient)
 }
 
 LuaRef CLuaEntity::GetSelf(lua_State *L)

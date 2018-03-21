@@ -16,7 +16,7 @@ CFlag::CFlag(CGameWorld *pGameWorld, int Team)
 
 void CFlag::Reset()
 {
-	MACRO_LUA_EVENT(GetLuaClassName());
+	MACRO_LUA_EVENT()
 
 	m_pCarryingCharacter = NULL;
 	m_AtStand = 1;
@@ -27,7 +27,7 @@ void CFlag::Reset()
 
 void CFlag::TickPaused()
 {
-	MACRO_LUA_EVENT(GetLuaClassName());
+	MACRO_LUA_EVENT()
 
 	++m_DropTick;
 	if(m_GrabTick)
@@ -36,7 +36,7 @@ void CFlag::TickPaused()
 
 void CFlag::Snap(int SnappingClient)
 {
-	MACRO_LUA_EVENT(GetLuaClassName(), SnappingClient);
+	MACRO_LUA_EVENT(SnappingClient);
 
 	if(NetworkClipped(SnappingClient))
 		return;

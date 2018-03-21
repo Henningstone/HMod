@@ -25,7 +25,7 @@ CProjectile::CProjectile(CGameWorld *pGameWorld, int Type, int Owner, vec2 Pos, 
 
 void CProjectile::Reset()
 {
-	MACRO_LUA_EVENT(GetLuaClassName())
+	MACRO_LUA_EVENT()
 
 	GameServer()->m_World.DestroyEntity(this);
 }
@@ -59,7 +59,7 @@ vec2 CProjectile::GetPos(float Time)
 
 void CProjectile::Tick()
 {
-	MACRO_LUA_EVENT(GetLuaClassName())
+	MACRO_LUA_EVENT()
 
 	float Pt = (Server()->Tick()-m_StartTick-1)/(float)Server()->TickSpeed();
 	float Ct = (Server()->Tick()-m_StartTick)/(float)Server()->TickSpeed();
@@ -88,7 +88,7 @@ void CProjectile::Tick()
 
 void CProjectile::TickPaused()
 {
-	MACRO_LUA_EVENT(GetLuaClassName())
+	MACRO_LUA_EVENT()
 
 	++m_StartTick;
 }
@@ -105,7 +105,7 @@ void CProjectile::FillInfo(CNetObj_Projectile *pProj)
 
 void CProjectile::Snap(int SnappingClient)
 {
-	MACRO_LUA_EVENT(GetLuaClassName(), SnappingClient)
+	MACRO_LUA_EVENT(SnappingClient)
 
 	float Ct = (Server()->Tick()-m_StartTick)/(float)Server()->TickSpeed();
 

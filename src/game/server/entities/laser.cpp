@@ -82,14 +82,14 @@ void CLaser::DoBounce()
 
 void CLaser::Reset()
 {
-	MACRO_LUA_EVENT(GetLuaClassName())
+	MACRO_LUA_EVENT()
 
 	GameServer()->m_World.DestroyEntity(this);
 }
 
 void CLaser::Tick()
 {
-	MACRO_LUA_EVENT(GetLuaClassName())
+	MACRO_LUA_EVENT()
 
 	if(Server()->Tick() > m_EvalTick+(Server()->TickSpeed()*GameServer()->Tuning()->m_LaserBounceDelay)/1000.0f)
 		DoBounce();
@@ -97,14 +97,14 @@ void CLaser::Tick()
 
 void CLaser::TickPaused()
 {
-	MACRO_LUA_EVENT(GetLuaClassName())
+	MACRO_LUA_EVENT()
 
 	++m_EvalTick;
 }
 
 void CLaser::Snap(int SnappingClient)
 {
-	MACRO_LUA_EVENT(GetLuaClassName(), SnappingClient)
+	MACRO_LUA_EVENT(SnappingClient)
 
 	if(NetworkClipped(SnappingClient))
 		return;
