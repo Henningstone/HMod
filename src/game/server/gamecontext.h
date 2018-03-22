@@ -178,6 +178,11 @@ public:
 	virtual const char *Version();
 	virtual const char *NetVersion();
 
+	// some haxx cuz luabridge ._,
+	CCollision *LuaGetCollision() const { return const_cast<CCollision*>((const CCollision *)&m_Collision); }
+	CTuningParams *LuaGetTuning() const { return const_cast<CTuningParams*>((const CTuningParams *)&m_Tuning); }
+	CGameWorld *LuaGetWorld() const { return const_cast<CGameWorld*>((const CGameWorld *)&m_World); }
+
 	// lua
 	class CCharacter *CreateEntityCharacter(int ClientID);
 	class CFlag *CreateEntityFlag(int Team);

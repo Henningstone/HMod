@@ -63,7 +63,7 @@ public:
 
 	bool IsAlive() const { return m_Alive; }
 
-	CCharacterCore *GetCore() { return &m_Core; }
+	CCharacterCore *GetCore() const { return const_cast<CCharacterCore*>((const CCharacterCore *)&m_Core); }
 	class CPlayer *GetPlayer() { return m_pPlayer; }
 
 private:

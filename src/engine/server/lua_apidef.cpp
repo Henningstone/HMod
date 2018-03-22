@@ -101,6 +101,24 @@ void CLua::RegisterLuaCallbacks()
 		.endClass()
 
 		.beginClass<CCollision>("CCollision")
+			.addProperty("MapWidth", &CCollision::GetWidth)
+			.addProperty("MapHeight", &CCollision::GetHeight)
+
+			.addFunction("Distance", &CCollision::Distance)
+			.addFunction("Normalize", &CCollision::Normalize)
+			.addFunction("ClosestPointOnLine", &CCollision::ClosestPointOnLine)
+
+			.addFunction("CheckPoint", &CCollision::CheckPointLua)
+			.addFunction("GetCollisionAt", &CCollision::GetCollisionAt)
+
+			.addFunction("IntersectLine", &CCollision::IntersectLine)
+			.addFunction("MovePoint", &CCollision::MovePoint)
+			.addFunction("MoveBox", &CCollision::MoveBox)
+			.addFunction("TestBox", &CCollision::TestBox)
+
+			.addFunction("IsTileSolid", &CCollision::IsTileSolid)
+			.addFunction("GetTile", &CCollision::GetTileRaw)
+			.addFunction("GetTileRaw", &CCollision::GetTileRaw)
 		.endClass()
 
 		.beginClass<CTuningParams>("CTuningParams")
@@ -122,12 +140,11 @@ void CLua::RegisterLuaCallbacks()
 
 		// Srv.Game
 		.beginClass<CGameContext>("CGameContext")
-			.addFunction("Collision", &CGameContext::Collision)
-			.addFunction("Tuning", &CGameContext::Tuning)
-			.addFunction("GetPlayer", &CGameContext::GetPlayer)
-			.addFunction("GetPlayerChar", &CGameContext::GetPlayerChar)
-			.addFunction("GetWorld", &CGameContext::GetGameWorld)
-			//.addProperty("World", &CGameContext::GetGameWorld)
+			.addProperty("Collision", &CGameContext::LuaGetCollision)
+			.addProperty("Tuning", &CGameContext::LuaGetTuning)
+			.addProperty("World", &CGameContext::LuaGetWorld)
+			.addFunction("GetPlayer", &CGameContext::GetPlayer) // -> [CPlayer]
+			.addFunction("GetPlayerChar", &CGameContext::GetPlayerChar) // [CCharacter]
 
 			.addFunction("StartVote", &CGameContext::StartVote)
 			.addFunction("EndVote", &CGameContext::EndVote)
@@ -192,6 +209,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("Kick", &IServer::Kick)
 		.endClass()
 
+		/// [CCharacterCore].Input
 		.beginClass<CNetObj_PlayerInput>("CNetObj_PlayerInput")
 			.addData("Direction", &CNetObj_PlayerInput::m_Direction)
 			.addData("TargetX", &CNetObj_PlayerInput::m_TargetX)
@@ -205,6 +223,7 @@ void CLua::RegisterLuaCallbacks()
 			.addData("PrevWeapon", &CNetObj_PlayerInput::m_PrevWeapon)
 		.endClass()
 
+		/// Srv.Game:GetPlayer(CID)
 		.deriveClass<CPlayer, CLuaClass>("CPlayer")
 			.addFunction("TryRespawn", &CPlayer::TryRespawn)
 			.addFunction("Respawn", &CPlayer::Respawn)
@@ -222,7 +241,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("OnDisconnect", &CPlayer::OnDisconnect)
 
 			.addFunction("KillCharacter", &CPlayer::KillCharacter)
-			.addFunction("GetCharacter", &CPlayer::GetCharacter)
+			.addFunction("GetCharacter", &CPlayer::GetCharacter) // -> [CCharacter]
 
 			.addData("ViewPos", &CPlayer::m_ViewPos)
 			.addData("PlayerFlags", &CPlayer::m_PlayerFlags)
@@ -259,6 +278,7 @@ void CLua::RegisterLuaCallbacks()
 			// TODO add struct m_Latency
 		.endClass()
 
+		/// [CCharacter].Core
 		.beginClass<CCharacterCore>("CCharacterCore")
 			.addData("Pos", &CCharacterCore::m_Pos)
 			.addData("Vel", &CCharacterCore::m_Vel)
@@ -273,7 +293,7 @@ void CLua::RegisterLuaCallbacks()
 
 			.addData("Direction", &CCharacterCore::m_Direction)
 			.addData("Angle", &CCharacterCore::m_Angle)
-			.addData("Input", &CCharacterCore::m_Input)
+			.addData("Input", &CCharacterCore::m_Input) // -> [CNetObj_PlayerInput]
 
 			.addData("TriggeredEvents", &CCharacterCore::m_TriggeredEvents)
 
@@ -314,6 +334,8 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GameLayerClipped", &CEntity::GameLayerClipped)
 		.endClass()
 
+		/// [Player].GetCharacter()
+		/// Srv.Game:GetPlayerChar(CID)
 		.deriveClass<CCharacter, CEntity>("CCharacter")
 			.addFunction("IsGrounded", &CCharacter::IsGrounded)
 
@@ -341,10 +363,11 @@ void CLua::RegisterLuaCallbacks()
 
 			.addFunction("SetEmote", &CCharacter::SetEmote)
 
-			.addFunction("IsAlive", &CCharacter::IsAlive)
+			.addProperty("IsAlive", &CCharacter::IsAlive)
 
-			.addFunction("GetPlayer", &CCharacter::GetPlayer)
-			.addFunction("GetCore", &CCharacter::GetCore)
+			.addFunction("GetPlayer", &CCharacter::GetPlayer) // -> [CPlayer]
+			.addFunction("GetCore", &CCharacter::GetCore) // -> [CCharacterCore]
+			.addProperty("Core", &CCharacter::GetCore)
 		.endClass()
 
 		.deriveClass<CPickup, CEntity>("CPickup")
