@@ -14,6 +14,9 @@ public:
 	void TickDefered();
 	void TickPaused();
 	void Snap(int SnappingClient);
+
+protected:
+	void OnCreate();
 };
 
 #endif

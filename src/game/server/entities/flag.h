@@ -23,6 +23,9 @@ public:
 	virtual void Reset();
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
+
+protected:
+	void OnCreate();
 };
 
 #endif

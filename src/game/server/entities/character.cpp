@@ -855,3 +855,8 @@ void CCharacter::Snap(int SnappingClient)
 
 	pCharacter->m_PlayerFlags = GetPlayer()->m_PlayerFlags;
 }
+
+void CCharacter::OnCreate()
+{
+	MACRO_LUA_EVENT()
+}

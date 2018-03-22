@@ -49,3 +49,8 @@ void CFlag::Snap(int SnappingClient)
 	pFlag->m_Y = (int)m_Pos.y;
 	pFlag->m_Team = m_Team;
 }
+
+void CFlag::OnCreate()
+{
+	MACRO_LUA_EVENT()
+}

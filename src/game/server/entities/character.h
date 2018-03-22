@@ -133,6 +133,8 @@ private:
 	CCharacterCore m_SendCore; // core that we should send
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
 
+protected:
+	void OnCreate();
 };
 
 #endif

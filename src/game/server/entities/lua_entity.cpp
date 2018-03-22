@@ -3,7 +3,6 @@
 CLuaEntity::CLuaEntity(CGameWorld *pGameWorld, const char *pLuaClass)
 		: CEntity(pGameWorld, CGameWorld::ENTTYPE_CUSTOM, pLuaClass)
 {
-
 }
 
 void CLuaEntity::Reset()
@@ -36,4 +35,9 @@ void CLuaEntity::TickPaused()
 void CLuaEntity::Snap(int SnappingClient)
 {
 	MACRO_LUA_EVENT(SnappingClient)
+}
+
+void CLuaEntity::OnCreate()
+{
+	MACRO_LUA_EVENT()
 }

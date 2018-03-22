@@ -119,3 +119,8 @@ void CLaser::Snap(int SnappingClient)
 	pObj->m_FromY = (int)m_From.y;
 	pObj->m_StartTick = m_EvalTick;
 }
+
+void CLaser::OnCreate()
+{
+	MACRO_LUA_EVENT()
+}

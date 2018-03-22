@@ -150,3 +150,8 @@ void CPickup::Snap(int SnappingClient)
 	pP->m_Type = m_Type;
 	pP->m_Subtype = m_Subtype;
 }
+
+void CPickup::OnCreate()
+{
+	MACRO_LUA_EVENT()
+}

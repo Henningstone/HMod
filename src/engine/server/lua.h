@@ -1,13 +1,16 @@
 #ifndef ENGINE_SERVER_LUA_H
 #define ENGINE_SERVER_LUA_H
 
+#include <map>
 #include <vector>
 #include <string>
 #include <lua.hpp>
+
 #include <engine/external/luabridge/LuaBridge.h>
-#include <engine/lua.h>
+
 #include <base/tl/array.h>
-#include <map>
+#include <engine/lua.h>
+
 
 /** USEFUL MACROS TO INVOKE LUA
  *
@@ -51,7 +54,7 @@ bool _LUA_EVENT_HANDLED = false; \
 				lua_pop(L, 1); /* pop the registry table */ \
 \
 				/* prepare */ \
-				char aSelfVarName[32]; \
+				char aSelfVarName[64]; \
 				str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", this); \
 				LuaRef Self = getGlobal(L, aSelfVarName); \
 				if(!Self.isTable()) \

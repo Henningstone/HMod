@@ -100,6 +100,7 @@ void CLua::RegisterLuaCallbacks()
 		.beginClass<IGameController>("IGameController")
 		.endClass()
 
+		/// Srv.Game.Collision
 		.beginClass<CCollision>("CCollision")
 			.addProperty("MapWidth", &CCollision::GetWidth)
 			.addProperty("MapHeight", &CCollision::GetHeight)
@@ -124,7 +125,7 @@ void CLua::RegisterLuaCallbacks()
 		.beginClass<CTuningParams>("CTuningParams")
 		.endClass()
 
-		// Server.Game.GetWorld()
+		/// Server.Game.GetWorld()
 		.beginClass<CGameWorld>("CGameWorld")
 			.addData("ResetRequested", &CGameWorld::m_ResetRequested)
 			.addData("Paused", &CGameWorld::m_Paused)
@@ -138,7 +139,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("Tick", &CGameWorld::Tick)
 		.endClass()
 
-		// Srv.Game
+		/// Srv.Game
 		.beginClass<CGameContext>("CGameContext")
 			.addProperty("Collision", &CGameContext::LuaGetCollision)
 			.addProperty("Tuning", &CGameContext::LuaGetTuning)
@@ -224,6 +225,7 @@ void CLua::RegisterLuaCallbacks()
 		.endClass()
 
 		/// Srv.Game:GetPlayer(CID)
+		/// [CCharacter].GetPlayer()
 		.deriveClass<CPlayer, CLuaClass>("CPlayer")
 			.addFunction("TryRespawn", &CPlayer::TryRespawn)
 			.addFunction("Respawn", &CPlayer::Respawn)
@@ -334,7 +336,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GameLayerClipped", &CEntity::GameLayerClipped)
 		.endClass()
 
-		/// [Player].GetCharacter()
+		/// [CPlayer].GetCharacter()
 		/// Srv.Game:GetPlayerChar(CID)
 		.deriveClass<CCharacter, CEntity>("CCharacter")
 			.addFunction("IsGrounded", &CCharacter::IsGrounded)

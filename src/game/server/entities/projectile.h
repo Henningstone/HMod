@@ -63,6 +63,9 @@ private:
 	float m_Force;
 	int m_StartTick;
 	bool m_Explosive;
+
+protected:
+	void OnCreate();
 };
 
 #endif
