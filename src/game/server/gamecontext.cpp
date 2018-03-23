@@ -1494,14 +1494,23 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//players = new CPlayer[MAX_CLIENTS];
 
 	// select gametype
-	if(str_comp(g_Config.m_SvGametype, "mod") == 0)
+/*	if(str_comp(g_Config.m_SvGametype, "mod") == 0)
 		m_pController = new CGameControllerMOD(this);
 	else if(str_comp(g_Config.m_SvGametype, "ctf") == 0)
 		m_pController = new CGameControllerCTF(this);
 	else if(str_comp(g_Config.m_SvGametype, "tdm") == 0)
 		m_pController = new CGameControllerTDM(this);
 	else
-		m_pController = new CGameControllerDM(this);
+		m_pController = new CGameControllerDM(this);*/
+
+	// this is a friggin lua server, this shit is always modded bro!
+	if(str_comp_nocase(g_Config.m_SvGametype, "dm") == 0 ||
+			str_comp_nocase(g_Config.m_SvGametype, "tdm") == 0 ||
+			str_comp_nocase(g_Config.m_SvGametype, "ctf") == 0)
+		str_append(g_Config.m_SvGametype, "-mod", sizeof(g_Config.m_SvGametype));
+
+	m_pController = new CGameControllerMOD(this);
+
 
 	// setup core world
 	//for(int i = 0; i < MAX_CLIENTS; i++)
