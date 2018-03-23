@@ -19,10 +19,10 @@
 #include "lua_class.h"
 #include "lua.h"
 
-using namespace luabridge;
 
 void CLua::RegisterLuaCallbacks()
 {
+	using namespace luabridge;
 	lua_State *L = m_pLuaState;
 
 	lua_register(L, "print", CLuaBinding::Print);
@@ -125,16 +125,16 @@ void CLua::RegisterLuaCallbacks()
 		.beginClass<CTuningParams>("CTuningParams")
 		.endClass()
 
-		/// Server.Game.GetWorld()
+		/// Srv.Game.World
 		.beginClass<CGameWorld>("CGameWorld")
 			.addData("ResetRequested", &CGameWorld::m_ResetRequested)
 			.addData("Paused", &CGameWorld::m_Paused)
 			.addFunction("FindFirst", &CGameWorld::FindFirst)
 			.addFunction("IntersectCharacter", &CGameWorld::IntersectCharacter)
 			.addFunction("ClosestCharacter", &CGameWorld::ClosestCharacter)
-			.addFunction("InsertEntity", &CGameWorld::InsertEntity)
-			.addFunction("RemoveEntity", &CGameWorld::RemoveEntity)
-			.addFunction("DestroyEntity", &CGameWorld::DestroyEntity)
+			.addFunction("InsertEntity", &CGameWorld::InsertEntity) // inserts an entity into the world
+			.addFunction("RemoveEntity", &CGameWorld::RemoveEntity) // remove the reference from the world
+			.addFunction("DestroyEntity", &CGameWorld::DestroyEntity) // marks the entity for deletion
 			.addFunction("Snap", &CGameWorld::Snap)
 			.addFunction("Tick", &CGameWorld::Tick)
 		.endClass()
@@ -324,8 +324,8 @@ void CLua::RegisterLuaCallbacks()
 
 			.addProperty("Type", &CEntity::GetType)
 
-			.addFunction("Destroy", &CEntity::Destroy)
-
+			// events; use them only in the respective event-callback in lua
+//			.addFunction("Destroy", &CEntity::Destroy) // <- DO NOT BIND THIS!
 			.addFunction("Reset", &CEntity::Reset)
 			.addFunction("Tick", &CEntity::Tick)
 			.addFunction("TickDefered", &CEntity::TickDefered)

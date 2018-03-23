@@ -1,37 +1,24 @@
 
 print("character loaded")
 
-Character.myDennis = nil
 
 function Character.OnCreate()
 	print("Character", tostring(this), "has been created")
+	this:GetPlayer():GetSelf():enableDennis()
 end
 
-function Character.Tick()
-	-- doubletime confirmed!!!11!1
-	--this:Tick()
-	this:Tick()
-
-	--this:GetCore().Vel = this:GetCore().Vel - vec2(0, 1)
 --[[
-	this.Core.Input = this.Input
-	this.Core.Tick(true)
+function Character.Destroy()
+	print("Character", tostring(this), "has been destroyed")
+	this:GetPlayer():GetSelf():disableDennis()
+end
+]]
 
-	this.PrevInput = Input
-	this:HandleWeapons()
-	]]
+function Character.OnDeath(Killer, Weapon)
+	print("Character", tostring(this), "was kileld by " .. Killer .. " with " .. Weapon)
+	this:GetPlayer():GetSelf():disableDennis()
 end
 
-function Character.spawnMyDennis(self, this)
-	if self.myDennis ~= nil then
-		print("Character", tostring(this), "has already got a dennis!!")
-		return
-	end
-
-	print("Character", tostring(this), "gets his dennis")
-
-	local dennis = Srv.Game:CreateEntityCustom("Dennis")
-	dennis:GetSelf():attachTo(this)  -- the attachTo method is custom written in lua!
-	self.myDennis = dennis
-	Srv.Game.World:InsertEntity(dennis)
+function Character.OnWeaponFire(Weapon)
+	this:GetPlayer():GetSelf():triggerDennis(Weapon)
 end

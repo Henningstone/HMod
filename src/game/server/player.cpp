@@ -21,6 +21,8 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team) : CLuaClass(
 	m_SpectatorID = SPEC_FREEVIEW;
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
+
+	MACRO_LUA_CALLBACK("Player")
 }
 
 CPlayer::~CPlayer()
@@ -36,6 +38,8 @@ void CPlayer::Tick()
 #endif
 	if(!Server()->ClientIngame(m_ClientID))
 		return;
+
+	MACRO_LUA_EVENT()
 
 	Server()->SetClientScore(m_ClientID, m_Score);
 
@@ -95,6 +99,8 @@ void CPlayer::Tick()
 
 void CPlayer::PostTick()
 {
+	MACRO_LUA_EVENT()
+
 	// update latency value
 	if(m_PlayerFlags&PLAYERFLAG_SCOREBOARD)
 	{
@@ -117,6 +123,8 @@ void CPlayer::Snap(int SnappingClient)
 #endif
 	if(!Server()->ClientIngame(m_ClientID))
 		return;
+
+	MACRO_LUA_EVENT()
 
 	CNetObj_ClientInfo *pClientInfo = static_cast<CNetObj_ClientInfo *>(Server()->SnapNewItem(NETOBJTYPE_CLIENTINFO, m_ClientID, sizeof(CNetObj_ClientInfo)));
 	if(!pClientInfo)
@@ -157,7 +165,10 @@ void CPlayer::Snap(int SnappingClient)
 
 void CPlayer::OnDisconnect(const char *pReason)
 {
-	MACRO_LUA_EVENT(pReason)
+	bool Skip = false;
+	MACRO_LUA_CALLBACK_RESULT(__func__, Skip=, pReason)
+	if(Skip)
+		return;
 
 	KillCharacter();
 

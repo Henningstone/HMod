@@ -12,7 +12,7 @@ void CLuaEntity::Reset()
 
 void CLuaEntity::Destroy()
 {
-	MACRO_LUA_EVENT()
+	MACRO_LUA_CALLBACK(__func__)
 
 	CEntity::Destroy();
 }

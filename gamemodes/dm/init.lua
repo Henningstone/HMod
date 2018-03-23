@@ -16,14 +16,18 @@ end)
 
 Srv.Console:Register("give_amazingness_dennis", "i", "Give'em teh real shit bro", function(result)
 	local GiveTo = result:GetInteger(0)
-	local chr = Srv.Game:GetPlayerChar(GiveTo)
-	if chr == nil then
+	local pl = Srv.Game:GetPlayer(GiveTo)
+	if pl == nil then
 		Srv.Console:Print(0, "dennisdude", "There is no player with ID " .. GiveTo)
 		return
 	end
-	Srv.Console:Print(0, "dennisdude", "Giving awesomeness to " .. Srv.Server:GetClientName(GiveTo))
 
-	chr:GetSelf():spawnMyDennis(chr)
+	local Success = pl:GetSelf():createDennis(pl)
+	if Success == true then
+		Srv.Console:Print(0, "dennisdude", "Given awesomeness to " .. Srv.Server:GetClientName(GiveTo))
+	else
+		Srv.Console:Print(0, "dennisdude", Srv.Server:GetClientName(GiveTo) .. " has already got awesomeness!")
+	end
 
 end)
 

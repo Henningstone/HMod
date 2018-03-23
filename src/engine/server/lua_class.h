@@ -1,13 +1,17 @@
 #ifndef HMOD_LUA_CLASS_H
 #define HMOD_LUA_CLASS_H
 
-#include <base/system.h>
 #include <string>
 #include <lua.hpp>
+#include <base/system.h>
+#include <engine/external/luabridge/LuaBridge.h>
+#include "lua.h"
 
 
 class CLuaClass
 {
+	friend class CLua;
+
 	std::string m_LuaClass;
 	volatile int m_IntegrityCheck;
 
@@ -25,20 +29,9 @@ protected:
 public:
 	inline void LuaBindClass(const char *pClassName) { m_LuaClass = std::string(pClassName); }
 
-	LuaRef GetSelf(lua_State *L)
+	luabridge::LuaRef GetSelf(lua_State *L)
 	{
-		char aSelfVarName[64]; \
-		str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", this);
-		LuaRef Self = luabridge::getGlobal(L, aSelfVarName);
-		if(!Self.isTable())
-		{
-			const char *pClassName = GetLuaClassName();
-			LuaRef ClassTable = luabridge::getGlobal(CLua::Lua()->L(), pClassName);
-			Self = CLua::CopyTable(ClassTable);
-			Self["__dbgId"] = LuaRef(L, std::string(aSelfVarName)); \
-			setGlobal(L, Self, aSelfVarName); \
-		}
-		return Self;
+		return CLua::GetSelfTable(L, this);
 	}
 
 
