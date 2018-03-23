@@ -405,8 +405,8 @@ void CCharacter::FireWeapon()
 
 	m_AttackTick = Server()->Tick();
 
-	if(m_aWeapons[m_aWeapons[m_ActiveWeapon].m_WeaponId].m_Ammo > 0) // -1 == unlimited
-		m_aWeapons[m_aWeapons[m_ActiveWeapon].m_WeaponId].m_Ammo--;
+	if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0) // -1 == unlimited
+		m_aWeapons[m_ActiveWeapon].m_Ammo--;
 
 	if(!m_ReloadTimer)
 		m_ReloadTimer = g_pData->m_Weapons.m_aId[m_aWeapons[m_ActiveWeapon].m_WeaponId].m_Firedelay * Server()->TickSpeed() / 1000;
@@ -468,10 +468,10 @@ bool CCharacter::GiveWeapon(int Weapon, int Ammo)
 }
 bool CCharacter::GiveWeaponSlot(int Weapon, int Ammo, int Slot)
 {
-	if(m_aWeapons[Weapon].m_Ammo < g_pData->m_Weapons.m_aId[Weapon].m_Maxammo || !m_aWeapons[Weapon].m_Got)
+	if(m_aWeapons[Slot].m_Ammo < g_pData->m_Weapons.m_aId[Weapon].m_Maxammo || !m_aWeapons[Weapon].m_Got)
 	{
-		m_aWeapons[Weapon].m_Got = true;
-		m_aWeapons[Weapon].m_Ammo = min(g_pData->m_Weapons.m_aId[Weapon].m_Maxammo, Ammo);
+		m_aWeapons[Slot].m_Got = true;
+		m_aWeapons[Slot].m_Ammo = min(g_pData->m_Weapons.m_aId[Weapon].m_Maxammo, Ammo);
 		m_aWeapons[Slot].m_WeaponId = Weapon;
 		if(Weapon == WEAPON_GRENADE || Weapon == WEAPON_SHOTGUN || Weapon == WEAPON_RIFLE)
 			m_aWeapons[Slot].m_FullAuto = true;
