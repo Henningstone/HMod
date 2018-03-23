@@ -250,7 +250,7 @@ function build(settings)
 	versionserver = Compile(settings, Collect("src/versionsrv/*.cpp"))
 	masterserver = Compile(settings, Collect("src/mastersrv/*.cpp"))
 	game_shared = Compile(settings, Collect("src/game/*.cpp"), nethash, network_source)
-	game_client = Compile(settings, CollectRecursive("src/game/client/*.cpp"), client_content_source)
+	--game_client = Compile(settings, CollectRecursive("src/game/client/*.cpp"), client_content_source)
 	game_server = Compile(settings, CollectRecursive("src/game/server/*.cpp"), server_content_source)
 	game_editor = Compile(settings, Collect("src/game/editor/*.cpp"))
 
@@ -271,9 +271,9 @@ function build(settings)
 	end
 
 	-- build client, server, version server and master server
-	client_exe = Link(client_settings, "teeworlds", game_shared, game_client,
-		engine, client, game_editor, zlib, pnglite, wavpack,
-		client_link_other, client_osxlaunch)
+--	client_exe = Link(client_settings, "teeworlds", game_shared, game_client,
+--		engine, client, game_editor, zlib, pnglite, wavpack,
+--		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "teeworlds_srv", engine, server,
 		game_shared, game_server, zlib, server_link_other, server_depends)
@@ -290,9 +290,9 @@ function build(settings)
 		engine, zlib)
 
 	-- make targets
-	c = PseudoTarget("client".."_"..settings.config_name, client_exe, client_depends)
+--	c = PseudoTarget("client".."_"..settings.config_name, client_exe, client_depends)
 	s = PseudoTarget("server".."_"..settings.config_name, server_exe, serverlaunch)
-	g = PseudoTarget("game".."_"..settings.config_name, client_exe, server_exe)
+--	g = PseudoTarget("game".."_"..settings.config_name, client_exe, server_exe)
 
 	v = PseudoTarget("versionserver".."_"..settings.config_name, versionserver_exe)
 	m = PseudoTarget("masterserver".."_"..settings.config_name, masterserver_exe)
@@ -418,5 +418,6 @@ if platform == "macosx" then
 else
 	build(debug_settings)
 	build(release_settings)
-	DefaultTarget("game_debug")
+	--DefaultTarget("game_debug")
+	DefaultTarget("server_release")
 end

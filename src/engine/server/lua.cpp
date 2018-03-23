@@ -195,6 +195,28 @@ int CLua::Panic(lua_State *L)
 	return 0;
 }
 
+int CLua::LuaHook_NewIndex(lua_State *L)
+{
+	/// args: table, key, value
+
+	const char *pKey = lua_tostring(L, 2);
+	if(pKey && pKey[0] == '_')
+		return luaL_error(L, "cannot create static attribute '%s' on an object", pKey);
+
+	lua_rawset(L, 1);
+	return 0;
+}
+
+int CLua::LuaHook_Index(lua_State *L)
+{
+	/// args: table, key
+
+	const char *pKey = lua_tostring(L, 2);
+
+	lua_rawget(L, 1);
+	return 1;
+}
+
 int CLua::LuaHook_ToString(lua_State *L)
 {
 	if(lua_getmetatable(L, 1) == 0)
@@ -210,6 +232,8 @@ int CLua::LuaHook_ToString(lua_State *L)
 
 int CLua::RegisterMeta(lua_State *L)
 {
+	/// args: object table, identifier string
+
 	// only do something if we haven't done it yet
 	if(lua_getmetatable(L, 1) != 0)
 	{
@@ -225,28 +249,68 @@ int CLua::RegisterMeta(lua_State *L)
 	lua_pushcfunction(L, CLua::LuaHook_ToString);
 	lua_rawset(L, -3);
 
-	// create object storage
-	lua_pushstring(L, LUACLASS_MT_OBJS);
-	lua_newtable(L);
+	// assign newindex event
+	lua_pushstring(L, "__newindex");
+	lua_pushcfunction(L, CLua::LuaHook_NewIndex);
 	lua_rawset(L, -3);
 
+	// assign index event
+/*	lua_pushstring(L, "__index");
+	lua_pushcfunction(L, CLua::LuaHook_Index);
+	lua_rawset(L, -3);*/
+
+	// create object storage
+/*	lua_pushstring(L, LUACLASS_MT_OBJS);
+	lua_newtable(L);
+	lua_rawset(L, -3);*/
+
 	// hide metatables
+	#if defined(CONF_RELEASE)
 	lua_pushstring(L, "__metatable");
 	lua_pushboolean(L, true);
 	lua_rawset(L, -3);
+	#endif
 
 	// remember what type this lua class is of
 	char aTypename[128];
 	str_formatb(aTypename, "LC:%s", lua_tostring(L, 2));
 	lua_pushstring(L, LUACLASS_MT_TYPE); // k (-2)
 	lua_pushstring(L, aTypename); // v (-1)
-	lua_rawset(L, -3); // pops 2 (k,v) - metatable and classtable still remain
+	lua_rawset(L, -3); // pops 2 (k,v) - metatable and object-table still remain
 
-	lua_setmetatable(L, -1); // our class table is on top of the stack (this pops the new metatable)
+	lua_setmetatable(L, 1); // our class table is on top of the stack (this pops the new metatable)
 
-	lua_pop(L, 2); // the args
+	lua_pop(L, 2); // pop the args
 
 	return 0;
+}
+
+luabridge::LuaRef CLua::GetSelfTable(lua_State *L, const CLuaClass *pLC)
+{
+	using namespace luabridge;
+
+	char aSelfVarName[64];
+	str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", pLC);
+	LuaRef Self = getGlobal(L, aSelfVarName);
+	if(!Self.isTable())
+	{
+		// create an "object" from the lua-class
+		const char *pClassName = pLC->GetLuaClassName();
+		LuaRef ClassTable = getGlobal(L, pClassName);
+		dbg_assert_legacy(ClassTable.isTable(), "Trying to get self-table of class that doesn't exist?!");
+		Self = CLua::CopyTable(ClassTable);
+		Self["__dbgId"] = LuaRef(L, std::string(aSelfVarName));
+		Self["__dbgLC"] = LuaRef(L, pLC);
+		setGlobal(L, Self, aSelfVarName);
+
+		// register metatables for this object
+		lua_pushcfunction(L, CLua::RegisterMeta);
+		Self.push(L);
+		lua_pushfstring(L, "%s->%p", pClassName, pLC);
+		lua_call(L, 2, 0);
+	}
+
+	return Self;
 }
 
 void CLua::HandleException(luabridge::LuaException& e)

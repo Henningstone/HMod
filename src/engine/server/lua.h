@@ -16,24 +16,20 @@
  *
  * Explanation of the suffixes:
  *  - '_V': will define a `bool _LUA_EVENT_HANDLED' in the current scope and set it's value depending on whether invoking lua was possible
- *  - '_C': lets you define the name of the lua class in the macro arguments list
+ *  //- '_C': lets you define the name of the lua class in the macro arguments list
  *  - Where these suffixes are combined, their meanings are as well.
  *  - No suffix means that the lua class name is automatically determined, the variable _LUA_EVENT_HANDLED will not be defined.
  */
 
-#define MACRO_LUA_CALLBACK_RESULT_CV(CLASSNAME, FUNCNAME, RESOP, ...) \
+#define MACRO_LUA_CALLBACK_RESULT_V(FUNCNAME, RESOP, ...) \
 bool _LUA_EVENT_HANDLED = false; \
 { \
 \
 	using namespace luabridge; \
-	LuaRef ClassTable = getGlobal(CLua::Lua()->L(), CLASSNAME); \
+	LuaRef ClassTable = getGlobal(CLua::Lua()->L(), GetLuaClassName()); \
 	if(ClassTable.isTable()) \
 	{ \
 		lua_State *L = ClassTable.state(); \
-		lua_pushcfunction(L, CLua::RegisterMeta); \
-		ClassTable.push(L); \
-		lua_pushstring(L, CLASSNAME); \
-		lua_call(L, 2, 0); \
 		LuaRef Func = ClassTable[FUNCNAME]; \
 		if(Func.isFunction()) \
 		{ \
@@ -54,23 +50,8 @@ bool _LUA_EVENT_HANDLED = false; \
 				lua_pop(L, 1); /* pop the registry table */ \
 \
 				/* prepare */ \
-				char aSelfVarName[64]; \
-				str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", this); \
-				LuaRef Self = getGlobal(L, aSelfVarName); \
-				if(!Self.isTable()) \
-				{ \
-					/* create an "object" from the lua-class*/ \
-					Self = CLua::CopyTable(ClassTable); \
-					Self["__dbgId"] = LuaRef(L, std::string(aSelfVarName)); \
-					setGlobal(L, Self, aSelfVarName); \
-				} \
-				/*LuaRef env = CLua::CopyTable(getGlobal(L, "_G")); \
-				env["self"] = Self; \
-				env["this"] = this; \
-				Func.push(L); \
-				env.push(L); \
-				lua_setfenv(L, -2); \
-				Func = Stack<LuaRef>::get(L, -1);*/ \
+				LuaRef Self = CLua::GetSelfTable(L, this); \
+\
 				/* store the execution environment */ \
 				LuaRef PrevSelf = getGlobal(L, "self"); \
 				LuaRef PrevThis = getGlobal(L, "this"); \
@@ -99,19 +80,18 @@ bool _LUA_EVENT_HANDLED = false; \
  *
  * Invoke a lua callback and use RESOP to store its result.
  */
-#define MACRO_LUA_CALLBACK_RESULT_C(CLASSNAME, FUNCNAME, RESOP, ...) { MACRO_LUA_CALLBACK_RESULT_CV(CLASSNAME, FUNCNAME, RESOP, __VA_ARGS__) }
-#define MACRO_LUA_CALLBACK_RESULT_V(FUNCNAME, RESOP, ...) MACRO_LUA_CALLBACK_RESULT_CV(GetLuaClassName(), FUNCNAME, RESOP, __VA_ARGS__)
-#define MACRO_LUA_CALLBACK_RESULT(FUNCNAME, RESOP, ...) MACRO_LUA_CALLBACK_RESULT_C(GetLuaClassName(), FUNCNAME, RESOP, __VA_ARGS__)
+//#define MACRO_LUA_CALLBACK_RESULT_C(CLASSNAME, FUNCNAME, RESOP, ...) { MACRO_LUA_CALLBACK_RESULT_CV(CLASSNAME, FUNCNAME, RESOP, __VA_ARGS__) }
+#define MACRO_LUA_CALLBACK_RESULT(FUNCNAME, RESOP, ...) { MACRO_LUA_CALLBACK_RESULT_V(FUNCNAME, RESOP, __VA_ARGS__) }
 
 /**
  * MACRO_LUA_CALLBACK
  *
  * Invoke a lua function contained in a lua class, if it exists.
  */
-#define MACRO_LUA_CALLBACK_CV(CLASSNAME, FUNCNAME, ...) MACRO_LUA_CALLBACK_RESULT_CV(CLASSNAME, FUNCNAME, /* ignored */, __VA_ARGS__)
-#define MACRO_LUA_CALLBACK_C(CLASSNAME, FUNCNAME, ...) MACRO_LUA_CALLBACK_RESULT_C(CLASSNAME, FUNCNAME, /* ignored */, __VA_ARGS__)
-#define MACRO_LUA_CALLBACK_V(FUNCNAME, ...) MACRO_LUA_CALLBACK_CV(GetLuaClassName(), FUNCNAME, __VA_ARGS__)
-#define MACRO_LUA_CALLBACK(FUNCNAME, ...) MACRO_LUA_CALLBACK_C(GetLuaClassName(), FUNCNAME, __VA_ARGS__)
+//#define MACRO_LUA_CALLBACK_CV(CLASSNAME, FUNCNAME, ...) MACRO_LUA_CALLBACK_RESULT_CV(CLASSNAME, FUNCNAME, /* ignored */, __VA_ARGS__)
+//#define MACRO_LUA_CALLBACK_C(CLASSNAME, FUNCNAME, ...) MACRO_LUA_CALLBACK_RESULT_C(CLASSNAME, FUNCNAME, /* ignored */, __VA_ARGS__)
+#define MACRO_LUA_CALLBACK_V(FUNCNAME, ...) MACRO_LUA_CALLBACK_RESULT_V(FUNCNAME, /* RESOP ignored */, __VA_ARGS__)
+#define MACRO_LUA_CALLBACK(FUNCNAME, ...) MACRO_LUA_CALLBACK_RESULT(FUNCNAME, /* RESOP ignored */, __VA_ARGS__)
 
 /**
  * MACRO_LUA_EVENT
@@ -122,14 +102,14 @@ bool _LUA_EVENT_HANDLED = false; \
  *
  * Note: Events will automatically return from the current function if the event was handles, '_V' versions don't make sense.
  */
-#define MACRO_LUA_EVENT_C(CLASSNAME, ...) { MACRO_LUA_CALLBACK_CV(CLASSNAME, __func__, __VA_ARGS__) if(_LUA_EVENT_HANDLED) return; }
-#define MACRO_LUA_EVENT(...) MACRO_LUA_EVENT_C(GetLuaClassName(), __VA_ARGS__)
+//#define MACRO_LUA_EVENT_C(CLASSNAME, ...) { MACRO_LUA_CALLBACK_CV(CLASSNAME, __func__, __VA_ARGS__) if(_LUA_EVENT_HANDLED) return; }
+#define MACRO_LUA_EVENT(...) { MACRO_LUA_CALLBACK_V(__func__, __VA_ARGS__) if(_LUA_EVENT_HANDLED) return; }
 
 
 using luabridge::LuaRef;
 
 #define LUACLASS_MT_TYPE "_type"
-#define LUACLASS_MT_OBJS "_objects"
+//#define LUACLASS_MT_OBJS "_objects"
 
 
 class CLua : public ILua
@@ -176,18 +156,22 @@ public:
 	int NumLoadedClasses() const { return (int)m_lLuaObjects.size(); }
 	std::string GetObjectIdentifier(int ID) const { return m_lLuaObjects[ID].GetIdent(); }
 
+	static luabridge::LuaRef GetSelfTable(lua_State *L, const class CLuaClass *pLC);
+
 	static void HandleException(luabridge::LuaException& e);
 	static int ErrorFunc(lua_State *L);
 	static int Panic(lua_State *L);
 
+	static int LuaHook_NewIndex(lua_State *L);
+	static int LuaHook_Index(lua_State *L);
 	static int LuaHook_ToString(lua_State *L);
 
 	/**
 	 * This function is meant to be invoked after registering a lua class
 	 * Must be called as a C-function via the lua enviroment
 	 * - Expected arguments:
-	 *     - first: the class table
-	 *     - second: a string telling the class name
+	 *     - first: the object table
+	 *     - second: a string telling the class name or object identifier
 	 * - pops both arguments off the stack
 	 * - does not return anything on the lua stack
 	 */

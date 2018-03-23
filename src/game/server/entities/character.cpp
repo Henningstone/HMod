@@ -281,6 +281,11 @@ void CCharacter::FireWeapon()
 		return;
 	}
 
+	bool PreventFire = false;
+	MACRO_LUA_CALLBACK_RESULT("OnWeaponFire", PreventFire=, m_ActiveWeapon)
+	if(PreventFire)
+		return;
+
 	vec2 ProjStartPos = m_Pos+Direction*m_ProximityRadius*0.75f;
 
 	switch(m_aWeapons[m_ActiveWeapon].m_WeaponId)
@@ -740,6 +745,8 @@ void CCharacter::Die(int Killer, int Weapon)
 	GameServer()->m_World.RemoveEntity(this);
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID());
+
+	MACRO_LUA_CALLBACK("OnDeath", Killer, Weapon)
 }
 
 bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
