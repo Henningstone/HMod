@@ -358,10 +358,14 @@ void CLua::RegisterLuaCallbacks()
 			//.addFunction("Remove", &CCharacter::Remove)
 
 			.addFunction("IncreaseHealth", &CCharacter::IncreaseHealth)
+			.addFunction("IncreaseHealthEndless", &CCharacter::IncreaseHealthEndless)
 			.addFunction("IncreaseArmor", &CCharacter::IncreaseArmor)
+			.addFunction("IncreaseArmorEndless", &CCharacter::IncreaseArmorEndless)
 
 			.addFunction("GiveWeapon", &CCharacter::GiveWeapon)
 			.addFunction("GiveNinja", &CCharacter::GiveNinja)
+			.addFunction("GiveWeaponSlot", &CCharacter::GiveWeaponSlot)
+			.addFunction("AutoFireWeapon", &CCharacter::AutoFireWeapon)
 
 			.addFunction("SetEmote", &CCharacter::SetEmote)
 

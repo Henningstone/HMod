@@ -54,10 +54,14 @@ public:
 	//bool Remove();
 
 	bool IncreaseHealth(int Amount);
+	bool IncreaseHealthEndless(int Amount);
 	bool IncreaseArmor(int Amount);
+	bool IncreaseArmorEndless(int Amount);
 
 	bool GiveWeapon(int Weapon, int Ammo);
+	bool GiveWeaponSlot(int Weapon, int Ammo, int Slot);
 	void GiveNinja();
+	void AutoFireWeapon(int Slot, bool AutoFire);
 
 	void SetEmote(int Emote, int Tick);
 
@@ -81,7 +85,9 @@ private:
 		int m_AmmoRegenStart;
 		int m_Ammo;
 		int m_Ammocost;
+		int m_WeaponId;
 		bool m_Got;
+		bool m_FullAuto;
 
 	} m_aWeapons[NUM_WEAPONS];
 

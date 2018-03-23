@@ -254,9 +254,7 @@ void CCharacter::FireWeapon()
 	DoWeaponSwitch();
 	vec2 Direction = normalize(vec2(m_LatestInput.m_TargetX, m_LatestInput.m_TargetY));
 
-	bool FullAuto = false;
-	if(m_ActiveWeapon == WEAPON_GRENADE || m_ActiveWeapon == WEAPON_SHOTGUN || m_ActiveWeapon == WEAPON_RIFLE)
-		FullAuto = true;
+	bool FullAuto = m_aWeapons[m_ActiveWeapon].m_FullAuto;
 
 
 	// check if we gonna fire
@@ -285,11 +283,13 @@ void CCharacter::FireWeapon()
 
 	vec2 ProjStartPos = m_Pos+Direction*m_ProximityRadius*0.75f;
 
-	switch(m_ActiveWeapon)
+	switch(m_aWeapons[m_ActiveWeapon].m_WeaponId)
 	{
 		case WEAPON_HAMMER:
 		{
+			// TODO: Lua-Event for triggering a Hammer hit.
 			// reset objects Hit
+			MACRO_LUA_CALLBACK("PreHammerFire", ProjStartPos) // PreHammerFire(StartPos)
 			m_NumObjectsHit = 0;
 			GameServer()->CreateSound(m_Pos, SOUND_HAMMER_FIRE);
 
@@ -318,7 +318,9 @@ void CCharacter::FireWeapon()
 					Dir = vec2(0.f, -1.f);
 
 				pTarget->TakeDamage(vec2(0.f, -1.f) + normalize(Dir + vec2(0.f, -1.1f)) * 10.0f, g_pData->m_Weapons.m_Hammer.m_pBase->m_Damage,
-					m_pPlayer->GetCID(), m_ActiveWeapon);
+					m_pPlayer->GetCID(), m_aWeapons[m_ActiveWeapon].m_WeaponId);
+
+				MACRO_LUA_CALLBACK("HammerHit", pTarget, m_pPlayer, vec2(0.f, -1.f) + normalize(Dir + vec2(0.f, -1.1f)) * 10.0f,g_pData->m_Weapons.m_Hammer.m_pBase->m_Damage,m_aWeapons[m_ActiveWeapon].m_WeaponId, m_ActiveWeapon) // HammerHit(target, player, velocity, damage, weapon_ID, slot)
 				Hits++;
 			}
 
@@ -326,10 +328,13 @@ void CCharacter::FireWeapon()
 			if(Hits)
 				m_ReloadTimer = Server()->TickSpeed()/3;
 
+			MACRO_LUA_CALLBACK("PostHammerFire", ProjStartPos, Hits) // PostHammerFire(StartPos, Hits)
+
 		} break;
 
 		case WEAPON_GUN:
 		{
+			MACRO_LUA_CALLBACK("PreGunFire", m_pPlayer,ProjStartPos,Direction) // PreGunFire(Owner,StartPos, Direction)
 			CProjectile *pProj = new CProjectile(GameWorld(), WEAPON_GUN,
 				m_pPlayer->GetCID(),
 				ProjStartPos,
@@ -342,6 +347,7 @@ void CCharacter::FireWeapon()
 
 		case WEAPON_SHOTGUN:
 		{
+			MACRO_LUA_CALLBACK("PreShotgunFire", m_pPlayer,ProjStartPos,Direction) // PreShotgunFire(Owner,StartPos, Direction)
 			int ShotSpread = 2;
 
 			for(int i = -ShotSpread; i <= ShotSpread; ++i)
@@ -364,6 +370,7 @@ void CCharacter::FireWeapon()
 
 		case WEAPON_GRENADE:
 		{
+			MACRO_LUA_CALLBACK("PreGrenadeFire", m_pPlayer,ProjStartPos,Direction) // PreGrenadeFire(Owner,StartPos, Direction)
 			CProjectile *pProj = new CProjectile(GameWorld(), WEAPON_GRENADE,
 				m_pPlayer->GetCID(),
 				ProjStartPos,
@@ -376,12 +383,14 @@ void CCharacter::FireWeapon()
 
 		case WEAPON_RIFLE:
 		{
+			MACRO_LUA_CALLBACK("PreRifleFire", m_pPlayer,m_Pos,Direction) // PreRifleFire(Owner,StartPos, Direction)
 			new CLaser(GameWorld(), m_Pos, Direction, GameServer()->Tuning()->m_LaserReach, m_pPlayer->GetCID());
 			GameServer()->CreateSound(m_Pos, SOUND_RIFLE_FIRE);
 		} break;
 
 		case WEAPON_NINJA:
 		{
+			MACRO_LUA_CALLBACK("PreNinjaFire", m_pPlayer,Direction) // PreRifleFire(Owner,StartPos, Direction)
 			// reset Hit objects
 			m_NumObjectsHit = 0;
 
@@ -396,11 +405,11 @@ void CCharacter::FireWeapon()
 
 	m_AttackTick = Server()->Tick();
 
-	if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0) // -1 == unlimited
-		m_aWeapons[m_ActiveWeapon].m_Ammo--;
+	if(m_aWeapons[m_aWeapons[m_ActiveWeapon].m_WeaponId].m_Ammo > 0) // -1 == unlimited
+		m_aWeapons[m_aWeapons[m_ActiveWeapon].m_WeaponId].m_Ammo--;
 
 	if(!m_ReloadTimer)
-		m_ReloadTimer = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Firedelay * Server()->TickSpeed() / 1000;
+		m_ReloadTimer = g_pData->m_Weapons.m_aId[m_aWeapons[m_ActiveWeapon].m_WeaponId].m_Firedelay * Server()->TickSpeed() / 1000;
 }
 
 void CCharacter::HandleWeapons()
@@ -450,9 +459,31 @@ bool CCharacter::GiveWeapon(int Weapon, int Ammo)
 	{
 		m_aWeapons[Weapon].m_Got = true;
 		m_aWeapons[Weapon].m_Ammo = min(g_pData->m_Weapons.m_aId[Weapon].m_Maxammo, Ammo);
+		m_aWeapons[Weapon].m_WeaponId = Weapon;
+		if(Weapon == WEAPON_GRENADE || Weapon == WEAPON_SHOTGUN || Weapon == WEAPON_RIFLE)
+			m_aWeapons[Weapon].m_FullAuto = true;
 		return true;
 	}
 	return false;
+}
+bool CCharacter::GiveWeaponSlot(int Weapon, int Ammo, int Slot)
+{
+	if(m_aWeapons[Weapon].m_Ammo < g_pData->m_Weapons.m_aId[Weapon].m_Maxammo || !m_aWeapons[Weapon].m_Got)
+	{
+		m_aWeapons[Weapon].m_Got = true;
+		m_aWeapons[Weapon].m_Ammo = min(g_pData->m_Weapons.m_aId[Weapon].m_Maxammo, Ammo);
+		m_aWeapons[Slot].m_WeaponId = Weapon;
+		if(Weapon == WEAPON_GRENADE || Weapon == WEAPON_SHOTGUN || Weapon == WEAPON_RIFLE)
+			m_aWeapons[Slot].m_FullAuto = true;
+		return true;
+	}
+	return false;
+}
+
+void CCharacter::AutoFireWeapon(int Slot, bool AutoFire)
+{
+	// Should we check if we got this? I dont think so :)
+	m_aWeapons[Slot].m_FullAuto = AutoFire;
 }
 
 void CCharacter::GiveNinja()
@@ -660,12 +691,22 @@ bool CCharacter::IncreaseHealth(int Amount)
 	m_Health = clamp(m_Health+Amount, 0, 10);
 	return true;
 }
+bool CCharacter::IncreaseHealthEndless(int Amount)
+{
+	m_Health += Amount;
+	return true;
+}
 
 bool CCharacter::IncreaseArmor(int Amount)
 {
 	if(m_Armor >= 10)
 		return false;
 	m_Armor = clamp(m_Armor+Amount, 0, 10);
+	return true;
+}
+bool CCharacter::IncreaseArmorEndless(int Amount)
+{
+	m_Armor += Amount;
 	return true;
 }
 
@@ -833,7 +874,7 @@ void CCharacter::Snap(int SnappingClient)
 	pCharacter->m_Health = 0;
 	pCharacter->m_Armor = 0;
 
-	pCharacter->m_Weapon = m_ActiveWeapon;
+	pCharacter->m_Weapon = m_aWeapons[m_ActiveWeapon].m_WeaponId;
 	pCharacter->m_AttackTick = m_AttackTick;
 
 	pCharacter->m_Direction = m_Input.m_Direction;
