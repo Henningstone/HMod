@@ -190,6 +190,8 @@ if gen_lua_constants:
 
 	for l in create_lua_constants(["WEAPON_%s"%i.name.value.upper() for i in content.container.weapons.id.items], "NUM_WEAPONS", 17): print(l)
 	print("")
+	for l in create_lua_constants(["SOUND_%s"%i.name.value.upper() for i in content.container.sounds.items], "NUM_SOUNDS", 25): print(l)
+	print("")
 	for l in create_lua_constants(["NETOBJ_INVALID"]+[o.enum_name for o in network.Objects], "NUM_NETOBJTYPES", 26): print(l)
 	print("")
 	for l in create_lua_constants(["NETMSG_INVALID"]+[o.enum_name for o in network.Messages], "NUM_NETMSGTYPES", 32): print(l)
