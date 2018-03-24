@@ -46,7 +46,7 @@ int CNetServer::SetCallbacks(NETFUNC_NEWCLIENT pfnNewClient, NETFUNC_DELCLIENT p
 
 int CNetServer::Close()
 {
-	// TODO: implement me
+	net_udp_close(m_Socket);
 	return 0;
 }
 

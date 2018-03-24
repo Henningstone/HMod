@@ -736,6 +736,7 @@ int net_tcp_close(NETSOCKET sock);
 		- Garantees that dst string will contain zero-termination.
 */
 void str_append(char *dst, const char *src, int dst_size);
+#define str_appendb(BUF, SRC) str_append(BUF, SRC, sizeof(BUF))
 
 /*
 	Function: str_copy
@@ -1309,6 +1310,15 @@ int str_utf8_encode(char *ptr, int chr);
 		- The string is treated as zero-terminated utf8 string.
 */
 int str_utf8_check(const char *str);
+
+int pid();
+
+/*
+	Function: shell_execute
+		Executes a given file.
+*/
+void shell_execute(const char *file);
+
 
 #ifdef __cplusplus
 }

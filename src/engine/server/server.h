@@ -140,7 +140,16 @@ public:
 
 	int64 m_GameStartTime;
 	//int m_CurrentGameTick;
+
+	enum
+	{
+		SERVER_SHUTDOWN = 0,
+		SERVER_RUNNING = 1,
+		SERVER_REBOOT = -1
+	};
+
 	int m_RunServer;
+	char m_aShutdownReason[128];
 	int m_MapReload;
 	int m_LuaReinit; // 0 = off, <0 = all, >0 = ID
 	bool m_GametypeReloaded;
@@ -223,6 +232,7 @@ public:
 	static void ConKick(IConsole::IResult *pResult, void *pUser);
 	static void ConStatus(IConsole::IResult *pResult, void *pUser);
 	static void ConShutdown(IConsole::IResult *pResult, void *pUser);
+	static void ConReboot(IConsole::IResult *pResult, void *pUser);
 	static void ConRecord(IConsole::IResult *pResult, void *pUser);
 	static void ConStopRecord(IConsole::IResult *pResult, void *pUser);
 	static void ConMapReload(IConsole::IResult *pResult, void *pUser);

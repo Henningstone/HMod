@@ -2153,11 +2153,34 @@ int str_utf8_check(const char *str)
 unsigned str_quickhash(const char *str)
 {
 	unsigned hash = 5381;
-	for(; *str; str++)
+	for(; str && *str; str++)
 		hash = ((hash << 5) + hash) + (*str); /* hash * 33 + c */
 	return hash;
 }
 
+int pid()
+{
+#if defined(CONF_FAMILY_WINDOWS)
+	return _getpid();
+#else
+	return getpid();
+#endif
+}
+
+void shell_execute(const char *file)
+{
+#if defined(CONF_FAMILY_WINDOWS)
+	ShellExecute(NULL, NULL, file, NULL, NULL, SW_SHOWDEFAULT);
+#elif defined(CONF_FAMILY_UNIX)
+	char *argv[2];
+	pid_t pid;
+	argv[0] = (char*) file;
+	argv[1] = NULL;
+	pid = fork();
+	if(!pid)
+		execv(file, argv);
+#endif
+}
 
 #if defined(__cplusplus)
 }

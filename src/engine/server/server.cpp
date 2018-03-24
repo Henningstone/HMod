@@ -277,7 +277,8 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	m_pGameServer = 0;
 
 	m_CurrentGameTick = 0;
-	m_RunServer = 1;
+	m_RunServer = SERVER_RUNNING;
+	str_copyb(m_aShutdownReason, "Server shutdown");
 
 	m_pCurrentMapData = 0;
 	m_CurrentMapSize = 0;
@@ -1313,7 +1314,7 @@ int CServer::Run()
 		str_format(aBuf, sizeof(aBuf), "baseline memory usage %dk", mem_stats()->allocated/1024);
 		Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "server", aBuf);
 
-		while(m_RunServer)
+		while(m_RunServer == SERVER_RUNNING)
 		{
 			int64 t = time_get();
 			int NewTicks = 0;
@@ -1438,21 +1439,37 @@ int CServer::Run()
 			net_socket_read_wait(m_NetServer.Socket(), 5);
 		}
 	}
-	// disconnect all clients on shutdown
-	for(int i = 0; i < MAX_CLIENTS; ++i)
-	{
-		if(m_aClients[i].m_State != CClient::STATE_EMPTY)
-			m_NetServer.Drop(i, "Server shutdown");
 
-		m_Econ.Shutdown();
+	if(m_RunServer == SERVER_SHUTDOWN)
+	{
+		// disconnect all clients on shutdown
+		for(int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if(m_aClients[i].m_State != CClient::STATE_EMPTY)
+				m_NetServer.Drop(i, m_aShutdownReason);
+		}
 	}
+	else if(m_RunServer == SERVER_REBOOT)
+	{
+		// reconnect all clients on shutdown
+		for(int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if(m_aClients[i].m_State != CClient::STATE_EMPTY)
+				SendMap(i);
+		}
+	}
+
+	m_NetServer.Close();
+
+	m_Econ.Shutdown();
 
 	GameServer()->OnShutdown();
 	m_pMap->Unload();
 
 	if(m_pCurrentMapData)
 		mem_free(m_pCurrentMapData);
-	return 0;
+
+	return m_RunServer == SERVER_REBOOT ? 1 : 0;
 }
 
 void CServer::ConKick(IConsole::IResult *pResult, void *pUser)
@@ -1494,7 +1511,19 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 
 void CServer::ConShutdown(IConsole::IResult *pResult, void *pUser)
 {
-	((CServer *)pUser)->m_RunServer = 0;
+	CServer *pSelf = ((CServer *)pUser);
+
+	pSelf->m_RunServer = SERVER_SHUTDOWN;
+	if(pResult->NumArguments() > 0)
+	{
+		str_appendb(pSelf->m_aShutdownReason, ": ");
+		str_appendb(pSelf->m_aShutdownReason, pResult->GetString(0));
+	}
+}
+
+void CServer::ConReboot(IConsole::IResult *pResult, void *pUser)
+{
+	((CServer *)pUser)->m_RunServer = SERVER_REBOOT;
 }
 
 void CServer::DemoRecorder_HandleAutoStart()
@@ -1822,7 +1851,8 @@ void CServer::RegisterCommands()
 	// register console commands
 	Console()->Register("kick", "i?r", CFGFLAG_SERVER, ConKick, this, "Kick player with specified id for any reason");
 	Console()->Register("status", "", CFGFLAG_SERVER, ConStatus, this, "List players");
-	Console()->Register("shutdown", "", CFGFLAG_SERVER, ConShutdown, this, "Shut down");
+	Console()->Register("shutdown", "?r", CFGFLAG_SERVER, ConShutdown, this, "Shut down");
+	Console()->Register("reboot", "", CFGFLAG_SERVER, ConReboot, this, "Restart the server");
 	Console()->Register("logout", "", CFGFLAG_SERVER, ConLogout, this, "Logout of rcon");
 
 	Console()->Register("record", "?s", CFGFLAG_SERVER|CFGFLAG_STORE, ConRecord, this, "Record to a file");
@@ -1949,8 +1979,9 @@ int main(int argc, const char **argv) // ignore_convention
 
 	// run the server
 	dbg_msg("server", "starting...");
+	bool Restart = false;
 	if(pLua->LoadGametype())
-		pServer->Run();
+		Restart = (bool)pServer->Run();
 
 	// free
 	delete pServer;
@@ -1961,6 +1992,10 @@ int main(int argc, const char **argv) // ignore_convention
 	delete pEngineMasterServer;
 	delete pStorage;
 	delete pConfig;
+
+	if(Restart)
+		shell_execute(argv[0]);
+
 	return 0;
 }
 
