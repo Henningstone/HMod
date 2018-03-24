@@ -116,6 +116,12 @@ class CLua : public ILua
 {
 	friend class CLuaBinding;
 
+public:
+	enum
+	{
+		OBJ_ID_EVERYTHING = -1
+	};
+
 private:
 	class IStorage *m_pStorage;
 	class IConsole *m_pConsole;
@@ -155,6 +161,7 @@ public:
 	void ReloadSingleObject(int ObjectID);
 	int NumLoadedClasses() const { return (int)m_lLuaObjects.size(); }
 	std::string GetObjectIdentifier(int ID) const { return m_lLuaObjects[ID].GetIdent(); }
+	const char *GetObjectName(int ID) const { return m_lLuaObjects[ID].name.c_str(); }
 
 	static luabridge::LuaRef GetSelfTable(lua_State *L, const class CLuaClass *pLC);
 

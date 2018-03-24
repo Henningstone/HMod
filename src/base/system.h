@@ -928,6 +928,11 @@ int str_comp(const char *a, const char *b);
 */
 int str_comp_num(const char *a, const char *b, const int num);
 
+/* returnes how many character were equal */
+int str_comp_match_len(const char *a, const char *b);
+
+int str_comp_match_len_nocase(const char *a, const char *b);
+
 /*
 	Function: str_comp_filenames
 		Compares two strings case sensitive, digit chars will be compared as numbers.

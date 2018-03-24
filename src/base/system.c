@@ -1772,6 +1772,26 @@ int str_comp_num(const char *a, const char *b, const int num)
 	return strncmp(a, b, num);
 }
 
+int str_comp_match_len(const char *a, const char *b)
+{
+	int match_len = 0;
+	for(; a && b && *a && *b && *a == *b; a++, b++)
+		match_len++;
+	return match_len;
+}
+
+int str_comp_match_len_nocase(const char *a, const char *b)
+{
+	int match_len = 0;
+	for(; a && b && *a && *b; a++, b++)
+	{
+		if(str_comp_nocase_num(a, b, 1) != 0)
+			break;
+		match_len++;
+	}
+	return match_len;
+}
+
 int str_comp_filenames(const char *a, const char *b)
 {
 	int result;

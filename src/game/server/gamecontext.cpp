@@ -1504,11 +1504,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		m_pController = new CGameControllerDM(this);*/
 
 	// this is a friggin lua server, this shit is always modded bro!
-	if(str_comp_nocase(g_Config.m_SvGametype, "dm") == 0 ||
-			str_comp_nocase(g_Config.m_SvGametype, "tdm") == 0 ||
-			str_comp_nocase(g_Config.m_SvGametype, "ctf") == 0)
-		str_append(g_Config.m_SvGametype, "-mod", sizeof(g_Config.m_SvGametype));
-
 	m_pController = new CGameControllerMOD(this);
 
 

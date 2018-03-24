@@ -9,7 +9,14 @@ CGameControllerMOD::CGameControllerMOD(class CGameContext *pGameServer)
 	// Exchange this to a string that identifies your game mode.
 	// DM, TDM and CTF are reserved for teeworlds original modes.
 	//m_pGameType = "MOD";
-	m_pGameType = g_Config.m_SvGametype;
+
+	str_copyb(m_aPublicGametype, g_Config.m_SvGametype);
+	if(str_comp_nocase(m_aPublicGametype, "dm") == 0 ||
+	   str_comp_nocase(m_aPublicGametype, "tdm") == 0 ||
+	   str_comp_nocase(m_aPublicGametype, "ctf") == 0)
+		str_append(m_aPublicGametype, "-mod", sizeof(m_aPublicGametype));
+
+	m_pGameType = m_aPublicGametype;
 
 	//m_GameFlags = GAMEFLAG_TEAMS; // GAMEFLAG_TEAMS makes it a two-team gamemode
 }

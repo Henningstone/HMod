@@ -1320,6 +1320,7 @@ int CServer::Run()
 				{
 					// new map loaded
 					GameServer()->OnShutdown();
+					m_GametypeReloaded = true;
 
 					for(int c = 0; c < MAX_CLIENTS; c++)
 					{
@@ -1597,14 +1598,104 @@ void CServer::ConLuaReinit(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pSelf = ((CServer *)pUser);
 
-	int What = -1; // everything
+	int What = CLua::OBJ_ID_EVERYTHING; // everything
 	if(pResult->NumArguments())
 		What = pResult->GetInteger(0);
 
 	if(What <= CLua::Lua()->NumLoadedClasses())
-		((CServer *)pUser)->m_LuaReinit = What;
+		pSelf->m_LuaReinit = What;
 	else
 		pSelf->Console()->Printf(0, "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedClasses());
+}
+
+void CServer::ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser)
+{
+	CServer *pSelf = ((CServer *)pUser);
+
+	if(pResult->NumArguments() == 0)
+	{
+		pSelf->m_LuaReinit = CLua::OBJ_ID_EVERYTHING;
+		return;
+	}
+
+	const char *pGivenHint = pResult->GetString(0);
+
+	std::vector<int> Candidates;
+	int LongestPrefixMatch = 1;
+
+	// do everything nocase aswell, just in case we don't find anything using casecmp
+	int LongestPrefixMatchNoCase = 1;
+	std::vector<int> CandidatesNoCase;
+
+	int Num = CLua::Lua()->NumLoadedClasses();
+	for(int i = 1; i <= Num; i++)
+	{
+		const char *pObjName = CLua::Lua()->GetObjectName(i-1);
+		if(str_comp(pObjName, pGivenHint) == 0)
+		{
+			// exact match, execute immediately
+			pSelf->m_LuaReinit = i;
+			pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "lr", "exact match '%s' found!", pObjName);
+			return;
+		}
+		else if(int ThisPrefixMatch = str_comp_match_len(pObjName, pGivenHint) >= LongestPrefixMatch)
+		{
+			if(ThisPrefixMatch > LongestPrefixMatch)
+			{
+				// found a new longest prefix match; discard all the shorter candidates
+				Candidates.clear();
+				LongestPrefixMatch = ThisPrefixMatch;
+			}
+
+			Candidates.push_back(i);
+		}
+		else if(int ThisPrefixMatchNoCase = str_comp_match_len_nocase(pObjName, pGivenHint) >= LongestPrefixMatchNoCase)
+		{
+			if(ThisPrefixMatchNoCase > LongestPrefixMatchNoCase)
+			{
+				// found a new longest prefix match; discard all the shorter candidates
+				CandidatesNoCase.clear();
+				LongestPrefixMatchNoCase = ThisPrefixMatchNoCase;
+			}
+
+			CandidatesNoCase.push_back(i);
+		}
+	}
+
+	// evaluate what we've got
+	std::vector<int> *pUsedCandidates = &Candidates;
+	if(pUsedCandidates->empty())
+		pUsedCandidates = &CandidatesNoCase;
+
+	if(pUsedCandidates->empty())
+	{
+		// got nothing at all
+		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lr", "no matches found for hint '%s'", pGivenHint);
+		return;
+	}
+	else if(pUsedCandidates->size() == 1)
+	{
+		// got exactly one match, perfect!
+		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "lr", "match found '%s' for given hint '%s'", CLua::Lua()->GetObjectName((*pUsedCandidates)[0]-1), pGivenHint);
+		pSelf->m_LuaReinit = (*pUsedCandidates)[0];
+		return;
+	}
+	else
+	{
+		// got multiple matches; ask for further specification
+		char aMatches[1024];
+		aMatches[0] = '\0';
+		std::vector<int>& UsedCandidates = *pUsedCandidates;
+		for(std::vector<int>::iterator it = UsedCandidates.begin(); it != UsedCandidates.end(); ++it)
+		{
+			const char *pObjName = CLua::Lua()->GetObjectName(*it-1);
+			str_append(aMatches, pObjName, sizeof(aMatches));
+			str_append(aMatches, ", ", sizeof(aMatches));
+		}
+		aMatches[str_length(aMatches)-1 - 1] = '\0';
+		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lr", "found multiple candidates for hint '%s': %s", pGivenHint, aMatches);
+		return;
+	}
 
 }
 
@@ -1732,8 +1823,10 @@ void CServer::RegisterCommands()
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
 
 	Console()->Register("lua", "r", CFGFLAG_SERVER, ConLuaDoString, this, "Execute the given line of lua code");
-	Console()->Register("lua_reload", "?i", CFGFLAG_SERVER, ConLuaReinit, this, "Reload the specified lua class (or all if none given) - see lua_listclasses");
+	Console()->Register("lua_reload", "?i", CFGFLAG_SERVER, ConLuaReinit, this, "Reload the specified lua class by ID (or all if none given) - see lua_listclasses");
+	Console()->Register("lr", "?r", CFGFLAG_SERVER, ConLuaReinitQuick, this, "Reload the specified lua class (via partial string matching algorithm)");
 	Console()->Register("lua_listclasses", "", CFGFLAG_SERVER, ConLuaListClasses, this, "View all loaded lua classes with their IDs");
+	Console()->Register("lsc", "", CFGFLAG_SERVER, ConLuaListClasses, this, "View all loaded lua classes with their IDs (short version of lua_listclasses) ");
 
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);

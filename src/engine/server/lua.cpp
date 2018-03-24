@@ -51,6 +51,7 @@ void CLua::OpenLua()
 bool CLua::Reload()
 {
 	lua_close(m_pLuaState);
+	m_lLuaObjects.clear();
 	OpenLua();
 
 	return LoadGametype();

@@ -8,6 +8,8 @@
 // todo a modification with their base as well.
 class CGameControllerMOD : public IGameController
 {
+	char m_aPublicGametype[16];
+
 public:
 	CGameControllerMOD(class CGameContext *pGameServer);
 	virtual void Tick();

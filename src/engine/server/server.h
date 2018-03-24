@@ -229,6 +229,7 @@ public:
 	static int LuaConLuaDoStringPrintOverride(class lua_State *L);
 	static void ConLuaDoString(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaReinit(IConsole::IResult *pResult, void *pUser);
+	static void ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaListClasses(IConsole::IResult *pResult, void *pUser);
 	static void ConLogout(IConsole::IResult *pResult, void *pUser);
 	static void ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
