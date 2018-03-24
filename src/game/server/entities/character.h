@@ -19,6 +19,7 @@ enum
 class CCharacter : public CEntity
 {
 	MACRO_ALLOC_POOL_ID()
+	friend class CLua;
 
 public:
 	//character's size
@@ -61,7 +62,8 @@ public:
 	bool GiveWeapon(int Weapon, int Ammo);
 	bool GiveWeaponSlot(int Weapon, int Ammo, int Slot);
 	void GiveNinja();
-	void AutoFireWeapon(int Slot, bool AutoFire);
+	void SetWeaponAutoFire(int Slot, bool AutoFire);
+
 
 	void SetEmote(int Emote, int Tick);
 
@@ -69,6 +71,23 @@ public:
 
 	CCharacterCore *GetCore() const { return const_cast<CCharacterCore*>((const CCharacterCore *)&m_Core); }
 	class CPlayer *GetPlayer() { return m_pPlayer; }
+
+	struct WeaponStat
+	{
+		int m_AmmoRegenStart;
+		int m_Ammo;
+		int m_Ammocost;
+		int m_WeaponId;
+		bool m_Got;
+		bool m_FullAuto;
+	};
+
+	WeaponStat *WeaponSlot(int ID)
+	{
+		if(ID < 0 || ID >= NUM_WEAPONS)
+			return NULL;
+		return &m_aWeapons[ID];
+	}
 
 private:
 	// player controlling this character
@@ -80,18 +99,9 @@ private:
 	CEntity *m_apHitObjects[10];
 	int m_NumObjectsHit;
 
-	struct WeaponStat
-	{
-		int m_AmmoRegenStart;
-		int m_Ammo;
-		int m_Ammocost;
-		int m_WeaponId;
-		bool m_Got;
-		bool m_FullAuto;
+	WeaponStat m_aWeapons[NUM_WEAPONS];
 
-	} m_aWeapons[NUM_WEAPONS];
-
-	int m_ActiveWeapon;
+	int m_ActiveWeaponSlot;
 	int m_LastWeapon;
 	int m_QueuedWeapon;
 

@@ -336,7 +336,17 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GameLayerClipped", &CEntity::GameLayerClipped)
 		.endClass()
 
-		/// [CPlayer].GetCharacter()
+		/// [CCharacter]:WeaponSlot(ID)
+		.beginClass<CCharacter::WeaponStat>("CCharacter_WeaponStat")
+			.addData("AmmoRegenStart", &CCharacter::WeaponStat::m_AmmoRegenStart)
+			.addData("Ammo", &CCharacter::WeaponStat::m_Ammo)
+			.addData("Ammocost", &CCharacter::WeaponStat::m_Ammocost)
+			.addData("WeaponId", &CCharacter::WeaponStat::m_WeaponId)
+			.addData("Got", &CCharacter::WeaponStat::m_Got)
+			.addData("FullAuto", &CCharacter::WeaponStat::m_FullAuto)
+		.endClass()
+
+		/// [CPlayer]:GetCharacter()
 		/// Srv.Game:GetPlayerChar(CID)
 		.deriveClass<CCharacter, CEntity>("CCharacter")
 			.addFunction("IsGrounded", &CCharacter::IsGrounded)
@@ -365,7 +375,8 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GiveWeapon", &CCharacter::GiveWeapon)
 			.addFunction("GiveNinja", &CCharacter::GiveNinja)
 			.addFunction("GiveWeaponSlot", &CCharacter::GiveWeaponSlot)
-			.addFunction("AutoFireWeapon", &CCharacter::AutoFireWeapon)
+			.addFunction("SetWeaponAutoFire", &CCharacter::SetWeaponAutoFire)
+			.addFunction("WeaponSlot", &CCharacter::WeaponSlot)
 
 			.addFunction("SetEmote", &CCharacter::SetEmote)
 
@@ -374,6 +385,10 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GetPlayer", &CCharacter::GetPlayer) // -> [CPlayer]
 			.addFunction("GetCore", &CCharacter::GetCore) // -> [CCharacterCore]
 			.addProperty("Core", &CCharacter::GetCore)
+
+			.addData("Health", &CCharacter::m_Health)
+			.addData("Armor", &CCharacter::m_Armor)
+			.addData("Jumped", &CCharacter::m_Jumped)
 		.endClass()
 
 		.deriveClass<CPickup, CEntity>("CPickup")
