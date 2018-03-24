@@ -31,6 +31,7 @@ Entity:
     - inherit all but:
       - TickDefend
       - OnPickedUp(CCharacter Pickuper)  # called, when the pickup has intersected with a player
+      - OnRespawn()  # called when the pickup respawns after having been picked up
 
   - Projectile:
     - inherit all but:

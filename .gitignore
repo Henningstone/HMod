@@ -6,9 +6,10 @@ datasrc/*.pyc
 /objs
 src/game/generated
 gamemodes/generated
-/SDL.dll
-/freetype.dll
 autoexec.cfg
+
+/*.dll
+/*.exe
 
 /crapnet*
 /dilate*
@@ -17,7 +18,8 @@ autoexec.cfg
 /map_version*
 /mastersrv*
 /packetgen*
-/teeworlds*
-/teeworlds_srv*
 /tileset_border*
 /versionsrv*
+
+/tmf_modsrv
+/tmf_modsrv_d

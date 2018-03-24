@@ -22,7 +22,7 @@ luajit = {
 			end
 		end
 
-		local apply = function(option, settings)
+		local apply = function(option, settings, no_pie)
             settings.cc.includes:Add(luajit.basepath .. "/include")
             
             if option.use_winlib > 0 then
@@ -34,7 +34,11 @@ luajit = {
 		        else
 		        	settings.link.libpath:Add(luajit.basepath .. "/unix/lib32")
 		        end
-				settings.link.libs:Add("luajit")
+		        if no_pie then
+					settings.link.libs:Add("luajit.no-pie")
+				else
+					settings.link.libs:Add("luajit")
+				end
 				settings.link.libs:Add("dl")
 			end
 		end

@@ -15,6 +15,7 @@ config:Add(OptLibrary("zlib", "zlib.h", false))
 config:Add(SDL.OptFind("sdl", true))
 config:Add(FreeType.OptFind("freetype", true))
 config:Add(luajit.OptFind("luajit", true))
+config:Add(OptString("no_pie", true))
 config:Finalize("config.lua")
 
 -- data compiler
@@ -153,7 +154,9 @@ function build(settings)
 		settings.cc.flags:Add("/wd4244", "/wd4577")
 	else
 		settings.cc.flags:Add("-Wall", "-Wno-comment")
-		settings.link.flags:Add("-no-pie")
+		if config.no_pie.value == true then
+			settings.link.flags:Add("-no-pie")
+		end
 		if family == "windows" then
 			-- disable visibility attribute support for gcc on windows
 			settings.cc.defines:Add("NO_VIZ")
@@ -210,7 +213,7 @@ function build(settings)
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
 
 	-- apply luajit settings
-	config.luajit:Apply(settings)
+	config.luajit:Apply(settings, config.no_pie.value)
 
 
 	-- build game components
@@ -275,7 +278,7 @@ function build(settings)
 --		engine, client, game_editor, zlib, pnglite, wavpack,
 --		client_link_other, client_osxlaunch)
 
-	server_exe = Link(server_settings, "teeworlds_srv", engine, server,
+	server_exe = Link(server_settings, "tmf_modsrv", engine, server,
 		game_shared, game_server, zlib, server_link_other, server_depends)
 
 	serverlaunch = {}
