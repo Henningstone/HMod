@@ -35,6 +35,8 @@ void CPickup::Tick()
 	{
 		if(Server()->Tick() > m_SpawnTick)
 		{
+			MACRO_LUA_CALLBACK("OnRespawn")
+
 			// respawn
 			m_SpawnTick = -1;
 
