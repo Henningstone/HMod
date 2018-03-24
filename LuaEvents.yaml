@@ -1,0 +1,47 @@
+# This file lists all lua events that exist.
+
+
+Entity:
+  - OnCreate()  # always applies to all entities
+
+  - Destroy()
+  - Reset()
+  - Tick()
+  - TickDefend()
+  - TickPaused()
+  - Snap(int SnappingClient)
+
+  - Character:
+    - inherit all
+    - OnDeath(int KillerCID, int WeaponID)  # called when this character dies
+    - OnWeaponFire(int ActiveWeaponSlot, vec2 ProjStartPos, vec2 Direction)
+    - PreHammerHit(CCharacter target, vec2 Force, int Damage, int m_ActiveWeaponSlot)
+
+  - Flag:
+    - inherit only:
+      - Reset
+      - TickPaused
+      - Snap
+
+  - Laser:
+    - inherit all but:
+      - TickDefend
+
+  - Pickup:
+    - inherit all but:
+      - TickDefend
+      - OnPickedUp(CCharacter Pickuper)  # called, when the pickup has intersected with a player
+
+  - Projectile:
+    - inherit all but:
+      - TickDefend
+
+  - CustomEntity:
+    - inherit all
+
+Player:
+  - Player()  # ctor
+  - Tick()
+  - PostTick()
+  - Snap()
+  - OnDisconnect(string Reason)

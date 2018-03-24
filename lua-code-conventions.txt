@@ -1,0 +1,36 @@
+
+
+[LUA-CLASS DEFINITION]
+- It is advised to define all members of a lua class at the very top of its file for best readability
+
+- Generally you don't want to change anything to your luaclass definition after the server has started up; if you do that, objects created from it afterwards will have the new properties, thus be different from objects created from it before. This is highly confusing and might lead to bugs in your code.
+
+- Regardless of the above, you may want to store some information in the class itself so that it's shared between all objects of this class and doesn't pollute the global scope. This is what we call 'static attributes', and they will not appear in objects of the class. To create a static attribute, prefix its name with a single underscore. This will tell the lua object manager to NOT copy this variable into objects of the class when creating them. Example: `MyClass._myStaticAttribute = 42` – doing `self._myStaticAttribute = 12` will cause an error.
+
+- Variables that are part of your class definition (in this document refered to as 'attributes' or 'class variables') should start with an upper case letter if they are written to from outside the class, and respectively with a lower case letter if they are only used within the class they belong to.
+
+
+[EVENT CALLBACKS / ENTRY-POINT METHODS]
+- Methods that represent entry-points from the native code (aka 'event callbacks') must start with an upper case letter (in this document refered to as 'event callbacks' or 'entry-point methods/functions')
+
+- DO NOT call entry-point methods from another lua class, this WILL lead to errors (because wrong 'self' and 'this'). In general: don't call them at all by yourself to be safe.
+
+- The c++ methods that call your event callback are bound into the api and protected against infinite recursion, so you can pass the event back to the original event handler from your event callback. They should not be called from anywhere else in your code and should only be called once per event callback, or unexpected things may happen.
+
+
+[PUBLIC METHODS]
+- Your custom methods that are meant to be called from other lua classes must start with a lower case letter and incorporate 'self' as their first argument (in this document refered to as 'public methods')
+
+- Note that function arguments take precedence over global variables in lua! That means, even if called from an in-class event callback, you have to pass the 'self' argument to it (otherwise it'd be nil) – use the colon-notation to do so in a simple manner.
+
+
+[SCRIPT-LOCAL FUNCTIONS]
+- Functions that are meant to be used solely in the file they're defined in _must_ be marked as 'local', i.e. write `local function someFunc()` (in this document refered to as 'script-local functions')
+
+- Script-local functions that are meant to be called from public methods must start with a lower case letter and incorporate 'self' as their first argument
+
+- Script-local function that are only called from event callbacks (so never from public methods) must start with an upper case letter and NOT incorporate 'self' in their arguments list as they only operate in event-environment, where 'self' and 'this' are predefined
+
+
+[]
+-
