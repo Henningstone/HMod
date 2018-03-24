@@ -36,6 +36,7 @@ public:
 	virtual void GetClientAddr(int ClientID, char *pAddrStr, int Size) = 0;
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID) = 0;
+	virtual void SendRconLine(int ClientID, const char *pLine) = 0;
 
 	template<class T>
 	int SendPackMsg(T *pMsg, int Flags, int ClientID)

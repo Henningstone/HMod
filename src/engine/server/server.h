@@ -226,6 +226,8 @@ public:
 	static void ConRecord(IConsole::IResult *pResult, void *pUser);
 	static void ConStopRecord(IConsole::IResult *pResult, void *pUser);
 	static void ConMapReload(IConsole::IResult *pResult, void *pUser);
+	static int LuaConLuaDoStringPrintOverride(class lua_State *L);
+	static void ConLuaDoString(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaReinit(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaListClasses(IConsole::IResult *pResult, void *pUser);
 	static void ConLogout(IConsole::IResult *pResult, void *pUser);

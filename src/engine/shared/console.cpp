@@ -209,6 +209,11 @@ void CConsole::Print(int Level, const char *pFrom, const char *pStr)
 	}
 }
 
+void CConsole::PrintLua(const char *pFrom, const char *pStr)
+{
+	Print(IConsole::OUTPUT_LEVEL_STANDARD, pFrom, pStr);
+}
+
 void CConsole::Printf(int Level, const char *pFrom, const char *format, ...)
 {
 	char buffer[1024];

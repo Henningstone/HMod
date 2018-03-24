@@ -30,6 +30,7 @@
 
 #include "register.h"
 #include "server.h"
+#include "luabinding.h"
 
 #if defined(CONF_FAMILY_WINDOWS)
 	#define _WIN32_WINNT 0x0501
@@ -1537,6 +1538,61 @@ void CServer::ConMapReload(IConsole::IResult *pResult, void *pUser)
 	((CServer *)pUser)->m_MapReload = 1;
 }
 
+int CServer::LuaConLuaDoStringPrintOverride(lua_State *L)
+{
+	CServer *pSelf = (CServer *)lua_touserdata(L, lua_upvalueindex(1));
+
+	int nargs = lua_gettop(L);
+	if(!nargs)
+		return luaL_error(L, "print expects at least 1 argument");
+
+	for(int i = 1; i <= nargs; i++)
+	{
+		LuaRef Val = luabridge::LuaRef::fromStack(L, i);
+		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "(print %i/%i):  %s", i, nargs, Val.tostring().c_str());
+	}
+
+	return 0;
+}
+
+void CServer::ConLuaDoString(IConsole::IResult *pResult, void *pUser)
+{
+	CServer *pSelf = ((CServer *)pUser);
+	lua_State *L = CLua::Lua()->L();
+
+	// store the original print function
+/*	lua_getregistry(L);
+	lua_pushstring(L, "luaserver:print-backup");
+	lua_getglobal(L, "print");
+	lua_rawset(L, -3);*/
+	/* registry is still on the stack top */
+
+	// override the print function with our own (passing the pointer to our CServer as an upvalue)
+	lua_pushlightuserdata(L, pSelf);
+	lua_pushcclosure(L, CServer::LuaConLuaDoStringPrintOverride, 1);
+	lua_setglobal(L, "print");
+
+	// execute!
+	pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "> %s", pResult->GetString(0));
+	int oldtop = lua_gettop(L);
+	int Success = luaL_dostring(L, pResult->GetString(0)) == 0;
+	int newtop = lua_gettop(L);
+	if(Success)
+	{
+		for(int i = oldtop+1; i <= newtop; i++)
+		{
+			LuaRef Val = luabridge::LuaRef::fromStack(L, i);
+			pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "<- %2i:  %s", i - oldtop, Val.tostring().c_str());
+		}
+	}
+	else
+		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "ERROR: %s", lua_tostring(L, -1));
+	lua_pop(L, newtop-oldtop);
+
+	// restore the old print
+	lua_register(L, "print", CLuaBinding::Print);
+}
+
 void CServer::ConLuaReinit(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pSelf = ((CServer *)pUser);
@@ -1675,6 +1731,7 @@ void CServer::RegisterCommands()
 
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
 
+	Console()->Register("lua", "r", CFGFLAG_SERVER, ConLuaDoString, this, "Execute the given line of lua code");
 	Console()->Register("lua_reload", "?i", CFGFLAG_SERVER, ConLuaReinit, this, "Reload the specified lua class (or all if none given) - see lua_listclasses");
 	Console()->Register("lua_listclasses", "", CFGFLAG_SERVER, ConLuaListClasses, this, "View all loaded lua classes with their IDs");
 

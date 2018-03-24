@@ -206,6 +206,8 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("SetRconCID", &IServer::SetRconCID)
 			.addFunction("IsAuthed", &IServer::IsAuthed)
 			.addFunction("Kick", &IServer::Kick)
+
+			.addFunction("SendRconLine", &IServer::SendRconLine)
 		.endClass()
 
 		/// [CCharacterCore].Input
@@ -434,7 +436,7 @@ void CLua::RegisterLuaCallbacks()
 		.deriveClass<CLuaEntity, CEntity>("CLuaEntity")
 		.endClass()
 
-		.beginClass<IConsole::IResult>("CConsole_IResult")
+		.beginClass<IConsole::IResult>("IConsole_IResult")
 			.addFunction("GetInteger", &IConsole::IResult::GetInteger)
 			.addFunction("GetFloat", &IConsole::IResult::GetFloat)
 			.addFunction("GetString", &IConsole::IResult::GetString)
@@ -443,7 +445,7 @@ void CLua::RegisterLuaCallbacks()
 
 		// Server.Console
 		.beginClass<IConsole>("IConsole")
-			.addFunction("Print", &IConsole::Print)
+			.addFunction("Print", &IConsole::PrintLua)
 			.addFunction("LineIsValid", &IConsole::LineIsValid)
 			.addFunction("Register", &IConsole::RegisterLua)
 			.addFunction("ExecuteLine", &IConsole::ExecuteLine)
