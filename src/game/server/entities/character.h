@@ -39,6 +39,7 @@ public:
 	void SetWeapon(int W);
 	void HandleWeaponSwitch();
 	void DoWeaponSwitch();
+	int GetActiveWeaponSlot() const { return m_ActiveWeaponSlot; }
 
 	void HandleWeapons();
 	void HandleNinja();

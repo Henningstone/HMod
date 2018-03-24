@@ -377,6 +377,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GiveWeaponSlot", &CCharacter::GiveWeaponSlot)
 			.addFunction("SetWeaponAutoFire", &CCharacter::SetWeaponAutoFire)
 			.addFunction("WeaponSlot", &CCharacter::WeaponSlot)
+			.addFunction("ActiveWeaponSlot", &CCharacter::GetActiveWeaponSlot)
 
 			.addFunction("SetEmote", &CCharacter::SetEmote)
 
