@@ -1,10 +1,10 @@
 
-local NUM_RINGS = 3
-local NUM_ITEMS = 8
 local OFFSET_BASE = 64
 local OFFSET_MOVE = 64*2
-local MAX_CAPTURE_DIST = 500
 
+Dennis.NUM_RINGS = 3
+Dennis.NUM_ITEMS = 8
+Dennis.MAX_CAPTURE_DIST = 500
 
 Dennis.parent = nil  -- CPlayer that we belong to
 Dennis.active = false  -- whether the rings are there
@@ -16,10 +16,10 @@ function Dennis.OnCreate()
 	print("ASDONASODJASJIODAJIOSDJIOASJIODJIOASJIOD Dennis.OnCreate", self.__dbgId, tostring(self.ents))
 
 	-- allocate all the entities, but hide them from the world
-	for ring = 1, NUM_RINGS do
+	for ring = 1, self.NUM_RINGS do
 		self.ents[ring] = {}
 
-		for i = 1, NUM_ITEMS do
+		for i = 1, self.NUM_ITEMS do
 			-- create an entity
 			local ent = Srv.Game:CreateEntityPickup(i%2, 0) -- armor and hearts
 			ent:GetSelf().CanNotBePickedUp = true
@@ -34,19 +34,6 @@ function Dennis.OnCreate()
 		end
 	end
 	print("Dennis alive", self.__dbgId, tostring(this))
-
-end
-
-function Dennis.Destroy()
-	print("XNKLXNMXBMNVHJBCJBVJBJKBJKVBVJH Dennis.Destroy", self.__dbgId, tostring(self.ents))
-
-	for ring,tr in ipairs(self.ents) do
-		for i,ent in ipairs(tr) do
-			Srv.Game.World:DestroyEntity(ent)
-		end
-	end
-
-	self.ents = nil
 
 end
 
@@ -87,6 +74,37 @@ function Dennis.disappear(self)
 
 	self.active = false
 	return true
+end
+
+local function ReleaseNextVictim()
+	print("ReleaseNextVictim")
+	if #self.captured > 0 then
+		local CID = self.captured[1]
+		local pl = Srv.Game:GetPlayer(CID)
+		table.remove(self.captured, 1)
+		pl:GetSelf():enableDennis(true)
+		pl:GetCharacter().PhysicsEnabled = true
+		Srv.Game:SendChatTarget(self.parent:GetCID(), Srv.Server:GetClientName(CID) .. " freed.")
+	else
+		Srv.Game:SendChatTarget(self.parent:GetCID(), "No tee's captured, use your gun first.")
+	end
+end
+
+function Dennis.Destroy()
+	print("XNKLXNMXBMNVHJBCJBVJBJKBJKVBVJH Dennis.Destroy", self.__dbgId, tostring(self.ents))
+
+	-- release all
+	for _= 1, #self.captured do
+		ReleaseNextVictim()
+	end
+
+	for ring,tr in ipairs(self.ents) do
+		for i,ent in ipairs(tr) do
+			Srv.Game.World:DestroyEntity(ent)
+		end
+	end
+
+	self.ents = nil
 end
 
 local function FindClosestPlayer(Pos)
@@ -131,30 +149,18 @@ local function FindClosestPlayer(Pos)
 	return ClosestID, Chr
 end
 
-local function ReleaseNextVictim()
-	print("ReleaseNextVictim")
-	if #self.captured > 0 then
-		local CID = self.captured[1]
-		local pl = Srv.Game:GetPlayer(CID)
-		table.remove(self.captured, 1)
-		pl:GetSelf():enableDennis()
-		Srv.Game:SendChatTarget(self.parent:GetCID(), Srv.Server:GetClientName(CID) .. " freed.")
-	else
-		Srv.Game:SendChatTarget(self.parent:GetCID(), "No tee's captured, use your gun first.")
-	end
-end
-
 local function CapturePlayer()
 	print("CapturePlayer")
-	if #self.captured < NUM_RINGS then
+	if #self.captured < self.NUM_RINGS then
 		local ClosestID, chr = FindClosestPlayer(this.Pos)
 		if ClosestID < 0 then
-			Srv.Game:SendChatTarget(self.parent:GetCID(), "No Tee found in range of " .. MAX_CAPTURE_DIST)
+			Srv.Game:SendChatTarget(self.parent:GetCID(), "No Tee found in range of " .. self.MAX_CAPTURE_DIST)
 		else
 			-- success
 			table.insert(self.captured, ClosestID)
-			chr:GetPlayer():GetSelf():disableDennis()
-			Srv.Game:SendChatTarget(self.parent:GetCID(), "Captured " .. Srv.Server:GetClientName(ClosestID) .. " into slot " .. #self.captured .. "/" .. NUM_RINGS)
+			chr:GetPlayer():GetSelf():disableDennis(true)
+			chr.PhysicsEnabled = false
+			Srv.Game:SendChatTarget(self.parent:GetCID(), "Captured " .. Srv.Server:GetClientName(ClosestID) .. " into slot " .. #self.captured .. "/" .. self.NUM_RINGS)
 		end
 	else
 		Srv.Game:SendChatTarget(self.parent:GetCID(), "All slots full, use your hammer to release.")
@@ -179,9 +185,24 @@ local function UpdateVictimPositions(ringPoses)
 	for i,v in ipairs(self.captured) do
 		local chr = Srv.Game:GetPlayerChar(v)
 		if chr ~= nil then
-			chr.Pos = ringPoses[i]
-			chr.Core.Pos = ringPoses[i]
-			chr.Core.Vel = vec2(0,0)
+			local core = chr.Core
+			local WantedPos = ringPoses[i]
+			if Srv.Game.Collision:Distance(core.Pos, WantedPos) > 21 then
+				-- smooth flying transition
+				core.Vel = Srv.Game.Collision:Normalize(WantedPos - core.Pos) * 16
+				core.Pos = core.Pos + core.Vel
+			else
+				-- rotate him
+				core.Pos = WantedPos
+
+				local RadialOut = Srv.Game.Collision:Normalize(core.Pos - this.Pos)
+				local CircleDir = Srv.Game.Collision:Rotate(RadialOut, 90)
+				CircleDir = CircleDir * 4
+				--print(tostring(CircleDir))
+				core.Vel = CircleDir + self.parent:GetCharacter().Core.Vel
+			end
+
+			chr.Pos = core.Pos
 		end
 	end
 end
@@ -197,7 +218,7 @@ end
 function Dennis.Tick()
 
 	if self.parent == nil or self.active == false then
-		print("Tick prevented", tostring(self.parent), tostring(self.active))
+		--print("Tick prevented", tostring(self.parent), tostring(self.active))
 		return
 	end
 
@@ -205,12 +226,13 @@ function Dennis.Tick()
 
 	local ringPoses = {}
 
-	for ring = 1, NUM_RINGS do
-		local ro = (ring/NUM_RINGS) * 2*math.pi
+	for ring = 1, self.NUM_RINGS do
+		local ro = (ring/self.NUM_RINGS) * 2*math.pi
 
 		-- update armor circle
 		local Time = Srv.Server.Tick/30
 		local Pos = self.parent:GetCharacter().Pos
+		this.Pos = Pos
 		for i,ent in ipairs(self.ents[ring]) do
 			local s = (i/#self.ents[ring])*2*math.pi
 			local x = Pos.x + OFFSET_BASE*math.cos(Time + s) + (OFFSET_MOVE*math.cos(Time + ro))

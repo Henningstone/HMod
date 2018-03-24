@@ -19,22 +19,37 @@
 
 const char *CConsole::CResult::GetString(unsigned Index)
 {
-	if (Index >= m_NumArgs)
-		return "";
-	return m_apArgs[Index];
+	return OptString(Index, "");
 }
 
 int CConsole::CResult::GetInteger(unsigned Index)
 {
-	if (Index >= m_NumArgs)
-		return 0;
-	return str_toint(m_apArgs[Index]);
+	return OptInteger(Index, 0);
 }
 
 float CConsole::CResult::GetFloat(unsigned Index)
 {
+	return OptFloat(Index, 0.0f);
+}
+
+const char *CConsole::CResult::OptString(unsigned Index, const char *pDefault)
+{
 	if (Index >= m_NumArgs)
-		return 0.0f;
+		return pDefault;
+	return m_apArgs[Index];
+}
+
+int CConsole::CResult::OptInteger(unsigned Index, int Default)
+{
+	if (Index >= m_NumArgs)
+		return Default;
+	return str_toint(m_apArgs[Index]);
+}
+
+float CConsole::CResult::OptFloat(unsigned Index, float Default)
+{
+	if (Index >= m_NumArgs)
+		return Default;
 	return str_tofloat(m_apArgs[Index]);
 }
 

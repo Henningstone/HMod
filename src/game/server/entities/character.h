@@ -144,6 +144,7 @@ private:
 
 	// the player core for the physics
 	CCharacterCore m_Core;
+	bool m_PhysicsEnabled;
 
 	// info for dead reckoning
 	int m_ReckoningTick; // tick that we are performing dead reckoning From

@@ -107,6 +107,7 @@ void CLua::RegisterLuaCallbacks()
 
 			.addFunction("Distance", &CCollision::Distance)
 			.addFunction("Normalize", &CCollision::Normalize)
+			.addFunction("Rotate", &CCollision::Rotate)
 			.addFunction("ClosestPointOnLine", &CCollision::ClosestPointOnLine)
 
 			.addFunction("CheckPoint", &CCollision::CheckPointLua)
@@ -384,6 +385,8 @@ void CLua::RegisterLuaCallbacks()
 			.addProperty("IsAlive", &CCharacter::IsAlive)
 
 			.addFunction("GetPlayer", &CCharacter::GetPlayer) // -> [CPlayer]
+
+			.addData("PhysicsEnabled", &CCharacter::m_PhysicsEnabled)
 			.addFunction("GetCore", &CCharacter::GetCore) // -> [CCharacterCore]
 			.addProperty("Core", &CCharacter::GetCore)
 
@@ -441,6 +444,9 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GetInteger", &IConsole::IResult::GetInteger)
 			.addFunction("GetFloat", &IConsole::IResult::GetFloat)
 			.addFunction("GetString", &IConsole::IResult::GetString)
+			.addFunction("OptInteger", &IConsole::IResult::OptInteger)
+			.addFunction("OptFloat", &IConsole::IResult::OptFloat)
+			.addFunction("OptString", &IConsole::IResult::OptString)
 			.addFunction("NumArguments", &IConsole::IResult::NumArguments)
 		.endClass()
 

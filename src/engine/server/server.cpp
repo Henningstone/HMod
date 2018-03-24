@@ -518,6 +518,14 @@ int CServer::SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System)
 	if(!pMsg)
 		return -1;
 
+#ifdef CONF_DEBUG
+	if(g_Config.m_DbgDummies)
+	{
+		if(ClientID >= MAX_CLIENTS-g_Config.m_DbgDummies)
+			return 1;
+	}
+#endif
+
 	mem_zero(&Packet, sizeof(CNetChunk));
 
 	Packet.m_ClientID = ClientID;

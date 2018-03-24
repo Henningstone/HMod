@@ -41,6 +41,7 @@ public:
 	// lua
 	float Distance(const vec2& s, const vec2& e) { return distance(s, e); }
 	vec2 Normalize(const vec2& v) { return normalize(v); }
+	vec2 Rotate(const vec2& v, float angle) { return rotate(v, angle); }
 	vec2 ClosestPointOnLine(const vec2& s, const vec2& e, const vec2& v) { return closest_point_on_line(s, e, v); }
 };
 

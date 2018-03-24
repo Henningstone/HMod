@@ -45,6 +45,7 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_ProximityRadius = ms_PhysSize;
 	m_Health = 0;
 	m_Armor = 0;
+	m_PhysicsEnabled = true;
 }
 
 void CCharacter::Reset()
@@ -560,7 +561,9 @@ void CCharacter::Tick()
 	}
 
 	m_Core.m_Input = m_Input;
-	m_Core.Tick(true);
+
+	if(m_PhysicsEnabled)
+		m_Core.Tick(true);
 
 	// handle death-tiles and leaving gamelayer
 	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x+m_ProximityRadius/3.f, m_Pos.y-m_ProximityRadius/3.f)&CCollision::COLFLAG_DEATH ||
@@ -585,6 +588,7 @@ void CCharacter::TickDefered()
 	MACRO_LUA_EVENT()
 
 	// advance the dummy
+	if(m_PhysicsEnabled)
 	{
 		CWorldCore TempWorld;
 		m_ReckoningCore.Init(&TempWorld, GameServer()->Collision());

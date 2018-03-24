@@ -411,6 +411,41 @@ void CGameContext::SwapTeams()
 
 void CGameContext::OnTick()
 {
+	#ifdef CONF_DEBUG
+	static int s_LastNumDummies = 0;
+	if(g_Config.m_DbgDummies)
+	{
+		if(g_Config.m_DbgDummies > s_LastNumDummies)
+		{
+			// add new
+			int added = 0;
+			for(int i = s_LastNumDummies; i < g_Config.m_DbgDummies; i++)
+			{
+				try {
+					OnClientConnected(MAX_CLIENTS - i - 1);
+				} catch(CTWException&) {
+					break;
+				}
+				added++;
+			}
+			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies added", added);
+		}
+		else if(g_Config.m_DbgDummies < s_LastNumDummies)
+		{
+			// remove some
+			int removed = 0;
+			for(int i = MAX_CLIENTS-(s_LastNumDummies-g_Config.m_DbgDummies); i < MAX_CLIENTS-g_Config.m_DbgDummies; i++)
+			{
+				OnClientDrop(i, "dummy purged"); // TODO: this doesn't clean it up properly
+				removed++;
+			}
+			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies removed", removed);
+		}
+	}
+	s_LastNumDummies = g_Config.m_DbgDummies;
+	#endif
+
+
 	// check tuning
 	CheckPureTuning();
 
@@ -517,6 +552,8 @@ void CGameContext::OnTick()
 		{
 			CNetObj_PlayerInput Input = {0};
 			Input.m_Direction = (i&1)?-1:1;
+			if(!m_apPlayers[MAX_CLIENTS-i-1])
+				continue;
 			m_apPlayers[MAX_CLIENTS-i-1]->OnPredictedInput(&Input);
 		}
 	}
@@ -1538,17 +1575,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		}
 	}
 
-	//game.world.insert_entity(game.Controller);
-
-#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies)
-	{
-		for(int i = 0; i < g_Config.m_DbgDummies ; i++)
-		{
-			OnClientConnected(MAX_CLIENTS-i-1);
-		}
-	}
-#endif
 }
 
 void CGameContext::OnShutdown()

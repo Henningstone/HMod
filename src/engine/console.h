@@ -43,6 +43,9 @@ public:
 		virtual int GetInteger(unsigned Index) = 0;
 		virtual float GetFloat(unsigned Index) = 0;
 		virtual const char *GetString(unsigned Index) = 0;
+		virtual const char *OptString(unsigned Index, const char *pDefault) = 0;
+		virtual int OptInteger(unsigned Index, int Default) = 0;
+		virtual float OptFloat(unsigned Index, float Default) = 0;
 
 		int NumArguments() const { return m_NumArgs; }
 	};

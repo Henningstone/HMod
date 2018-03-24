@@ -127,6 +127,9 @@ class CConsole : public IConsole
 		virtual const char *GetString(unsigned Index);
 		virtual int GetInteger(unsigned Index);
 		virtual float GetFloat(unsigned Index);
+		virtual const char *OptString(unsigned Index, const char *pDefault);
+		virtual int OptInteger(unsigned Index, int Default);
+		virtual float OptFloat(unsigned Index, float Default);
 	};
 
 	int ParseStart(CResult *pResult, const char *pString, int Length);
