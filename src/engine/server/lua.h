@@ -105,6 +105,8 @@ bool _LUA_EVENT_HANDLED = false; \
 //#define MACRO_LUA_EVENT_C(CLASSNAME, ...) { MACRO_LUA_CALLBACK_CV(CLASSNAME, __func__, __VA_ARGS__) if(_LUA_EVENT_HANDLED) return; }
 #define MACRO_LUA_EVENT(...) { MACRO_LUA_CALLBACK_V(__func__, __VA_ARGS__) if(_LUA_EVENT_HANDLED) return; }
 
+#define MACRO_LUA_RESULT_BOOL(VAR, TRUTH) (!(VAR).isBoolean() || ((VAR).isBoolean() && (VAR).cast<bool>() == (TRUTH)))
+
 
 using luabridge::LuaRef;
 

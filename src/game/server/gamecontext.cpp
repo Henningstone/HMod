@@ -649,7 +649,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	{
 		if(MsgID == NETMSGTYPE_CL_SAY)
 		{
-			if(g_Config.m_SvSpamprotection && pPlayer->m_LastChat && pPlayer->m_LastChat+Server()->TickSpeed() > Server()->Tick())
+			if(g_Config.m_SvSpamprotection && pPlayer->m_LastChat && pPlayer->m_LastChat+Server()->TickSpeed()*g_Config.m_SvSpamprotectionChat > Server()->Tick())
 				return;
 
 			CNetMsg_Cl_Say *pMsg = (CNetMsg_Cl_Say *)pRawMsg;
@@ -689,7 +689,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 			luabridge::LuaRef Result(CLua::Lua()->L());
 			MACRO_LUA_CALLBACK_RESULT("OnChat", Result=, pMsg->m_pMessage, ClientID, Team == CGameContext::CHAT_ALL ? 0 : Team == CGameContext::CHAT_SPEC ? -1 : Team+1)
-			if(!Result.isBoolean() || (Result.isBoolean() && Result.cast<bool>()))
+			if(MACRO_LUA_RESULT_BOOL(Result, true))
 			{
 				pPlayer->m_LastChat = Server()->Tick();
 				SendChat(ClientID, Team, pMsg->m_pMessage);
@@ -697,7 +697,14 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 		else if(MsgID == NETMSGTYPE_CL_CALLVOTE)
 		{
-			if(g_Config.m_SvSpamprotection && pPlayer->m_LastVoteTry && pPlayer->m_LastVoteTry+Server()->TickSpeed()*3 > Server()->Tick())
+			if(g_Config.m_SvSpamprotection && pPlayer->m_LastVoteTry && pPlayer->m_LastVoteTry+Server()->TickSpeed()*g_Config.m_SvSpamprotectionVote > Server()->Tick())
+				return;
+
+			CNetMsg_Cl_CallVote *pMsg = (CNetMsg_Cl_CallVote *)pRawMsg;
+
+			luabridge::LuaRef Result(CLua::Lua()->L());
+			MACRO_LUA_CALLBACK_RESULT("OnCallVote", Result=, ClientID, pMsg->m_Type, pMsg->m_Value, pMsg->m_Reason)
+			if(MACRO_LUA_RESULT_BOOL(Result, false))
 				return;
 
 			int64 Now = Server()->Tick();
@@ -726,7 +733,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			char aChatmsg[512] = {0};
 			char aDesc[VOTE_DESC_LENGTH] = {0};
 			char aCmd[VOTE_CMD_LENGTH] = {0};
-			CNetMsg_Cl_CallVote *pMsg = (CNetMsg_Cl_CallVote *)pRawMsg;
 			const char *pReason = pMsg->m_Reason[0] ? pMsg->m_Reason : "No reason given";
 
 			if(str_comp_nocase(pMsg->m_Type, "option") == 0)
@@ -844,12 +850,18 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 		else if(MsgID == NETMSGTYPE_CL_VOTE)
 		{
+			CNetMsg_Cl_Vote *pMsg = (CNetMsg_Cl_Vote *)pRawMsg;
+
+			luabridge::LuaRef Result(CLua::Lua()->L());
+			MACRO_LUA_CALLBACK_RESULT("OnVote", Result=, ClientID, pMsg->m_Vote)
+			if(MACRO_LUA_RESULT_BOOL(Result, false))
+				return;
+
 			if(!m_VoteCloseTime)
 				return;
 
 			if(pPlayer->m_Vote == 0)
 			{
-				CNetMsg_Cl_Vote *pMsg = (CNetMsg_Cl_Vote *)pRawMsg;
 				if(!pMsg->m_Vote)
 					return;
 
@@ -862,7 +874,12 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			CNetMsg_Cl_SetTeam *pMsg = (CNetMsg_Cl_SetTeam *)pRawMsg;
 
-			if(pPlayer->GetTeam() == pMsg->m_Team || (g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam+Server()->TickSpeed()*3 > Server()->Tick()))
+			if(pPlayer->GetTeam() == pMsg->m_Team || (g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam+Server()->TickSpeed()*g_Config.m_SvSpamprotectionTeam > Server()->Tick()))
+				return;
+
+			luabridge::LuaRef Result(CLua::Lua()->L());
+			MACRO_LUA_CALLBACK_RESULT("OnSetTeam", Result=, ClientID, pMsg->m_Team)
+			if(MACRO_LUA_RESULT_BOOL(Result, false))
 				return;
 
 			if(pMsg->m_Team != TEAM_SPECTATORS && m_LockTeams)
@@ -909,7 +926,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			CNetMsg_Cl_SetSpectatorMode *pMsg = (CNetMsg_Cl_SetSpectatorMode *)pRawMsg;
 
 			if(pPlayer->GetTeam() != TEAM_SPECTATORS || pPlayer->m_SpectatorID == pMsg->m_SpectatorID || ClientID == pMsg->m_SpectatorID ||
-				(g_Config.m_SvSpamprotection && pPlayer->m_LastSetSpectatorMode && pPlayer->m_LastSetSpectatorMode+Server()->TickSpeed()*3 > Server()->Tick()))
+				(g_Config.m_SvSpamprotection && pPlayer->m_LastSetSpectatorMode && pPlayer->m_LastSetSpectatorMode+Server()->TickSpeed()*g_Config.m_SvSpamprotectionTeam > Server()->Tick()))
 				return;
 
 			pPlayer->m_LastSetSpectatorMode = Server()->Tick();
@@ -920,7 +937,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 		else if (MsgID == NETMSGTYPE_CL_CHANGEINFO)
 		{
-			if(g_Config.m_SvSpamprotection && pPlayer->m_LastChangeInfo && pPlayer->m_LastChangeInfo+Server()->TickSpeed()*5 > Server()->Tick())
+			if(g_Config.m_SvSpamprotection && pPlayer->m_LastChangeInfo && pPlayer->m_LastChangeInfo+Server()->TickSpeed()*g_Config.m_SvSpamprotectionInfo > Server()->Tick())
 				return;
 
 			CNetMsg_Cl_ChangeInfo *pMsg = (CNetMsg_Cl_ChangeInfo *)pRawMsg;
@@ -948,7 +965,12 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			CNetMsg_Cl_Emoticon *pMsg = (CNetMsg_Cl_Emoticon *)pRawMsg;
 
-			if(g_Config.m_SvSpamprotection && pPlayer->m_LastEmote && pPlayer->m_LastEmote+Server()->TickSpeed()*3 > Server()->Tick())
+			if(g_Config.m_SvSpamprotection && pPlayer->m_LastEmote && pPlayer->m_LastEmote+Server()->TickSpeed()*g_Config.m_SvSpamprotectionEmote > Server()->Tick())
+				return;
+
+			luabridge::LuaRef Result(CLua::Lua()->L());
+			MACRO_LUA_CALLBACK_RESULT("OnEmote", Result=, ClientID, pMsg->m_Emoticon)
+			if(MACRO_LUA_RESULT_BOOL(Result, false))
 				return;
 
 			pPlayer->m_LastEmote = Server()->Tick();

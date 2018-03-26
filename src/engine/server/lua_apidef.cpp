@@ -5,6 +5,7 @@
 #include <game/server/gamecontext.h>
 #include <game/server/gameworld.h>
 #include <game/collision.h>
+#include <game/voting.h>
 
 #include <game/generated/protocol.h>
 
@@ -92,6 +93,14 @@ void CLua::RegisterLuaCallbacks()
 			.addData("Force", &CProjectileProperties::Force)
 		.endClass()
 
+		/// [CGameContext].VoteOption{First,Last}
+		.beginClass<CVoteOptionServer>("CVoteOptionServer")
+			.addData("Next", &CVoteOptionServer::m_pNext, false)
+			.addData("Prev", &CVoteOptionServer::m_pPrev, false)
+			.addData("Description", &CVoteOptionServer::m_pDescription, false)
+			.addData("Command", &CVoteOptionServer::m_pCommand, false)
+		.endClass()
+
 		.beginClass<CLuaClass>("CLuaClass")
 			.addFunction("BindClass", &CLuaClass::LuaBindClass)
 			.addFunction("GetSelf", &CLuaClass::GetSelf)
@@ -172,7 +181,7 @@ void CLua::RegisterLuaCallbacks()
 
 			.addFunction("IsClientReady", &CGameContext::IsClientReady)
 			.addFunction("IsClientPlayer", &CGameContext::IsClientPlayer)
-			
+
 			.addFunction("CreateEntityCharacter", &CGameContext::CreateEntityCharacter)
 			.addFunction("CreateEntityFlag", &CGameContext::CreateEntityFlag)
 			.addFunction("CreateEntityLaser", &CGameContext::CreateEntityLaser)
@@ -183,6 +192,9 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GameType", &CGameContext::GameType)
 			.addFunction("Version", &CGameContext::Version)
 			.addFunction("NetVersion", &CGameContext::NetVersion)
+
+			.addData("VoteOptionFirst", &CGameContext::m_pVoteOptionFirst, false)
+			.addData("VoteOptionLast", &CGameContext::m_pVoteOptionLast, false)
 		.endClass()
 
 		/// Srv.Server

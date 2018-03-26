@@ -25,6 +25,14 @@ struct CVoteOptionServer
 	CVoteOptionServer *m_pPrev;
 	char m_aDescription[VOTE_DESC_LENGTH];
 	char m_aCommand[1];
+
+	// for lua
+	const char * const m_pDescription;
+	const char * const m_pCommand;
+
+	CVoteOptionServer() : m_pDescription(m_aDescription), m_pCommand(m_aCommand)
+	{
+	}
 };
 
 #endif

@@ -68,7 +68,13 @@ MACRO_CONFIG_INT(SvScorelimit, sv_scorelimit, 20, 0, 1000, CFGFLAG_SERVER, "Scor
 MACRO_CONFIG_INT(SvTimelimit, sv_timelimit, 0, 0, 1000, CFGFLAG_SERVER, "Time limit in minutes (0 disables)")
 MACRO_CONFIG_STR(SvGametype, sv_gametype, 32, "dm", CFGFLAG_SERVER, "Game type to load")
 MACRO_CONFIG_INT(SvTournamentMode, sv_tournament_mode, 0, 0, 1, CFGFLAG_SERVER, "Tournament mode. When enabled, players joins the server as spectator")
+
 MACRO_CONFIG_INT(SvSpamprotection, sv_spamprotection, 1, 0, 1, CFGFLAG_SERVER, "Spam protection")
+MACRO_CONFIG_INT(SvSpamprotectionChat, sv_spamprotection_chat, 1, 0, 9999, CFGFLAG_SERVER, "Chat messaging; Delay in seconds")
+MACRO_CONFIG_INT(SvSpamprotectionVote, sv_spamprotection_vote, 3, 0, 9999, CFGFLAG_SERVER, "Vote calling; Delay in seconds")
+MACRO_CONFIG_INT(SvSpamprotectionEmote, sv_spamprotection_emote, 3, 0, 9999, CFGFLAG_SERVER, "Emoticon; Delay in seconds")
+MACRO_CONFIG_INT(SvSpamprotectionTeam, sv_spamprotection_team, 3, 0, 9999, CFGFLAG_SERVER, "Team change; Delay in seconds")
+MACRO_CONFIG_INT(SvSpamprotectionInfo, sv_spamprotection_info, 5, 0, 9999, CFGFLAG_SERVER, "Client info change; Delay in seconds")
 
 MACRO_CONFIG_INT(SvRespawnDelayTDM, sv_respawn_delay_tdm, 3, 0, 10, CFGFLAG_SERVER, "Time needed to respawn after death in tdm gametype")
 
