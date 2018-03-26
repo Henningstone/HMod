@@ -1264,7 +1264,7 @@ int CServer::Run()
 	if(!LoadMap(g_Config.m_SvMap))
 	{
 		dbg_msg("server", "failed to load map. mapname='%s'", g_Config.m_SvMap);
-		return -1;
+		return 0;
 	}
 
 	// start server
@@ -1285,7 +1285,7 @@ int CServer::Run()
 	if(!m_NetServer.Open(BindAddr, &m_ServerBan, g_Config.m_SvMaxClients, g_Config.m_SvMaxClientsPerIP, 0))
 	{
 		dbg_msg("server", "couldn't open socket. port %d might already be in use", g_Config.m_SvPort);
-		return -1;
+		return 0;
 	}
 
 	m_NetServer.SetCallbacks(NewClientCallback, DelClientCallback, this);
