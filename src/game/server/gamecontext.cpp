@@ -44,12 +44,12 @@ void CGameContext::Construct(int Resetting)
 		m_pVoteOptionHeap = new CHeap();
 }
 
-CGameContext::CGameContext(int Resetting)
+CGameContext::CGameContext(int Resetting) : CLuaClass("Gameserver")
 {
 	Construct(Resetting);
 }
 
-CGameContext::CGameContext()
+CGameContext::CGameContext() : CLuaClass("Gameserver")
 {
 	Construct(NO_RESET);
 }
@@ -687,9 +687,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if(Length == 0 || (g_Config.m_SvSpamprotection && pPlayer->m_LastChat && pPlayer->m_LastChat+Server()->TickSpeed()*((15+Length)/16) > Server()->Tick()))
 				return;
 
-			pPlayer->m_LastChat = Server()->Tick();
-
-			SendChat(ClientID, Team, pMsg->m_pMessage);
+			luabridge::LuaRef Result(CLua::Lua()->L());
+			MACRO_LUA_CALLBACK_RESULT("OnChat", Result=, pMsg->m_pMessage, ClientID, Team == CGameContext::CHAT_ALL ? 0 : Team == CGameContext::CHAT_SPEC ? -1 : Team+1)
+			if(!Result.isBoolean() || (Result.isBoolean() && Result.cast<bool>()))
+			{
+				pPlayer->m_LastChat = Server()->Tick();
+				SendChat(ClientID, Team, pMsg->m_pMessage);
+			}
 		}
 		else if(MsgID == NETMSGTYPE_CL_CALLVOTE)
 		{

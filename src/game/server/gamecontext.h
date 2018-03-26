@@ -37,7 +37,7 @@
 			All players (CPlayer::snap)
 
 */
-class CGameContext : public IGameServer
+class CGameContext : public IGameServer, protected CLuaClass
 {
 	IServer *m_pServer;
 	class IConsole *m_pConsole;

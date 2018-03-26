@@ -46,3 +46,6 @@ Player:
   - PostTick()
   - Snap()
   - OnDisconnect(string Reason)
+
+Gameserver:
+  - OnChat(Msg, ClientID, Team)  # Team can be: -1 -> Spec, 0 -> Global, 1 -> Red, 2 -> Blue
