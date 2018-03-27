@@ -5,7 +5,7 @@ datasrc/__pycache__
 datasrc/*.pyc
 /objs
 src/game/generated
-gamemodes
+/gamemodes
 autoexec.cfg
 
 /*.dll
