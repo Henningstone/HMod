@@ -24,7 +24,7 @@ protected:
 
 	virtual ~CLuaClass(){}
 
-	inline const char *GetLuaClassName() const { dbg_assert_legacy(m_IntegrityCheck == 0x539, "bad mem"); return m_LuaClass.c_str(); }
+	inline const char *GetLuaClassName() const { dbg_assert_strict(m_IntegrityCheck == 0x539, "bad mem"); return m_LuaClass.c_str(); }
 
 public:
 	inline void LuaBindClass(const char *pClassName) { m_LuaClass = std::string(pClassName); }

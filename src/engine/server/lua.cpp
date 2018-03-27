@@ -316,6 +316,38 @@ luabridge::LuaRef CLua::GetSelfTable(lua_State *L, const CLuaClass *pLC)
 
 void CLua::HandleException(luabridge::LuaException& e)
 {
+	// pop the error message if there is any
+	if(lua_gettop(CLua::Lua()->L()) > 0)
+		lua_pop(CLua::Lua()->L(), 1);
+
+	static int s_SameErrorCount = 0;
+	static int64 s_LastErrorTime = 0;
+	static unsigned int s_LastErrorHash = 0;
+	unsigned int ThisErrorHash = str_quickhash(e.what());
+
+	// don't spam
+	if(ThisErrorHash == s_LastErrorHash)
+	{
+		s_SameErrorCount++;
+		if(s_SameErrorCount >= 4)
+		{
+			// throttle
+			if(s_SameErrorCount == 4)
+				CLua::Lua()->Console()->Print(0, "lua/ERROR", "  (throttling further errors of this kind)");
+
+			int64 Now = time_get();
+			if(Now < s_LastErrorTime + time_freq())
+				return;
+			else
+				s_LastErrorTime = Now;
+		}
+	}
+	else
+		s_SameErrorCount = 0;
+	s_LastErrorHash = ThisErrorHash;
+
+	CLua::DbgPrintLuaStack(CLua::Lua()->L(), "asdasdasd");
+	// print the error so that you won't miss it in all the console output mess
 	dbg_msg("XXX", "XXX");
 	CLua::Lua()->Console()->Print(0, "lua/ERROR", e.what());
 	dbg_msg("XXX", "XXX");
