@@ -1,3 +1,4 @@
+#include <string>
 #include <lua.hpp>
 
 #include <engine/external/luabridge/LuaBridge.h>
@@ -45,7 +46,36 @@ void CLua::OpenLua()
 
 	luaL_openlibs(m_pLuaState);
 
+	InitializeLuaState();
 	RegisterLuaCallbacks();
+}
+
+void CLua::InitializeLuaState()
+{
+	luabridge::LuaRef Package = luabridge::getGlobal(m_pLuaState, "package");
+	if(!Package.isTable())
+	{
+		dbg_msg("lua/WARN", "failed to initialize module loader: 'package' is not a table");
+		return;
+	}
+
+	luabridge::LuaRef Path = Package["path"];
+	if(!Path.isString())
+		Package["path"] = std::string("./?.lua");
+
+	char aBuf[1024];
+	// add some more locations to the package.path
+	char aCompletePath[512];
+	Storage()->GetCompletePath(IStorage::TYPE_SAVE, "lua", aCompletePath, sizeof(aCompletePath));
+	str_formatb(aBuf, "%s;./lua/?.lua"
+			";./lua/modules/?.lua"
+			";./lua/modules/?/init.lua"
+			";./gametypes/include/?.lua"
+			";./gametypes/include/?/init.lua"
+			";%s/?.lua"
+			";%s/?/init.lua", Path.tostring().c_str(), aCompletePath, aCompletePath);
+
+	Package["path"] = std::string(aBuf);
 }
 
 bool CLua::Reload()
@@ -119,7 +149,7 @@ int CLua::ListdirCallback(const char *name, const char *full_path, int is_dir, i
 		return 0;
 
 	CLua *pSelf = static_cast<CLua *>(user);
-	if(is_dir)
+	if(is_dir && str_comp_nocase(full_path, "include") != 0)
 		return fs_listdir_verbose(full_path, CLua::ListdirCallback, dir_type, user);
 	else
 	{

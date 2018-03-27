@@ -136,6 +136,7 @@ private:
 	CGameContext *GameServer() { return m_pGameServer; }
 
 	lua_State *m_pLuaState;
+	void InitializeLuaState();
 	void RegisterLuaCallbacks();
 	bool RegisterScript(const char *pFullPath, const char *pObjName, bool Reloading = false);
 	static int ListdirCallback(const char *name, const char *full_path, int is_dir, int dir_type, void *user);
