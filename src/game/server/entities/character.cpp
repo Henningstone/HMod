@@ -713,6 +713,9 @@ bool CCharacter::IncreaseArmorEndless(int Amount)
 
 void CCharacter::Die(int Killer, int Weapon)
 {
+	if(Killer < 0)
+		Killer = m_pPlayer->GetCID();
+
 	// we got to wait 0.5 secs before respawning
 	m_pPlayer->m_RespawnTick = Server()->Tick()+Server()->TickSpeed()/2;
 	int ModeSpecial = GameServer()->m_pController->OnCharacterDeath(this, GameServer()->m_apPlayers[Killer], Weapon);
@@ -753,7 +756,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		return false;
 
 	// m_pPlayer only inflicts half damage on self
-	if(From == m_pPlayer->GetCID())
+	if(Dmg > 0 && From == m_pPlayer->GetCID())
 		Dmg = max(1, Dmg/2);
 
 	m_DamageTaken++;

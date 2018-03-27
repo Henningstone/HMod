@@ -121,7 +121,7 @@ void CGameContext::CreateHammerHit(vec2 Pos)
 }
 
 
-void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, int DamageMul, float ForceRadius, float DamageRadius)
+void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamage, float DamageMul, float ForceRadius, float DamageRadius, std::vector<CEntity*> *plNoDamage)
 {
 	// create the event
 	CNetEvent_Explosion *pEvent = (CNetEvent_Explosion *)m_Events.Create(NETEVENTTYPE_EXPLOSION, sizeof(CNetEvent_Explosion));
@@ -130,6 +130,9 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, int DamageMu
 		pEvent->m_X = (int)Pos.x;
 		pEvent->m_Y = (int)Pos.y;
 	}
+
+	if(NoDamage)
+		return;
 
 	// deal damage
 	CCharacter *apEnts[MAX_CLIENTS];
@@ -143,8 +146,28 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, int DamageMu
 			ForceDir = normalize(Diff);
 		l = 1.0f-clamp((l-DamageRadius)/(ForceRadius-DamageRadius), 0.0f, 1.0f);
 		float Dmg = 6 * l;
+
 		if((int)Dmg > 0)
-			apEnts[i]->TakeDamage(ForceDir*Dmg*2, ((int)Dmg)*DamageMul, Owner, Weapon);
+		{
+			CCharacter *pHitChar = apEnts[i];
+
+			// check if we should deal damage to this one
+			int IgnoreDmgMul = 1;
+			if(plNoDamage)
+			{
+				for(std::vector<CEntity *>::iterator it = plNoDamage->begin(); it != plNoDamage->end(); ++it)
+				{
+					if(*it == pHitChar)
+					{
+						// nope, don't deal any damage. Just throw him through the air.
+						IgnoreDmgMul = 0;
+						break;
+					}
+				}
+			}
+
+			pHitChar->TakeDamage(ForceDir * Dmg * 2, ((int)(Dmg * DamageMul)) * IgnoreDmgMul, Owner, Weapon);
+		}
 	}
 }
 
@@ -159,6 +182,113 @@ void create_smoke(vec2 Pos)
 		pEvent->y = (int)Pos.y;
 	}
 }*/
+
+/**
+ * Definition of this function in Lua:
+ * Srv.Game:CreateExplosion(vec2 Pos, int Owner, int Weapon [, bool NoDamage] [, float DamageMul [, float ForceRadius [, float DamageRadius]]] [, table<CCharacter*|int>|int IgnoreDamageOn])
+ *
+ * Optional arguments' dependency graph:
+	- NoDamage
+	- DamageMul
+		- ForceRadius
+			- DamageRadius
+	- IgnoreDamageOn
+ */
+void CGameContext::CreateExplosionLua(vec2 Pos, int Owner, int Weapon, lua_State *L)
+{
+	// this function can be given optional parameters:
+	//   bool NoDamage (defaults to false)
+	//   float DamageMul (default to 1)
+	//   float ForceRadius (defaults to 135)
+	//   float DamageRadius (defaults to 48)
+	//   int/table NoDamage  -- can contain either numbers (CIDs) or Entities that will not be dealt any damage from the explosion
+
+	const int HARD_STACK_SIZE = 4; // there are always 5 "hard" elements on the stack that we don't want to care about
+	#define IDX(INDEX) ((INDEX) + HARD_STACK_SIZE)
+
+	int nargs = lua_gettop(L) - HARD_STACK_SIZE;
+	int carg = 1;
+
+	// no damage
+	bool NoDamage = false;
+	if(nargs >= carg && lua_isboolean(L, IDX(carg)))
+	{
+		NoDamage = (bool)lua_toboolean(L, IDX(carg));
+		carg++;
+	}
+
+	// damage multiplicator
+	float DamageMul = 1.0f;
+	if(nargs >= carg && lua_isnumber(L, IDX(carg)))
+	{
+		DamageMul = (float)lua_tonumber(L, IDX(carg));
+		carg++;
+	}
+
+	// force radius
+	float ForceRadius = 135.0f;
+	if(nargs >= carg && lua_isnumber(L, IDX(carg)))
+	{
+		ForceRadius = (float)lua_tonumber(L, IDX(carg));
+		carg++;
+	}
+
+	// damage radius
+	float DamageRadius = 48.0f;
+	if(nargs >= carg && lua_isnumber(L, IDX(carg)))
+	{
+		DamageRadius = (float)lua_tonumber(L, IDX(carg));
+		carg++;
+	}
+
+	// ignore damage on XYZ
+	std::vector<CEntity *> lIgnoreDmgEnts;
+	if(nargs >= carg)
+	{
+		LuaRef Given = luabridge::LuaRef::fromStack(L, IDX(carg));
+		if(lua_isnumber(L, IDX(carg))) // lua_isnumber also checks for strings that are convertible to a number, LuaRef::isNumber() doesn't!
+		{
+			// client id
+			CCharacter *pChr = GetPlayerChar((int)Given);
+			if(pChr)
+				lIgnoreDmgEnts.push_back(pChr);
+		}
+		else if(Given.isLightUserdata())
+		{
+			// entity
+			CCharacter *pChr = dynamic_cast<CCharacter *>((CEntity*)Given);
+			if(pChr)
+				lIgnoreDmgEnts.push_back(pChr);
+		}
+		else if(Given.isTable())
+		{
+			// multiple things in a table
+			for(luabridge::Iterator it(Given); !it.isNil(); ++it)
+			{
+				const LuaRef& Elem = *it;
+				if(Elem.isNumber())
+				{
+					CCharacter *pChr = GetPlayerChar((int)Elem);
+					if(pChr)
+						lIgnoreDmgEnts.push_back(pChr);
+				}
+				else if(Elem.isUserdata() || Elem.isLightUserdata())
+				{
+					CCharacter *pChr = dynamic_cast<CCharacter *>((CEntity*)Elem);
+					if(pChr)
+						lIgnoreDmgEnts.push_back(pChr);
+				}
+			}
+
+		}
+
+	}
+
+	// set it off
+	CreateExplosion(Pos, Owner, Weapon, NoDamage, DamageMul, ForceRadius, DamageRadius, &lIgnoreDmgEnts);
+
+#undef IDX
+}
 
 void CGameContext::CreatePlayerSpawn(vec2 Pos)
 {

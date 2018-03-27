@@ -122,7 +122,8 @@ public:
 
 	// helper functions
 	void CreateDamageInd(vec2 Pos, float AngleMod, int Amount);
-	void CreateExplosion(vec2 Pos, int Owner, int Weapon, int DamageMul, float ForceRadius = 135.0f, float DamageRadius = 48.0f);
+	void CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamage, float DamageMul = 1.0f, float ForceRadius = 135.0f, float DamageRadius = 48.0f, std::vector<class CEntity*> *plNoDamage = NULL);
+	void CreateExplosionLua(vec2 Pos, int Owner, int Weapon, lua_State *L /* bool NoDamage = false, int DamageMul = 1, float ForceRadius = 135.0f, float DamageRadius = 48.0f, int NoDamage = { :=[<CCharacter>;<number>] } */);
 	void CreateHammerHit(vec2 Pos);
 	void CreatePlayerSpawn(vec2 Pos);
 	void CreateDeath(vec2 Pos, int Who);

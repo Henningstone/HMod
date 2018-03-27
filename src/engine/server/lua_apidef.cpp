@@ -164,7 +164,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("AbortVoteKickOnDisconnect", &CGameContext::AbortVoteKickOnDisconnect)
 
 			.addFunction("CreateDamageInd", &CGameContext::CreateDamageInd)
-			.addFunction("CreateExplosion", &CGameContext::CreateExplosion)
+			.addFunction("CreateExplosion", &CGameContext::CreateExplosionLua)
 			.addFunction("CreateHammerHit", &CGameContext::CreateHammerHit)
 			.addFunction("CreatePlayerSpawn", &CGameContext::CreatePlayerSpawn)
 			.addFunction("CreateDeath", &CGameContext::CreateDeath)
