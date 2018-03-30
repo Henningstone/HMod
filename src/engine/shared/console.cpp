@@ -818,14 +818,19 @@ void CConsole::RegisterLua(const char *pName, const char *pParams, const char *p
 		luaL_error(L, "parameter 3 must be a function");
 
 	CCommand *pCommand = FindCommand(pName, CFGFLAG_SERVER);
-	if(pCommand && !pCommand->m_Temp)
-		luaL_error(L, "the command '%s' can't be overwritten!", pName);
+	if(pCommand)
+	{
+		if(!pCommand->m_Temp)
+			luaL_error(L, "the command '%s' can't be overwritten!", pName);
+		else
+			DeregisterTemp(pName);
+	}
 
 	LuaRef *pCbRef = new luabridge::LuaRef(L);
 	*pCbRef = LuaFunc;
 
 	RegisterTemp(pName, pParams, CFGFLAG_SERVER, pHelp, CConsole::LuaCommandCallback, pCbRef);
-
+	CLua::Lua()->GetResMan()->RegisterConsoleCommand(pName);
 }
 
 void CConsole::LuaCommandCallback(IResult *pResult, void *pUserData)
@@ -904,6 +909,7 @@ void CConsole::DeregisterTemp(const char *pName)
 			// userdata for temp commands is only set for commands registered by lua
 			delete static_cast<LuaRef *>(pRemoved->m_pUserData);
 			pRemoved->m_pUserData = NULL;
+			CLua::Lua()->GetResMan()->DeregisterConsoleCommand(pRemoved->m_pName);
 		}
 
 		// add to recycle list

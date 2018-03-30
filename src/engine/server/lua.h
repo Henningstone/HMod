@@ -116,6 +116,7 @@ using luabridge::LuaRef;
 class CLua : public ILua
 {
 	friend class CLuaBinding;
+	friend class CLuaRessourceMgr;
 
 public:
 	enum

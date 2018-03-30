@@ -17,4 +17,8 @@ REGISTER_RESSOURCE(CLuaSqlConn *, LuaSqlConn,
 				   delete ELEM;
 )
 
+REGISTER_RESSOURCE(std::string, ConsoleCommand,
+				   CLua::Lua()->Console()->DeregisterTemp(ELEM.c_str());
+)
+
 #endif

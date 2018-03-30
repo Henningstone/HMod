@@ -2,6 +2,7 @@
 #define ENGINE_SERVER_LUARESMAN_H
 
 #include <vector>
+#include <string>
 #include <base/system.h>
 
 class CLuaSqlConn;

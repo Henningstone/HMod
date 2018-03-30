@@ -1,13 +1,21 @@
+#include <string>
 #include "lua/luasql.h"
+#include <engine/console.h>
+
 #include "luaresman.h"
+
 
 void CLuaRessourceMgr::FreeAll()
 {
 	#define REGISTER_RESSOURCE(TYPE, VARNAME, DELETION) \
-			for(int i = 0; i < (int)m_##VARNAME.size(); i++) \
-				{ TYPE ELEM = m_##VARNAME.at(i); DELETION; } \
+			while(!m_##VARNAME.empty()) \
+			{ \
+				unsigned SizeBefore = (unsigned)m_##VARNAME.size(); \
+				TYPE ELEM = m_##VARNAME.front(); \
+				DELETION; \
+				dbg_assert_strict((unsigned)m_##VARNAME.size() < SizeBefore, "deletion function of " #TYPE " " #VARNAME " did not deregister the object"); \
+			} \
 			m_##VARNAME.clear();
 	#include "luaresmandef.h"
 	#undef REGISTER_RESSOURCE
 }
-

@@ -1367,7 +1367,8 @@ int CServer::Run()
 				m_GametypeReloaded = false;
 				if(!CLua::Lua()->Reload())
 				{
-					dbg_msg("server", "failde to load new gametype, aborting");
+					str_format(aBuf, sizeof(aBuf), "failed to load gametype. gametype='%s'", g_Config.m_SvGametype);
+					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", aBuf);
 					break;
 				}
 			}

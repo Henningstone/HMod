@@ -78,6 +78,7 @@ void CLua::InitializeLuaState()
 
 bool CLua::Reload()
 {
+	GetResMan()->FreeAll();
 	lua_close(m_pLuaState);
 	m_lLuaObjects.clear();
 	OpenLua();
