@@ -5,13 +5,14 @@ set(CMAKE_CXX_STANDARD 11)
 
 add_definitions("-DCONF_FAMILY_UNIX")
 add_definitions("-DCONF_DEBUG")
-add_definitions("-DDO_NOT_COMPILE_THIS")
+add_definitions("-DDO_NOT_COMPILE_THIS_CODE")
 
 include_directories(
         other/sdl/include
         other/freetype/include
         other/luajit/include
         src
+        #src/engine/external
 )
 
 set(SOURCE_FILES
@@ -236,6 +237,13 @@ set(SOURCE_FILES
     src/engine/external/luabridge/detail/TypeList.h
     src/engine/external/luabridge/detail/TypeTraits.h
     src/engine/external/luabridge/detail/Userdata.h
+    src/engine/external/json-parser/json.cpp
+    src/engine/external/json-parser/json.hpp
+    src/engine/external/json-builder/json-builder.c
+    src/engine/external/json-builder/json-builder.h
+    src/engine/external/sqlite3/sqlite3.h
+    src/engine/external/sqlite3/sqlite3.c
+    src/engine/external/sqlite3/sqlite3ext.h
     src/engine/server/register.cpp
     src/engine/server/register.h
     src/engine/server/server.cpp
@@ -287,6 +295,8 @@ set(SOURCE_FILES
     src/engine/shared/snapshot.cpp
     src/engine/shared/snapshot.h
     src/engine/shared/storage.cpp
+    src/engine/shared/db_sqlite3.cpp
+    src/engine/shared/db_sqlite3.h
     src/engine/client.h
     src/engine/config.h
     src/engine/console.h
@@ -460,6 +470,12 @@ set(SOURCE_FILES
         src/engine/lua.h
         src/game/server/entities/lua_entity.cpp
         src/game/server/entities/lua_entity.h
-        src/engine/server/lua_class.h)
+        src/engine/server/lua_class.h
+        src/engine/server/lua/lua_config.h
+        src/engine/server/lua/luajson.cpp
+        src/engine/server/lua/luajson.h
+        src/engine/server/lua/luasql.cpp
+        src/engine/server/lua/luasql.h
+        src/engine/lua_include.h)
 
 add_executable(HMod ${SOURCE_FILES})

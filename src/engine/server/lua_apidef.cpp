@@ -1,5 +1,4 @@
-#include <lua.hpp>
-#include <engine/external/luabridge/LuaBridge.h>
+#include <engine/lua_include.h>
 
 #include <game/server/gamecontroller.h>
 #include <game/server/gamecontext.h>
@@ -17,6 +16,9 @@
 #include <game/server/entities/lua_entity.h>
 
 #include "luabinding.h"
+#include "lua/lua_config.h"
+#include "lua/luajson.h"
+#include "lua/luasql.h"
 #include "lua_class.h"
 #include "lua.h"
 
@@ -84,6 +86,69 @@ void CLua::RegisterLuaCallbacks()
 			.addData("u", &vector4_base<float>::u)
 			.addData("v", &vector4_base<float>::v)
 		.endClass()
+
+		// json
+		.beginClass< CJsonValue >("JsonValue")
+			//.addFunction("__tostring", &CJsonValue::ToString) TODO: serialize
+			//.addFunction("__tonumber", &CJsonValue::ToNumber)
+			.addFunction("Destroy", &CJsonValue::Destroy)
+			.addFunction("GetType", &CJsonValue::GetType)
+			.addFunction("ToString", &CJsonValue::ToString)
+			.addFunction("ToNumber", &CJsonValue::ToNumber)
+			.addFunction("ToBoolean", &CJsonValue::ToBoolean)
+			.addFunction("ToTable", &CJsonValue::ToTable)
+			.addFunction("ToObject", &CJsonValue::ToObject)
+		.endClass()
+
+		.beginClass< CLuaJson >("CLuaJson")
+		.endClass()
+
+		.beginNamespace("json")
+			.addFunction("Parse", &CLuaJson::Parse)
+			.addFunction("Convert", &CLuaJson::Convert)
+			.addFunction("Serialize", &CLuaJson::Serialize)
+		.endNamespace()
+
+		// sql
+		.beginClass< CQuery >("CQuery")
+			.addFunction("GetColumnCount", &CQuery::GetColumnCount)
+			.addFunction("GetName", &CQuery::GetName)
+			.addFunction("GetType", &CQuery::GetType)
+			.addFunction("GetID", &CQuery::GetID)
+
+			.addFunction("GetInt", &CQuery::GetInt)
+			.addFunction("GetFloat", &CQuery::GetFloat)
+			.addFunction("GetText", &CQuery::GetText)
+			.addFunction("GetStr", &CQuery::GetText) // alias
+			.addFunction("GetBlob", &CQuery::GetBlob)
+			.addFunction("GetSize", &CQuery::GetSize)
+
+			.addFunction("GetIntN", &CQuery::GetIntN)
+			.addFunction("GetFloatN", &CQuery::GetFloatN)
+			.addFunction("GetTextN", &CQuery::GetTextN)
+			.addFunction("GetStrN", &CQuery::GetTextN) // alias
+			.addFunction("GetBlobN", &CQuery::GetBlobN)
+			.addFunction("GetSizeN", &CQuery::GetSizeN)
+		.endClass()
+
+		.beginClass< CLuaSqlConn >("CLuaSqlConn")
+			//.addConstructor <void (*) (const char *)> ()
+			.addFunction("Execute", &CLuaSqlConn::Execute)
+			.addFunction("Flush", &CLuaSqlConn::Flush)
+			.addFunction("Work", &CLuaSqlConn::Work)
+			.addFunction("Clear", &CLuaSqlConn::Clear)
+			.addFunction("GetDatabasePath", &CLuaSqlConn::GetDatabasePath)
+		.endClass()
+
+		.beginClass< CLuaSql >("CLuaSql")
+		.endClass()
+
+		.beginNamespace("sql")
+			.addFunction("Open", &CLuaSql::Open)
+			.addFunction("Flush", &CLuaSql::Flush)
+			.addFunction("Clear", &CLuaSql::Clear)
+		.endNamespace()
+
 
 		.beginClass< CProjectileProperties>("CProjectileProperties")
 			.addConstructor <void (*) (int, int, bool, float)> ()
@@ -477,6 +542,23 @@ void CLua::RegisterLuaCallbacks()
 			.addVariable("Game", &CLua::ms_pSelf->m_pGameServer, false)
 			.addVariable("Server", &CLua::ms_pSelf->m_pServer, false)
 		.endNamespace()
+
+		/// Config.<var_name>
+#define MACRO_CONFIG_STR(Name,ScriptName,Len,Def,Save,Desc) \
+			.addStaticProperty(#Name, &CConfigProperties::GetConfig_##Name) \
+			.addStaticProperty(#ScriptName, &CConfigProperties::GetConfig_##Name)
+
+#define MACRO_CONFIG_INT(Name,ScriptName,Def,Min,Max,Save,Desc) \
+			.addStaticProperty(#Name, &CConfigProperties::GetConfig_##Name) \
+			.addStaticProperty(#ScriptName, &CConfigProperties::GetConfig_##Name)
+
+		.beginClass<CConfigProperties>("Config")
+			#include <engine/shared/config_variables.h>
+		.endClass()
+
+#undef MACRO_CONFIG_STR
+#undef MACRO_CONFIG_INT
+
 
 	; // end global namespace
 }

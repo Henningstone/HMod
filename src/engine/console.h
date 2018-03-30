@@ -4,8 +4,7 @@
 #define ENGINE_CONSOLE_H
 
 #include <string>
-#include <lua.hpp>
-#include <engine/external/luabridge/LuaBridge.h>
+#include <engine/lua_include.h>
 
 #include "kernel.h"
 

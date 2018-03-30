@@ -4,12 +4,11 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <lua.hpp>
-
-#include <engine/external/luabridge/LuaBridge.h>
+#include <engine/lua_include.h>
 
 #include <base/tl/array.h>
 #include <engine/lua.h>
+#include <engine/server/luaresman.h>
 
 
 /** USEFUL MACROS TO INVOKE LUA
@@ -153,6 +152,8 @@ private:
 	};
 	std::vector<LuaObject> m_lLuaObjects;
 
+	CLuaRessourceMgr m_ResMan;
+
 public:
 	CLua();
 	void Init();
@@ -160,6 +161,7 @@ public:
 	bool Reload();
 	bool LoadGametype();
 	lua_State *L() { return m_pLuaState; }
+	CLuaRessourceMgr *GetResMan() { return &m_ResMan; }
 
 	void ReloadSingleObject(int ObjectID);
 	int NumLoadedClasses() const { return (int)m_lLuaObjects.size(); }

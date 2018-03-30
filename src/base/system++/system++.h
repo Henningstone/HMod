@@ -21,7 +21,7 @@ public:
 	CTWException(const char *msg);
 	CTWException(const char *pFilename, int Line, const char *pAssertStr, const char *pMsg);
 
-	virtual const char *what() const throw ();
+	virtual const char *what() const noexcept;
 };
 
 void dbg_break();

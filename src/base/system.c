@@ -22,7 +22,12 @@
 	#include <netdb.h>
 	#include <netinet/in.h>
 	#include <fcntl.h>
+
+	#define _GNU_SOURCE
 	#include <pthread.h>
+	int pthread_setname_np(pthread_t thread, const char *name);
+	#undef _GNU_SOURCE
+
 	#include <arpa/inet.h>
 
 	#include <dirent.h>
@@ -406,10 +411,21 @@ int io_flush(IOHANDLE io)
 
 void *thread_init(void (*threadfunc)(void *), void *u)
 {
+	return thread_init_named(threadfunc, u, 0);
+}
+
+void *thread_init_named(void (*threadfunc)(void *), void *u, const char *n)
+{
 #if defined(CONF_FAMILY_UNIX)
 	pthread_t id;
-	pthread_create(&id, NULL, (void *(*)(void*))threadfunc, u);
-	return (void*)id;
+	if(pthread_create(&id, NULL, (void *(*)(void*))threadfunc, u) == 0)
+	{
+		if(n && n[0])
+			pthread_setname_np(id, n);
+		return (void *)id;
+	}
+	else
+		return NULL;
 #elif defined(CONF_FAMILY_WINDOWS)
 	return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)threadfunc, u, 0, NULL);
 #else
@@ -1500,6 +1516,24 @@ int fs_makedir(const char *path)
 #endif
 }
 
+int fs_makedir_rec_for(const char *path)
+{
+	char buffer[1024*2];
+	char *p;
+	str_copy(buffer, path, sizeof(buffer));
+	for(p = buffer+1; *p != '\0'; p++)
+	{
+		if(*p == '/' && *(p + 1) != '\0')
+		{
+			*p = '\0';
+			if(fs_makedir(buffer) < 0)
+				return -1;
+			*p = '/';
+		}
+	}
+	return 0;
+}
+
 int fs_is_dir(const char *path)
 {
 #if defined(CONF_FAMILY_WINDOWS)
@@ -1579,6 +1613,24 @@ int fs_rename(const char *oldname, const char *newname)
 	if(rename(oldname, newname) != 0)
 		return 1;
 	return 0;
+}
+
+int fs_compare(const char *a, const char *b)
+{
+#if defined(CONF_FAMILY_UNIX)
+	return str_comp(a, b);
+#elif defined(CONF_FAMILY_WINDOWS)
+	return str_comp_nocase(a, b);
+#endif
+}
+
+int fs_compare_num(const char *a, const char *b, int num)
+{
+#if defined(CONF_FAMILY_UNIX)
+	return str_comp_num(a, b, num);
+#elif defined(CONF_FAMILY_WINDOWS)
+	return str_comp_nocase_num(a, b, num);
+#endif
 }
 
 void swap_endian(void *data, unsigned elem_size, unsigned num)

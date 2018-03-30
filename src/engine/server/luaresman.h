@@ -1,5 +1,5 @@
-#ifndef ENGINE_CLIENT_LUARESMAN_H
-#define ENGINE_CLIENT_LUARESMAN_H
+#ifndef ENGINE_SERVER_LUARESMAN_H
+#define ENGINE_SERVER_LUARESMAN_H
 
 #include <vector>
 #include <base/system.h>
@@ -41,7 +41,7 @@ public:
 	/**
 	 * Uses the defined deletion method to free all registered objects
 	 */
-	void FreeAll(class IKernel *pKernel);
+	void FreeAll();
 };
 
 #endif

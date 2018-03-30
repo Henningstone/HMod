@@ -2,6 +2,7 @@
 #define ENGINE_CLIENT_LUARESMANDEF_H
 #undef ENGINE_CLIENT_LUARESMANDEF_H // this file is included multiple times
 
+// this is to make IDE's inspection work
 #ifndef REGISTER_RESSOURCE
 	#define REGISTER_RESSOURCE(TYPE, VARNAME, DELETION) ;;
 	#if !defined(DO_NOT_COMPILE_THIS_CODE)
@@ -9,10 +10,11 @@
 	#endif
 #endif
 
-REGISTER_RESSOURCE(int, Texture,
-				   pKernel->RequestInterface<IGraphics>()->UnloadTexture(ELEM);
+
+// the actual definitions
+
+REGISTER_RESSOURCE(CLuaSqlConn *, LuaSqlConn,
+				   delete ELEM;
 )
-
-
 
 #endif

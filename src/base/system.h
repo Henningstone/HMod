@@ -94,6 +94,7 @@ void dbg_msg(const char *sys, const char *fmt, ...);
 */
 void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned alignment);
 #define mem_alloc(s,a) mem_alloc_debug(__FILE__, __LINE__, (s), (a))
+#define mem_allocb(t,n) (t*)mem_alloc_debug(__FILE__, __LINE__, (sizeof(t)*n), 0)
 
 /*
 	Function: mem_free
@@ -365,6 +366,13 @@ void thread_sleep(int milliseconds);
 
 */
 void *thread_init(void (*threadfunc)(void *), void *user);
+
+/*
+ (see thread_init)
+
+ Note: the name can have a maximum length of 15 characters
+ */
+void *thread_init_named(void (*threadfunc)(void *), void *user, const char *name);
 
 /*
 	Function: thread_wait
@@ -1053,6 +1061,7 @@ int fs_listdir_verbose(const char *dir, FS_LISTDIR_CALLBACK_VERBOSE cb, int type
 		in a failure if b or a does not exist.
 */
 int fs_makedir(const char *path);
+int fs_makedir_rec_for(const char *path);
 
 /*
 	Function: fs_storage_path
@@ -1140,6 +1149,9 @@ int fs_remove(const char *filename);
 		- The strings are treated as zero-terminated strings.
 */
 int fs_rename(const char *oldname, const char *newname);
+
+int fs_compare(const char *a, const char *b);
+int fs_compare_num(const char *a, const char *b, int num);
 
 /*
 	Group: Undocumented

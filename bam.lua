@@ -153,7 +153,7 @@ function build(settings)
 	if config.compiler.driver == "cl" then
 		settings.cc.flags:Add("/wd4244", "/wd4577")
 	else
-		settings.cc.flags:Add("-Wall", "-Wno-comment")
+		settings.cc.flags:Add("-Wall", "-Wno-comment", "-Wno-unused-but-set-variable")
 		if config.no_pie.value == true then
 			settings.link.flags:Add("-no-pie")
 		end
@@ -211,6 +211,10 @@ function build(settings)
 	-- build the small libraries
 	wavpack = Compile(settings, Collect("src/engine/external/wavpack/*.c"))
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
+	jsonparser = Compile(settings, Collect("src/engine/external/json-parser/*.cpp"))
+	jsonbuilder = Compile(settings, Collect("src/engine/external/json-builder/*.c"))
+	sqlite3 = Compile(settings, Collect("src/engine/external/sqlite3/*.c"))
+
 
 	-- apply luajit settings
 	config.luajit:Apply(settings, config.no_pie.value)
@@ -248,7 +252,7 @@ function build(settings)
 
 	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c", "src/base/system++/*.cpp"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
-	server = Compile(server_settings, Collect("src/engine/server/*.cpp"))
+	server = Compile(server_settings, Collect("src/engine/server/*.cpp", "src/engine/server/lua/*.cpp"))
 
 	versionserver = Compile(settings, Collect("src/versionsrv/*.cpp"))
 	masterserver = Compile(settings, Collect("src/mastersrv/*.cpp"))
@@ -279,7 +283,8 @@ function build(settings)
 --		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "tmf_modsrv", engine, server,
-		game_shared, game_server, zlib, server_link_other, server_depends)
+		game_shared, game_server, zlib, server_link_other, server_depends,
+		jsonparser, jsonbuilder, sqlite3)
 
 	serverlaunch = {}
 	if platform == "macosx" then

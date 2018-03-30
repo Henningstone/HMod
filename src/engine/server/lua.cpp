@@ -1,7 +1,5 @@
 #include <string>
-#include <lua.hpp>
-
-#include <engine/external/luabridge/LuaBridge.h>
+#include <engine/lua_include.h>
 
 #include <base/system.h>
 
@@ -106,7 +104,7 @@ bool CLua::RegisterScript(const char *pFullPath, const char *pObjName, bool Relo
 
 	if(!Reloading)
 	{
-		m_lLuaObjects.push_back(LuaObject(pFullPath, pObjName));
+		m_lLuaObjects.emplace_back(pFullPath, pObjName);
 
 		dbg_msg("lua/objectmgr", "loaded object '%s' from file '%s'", pObjName, pFullPath);
 	}
@@ -144,6 +142,12 @@ int CLua::ListdirCallback(const char *name, const char *full_path, int is_dir, i
 
 	if(str_length(name) <= 4)
 		return 0;
+
+	if(!is_dir && str_comp_nocase_num(name+str_length(name)-4, ".lua", 4) != 0)
+	{
+		dbg_msg("lua/loader", "WARN: ignoring non-lua file '%s'", name);
+		return 0;
+	}
 
 	if(str_comp_filenames(name, "init.lua") == 0)
 		return 0;

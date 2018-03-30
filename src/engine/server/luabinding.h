@@ -1,7 +1,7 @@
 #ifndef ENGINE_SERVER_LUABINDING_H
 #define ENGINE_SERVER_LUABINDING_H
 
-#include <lua.h>
+#include <lua.hpp>
 
 #define argcheck(cond, narg, expected) \
 		if(!(cond)) \
@@ -24,10 +24,9 @@ public:
 	static int ScriptName(lua_State *L);
 	static int Print(lua_State *L);
 	static int Throw(lua_State *L);
-};
 
-void luaX_openlibs(lua_State *L, const luaL_Reg *lualibs);
-void luaX_openlib(lua_State *L, const char *name, lua_CFunction func);
-void luaX_register_module(lua_State *L, const char *name);
+	// helper functions
+	static const char *SandboxPath(char *pInOutBuffer, unsigned BufferSize, lua_State *L, bool MakeFullPath = false);
+};
 
 #endif

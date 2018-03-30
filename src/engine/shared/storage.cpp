@@ -1,7 +1,13 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include <string>
+#include <vector>
+
 #include <base/system.h>
+#include <base/system++/system++.h>
+
 #include <engine/storage.h>
+
 #include "linereader.h"
 
 // compiled-in data-dir path
@@ -242,7 +248,7 @@ public:
 		}
 	}
 
-	const char *GetPath(int Type, const char *pDir, char *pBuffer, unsigned BufferSize)
+	const char *GetPath(int Type, const char *pDir, char *pBuffer, unsigned BufferSize) const
 	{
 		str_format(pBuffer, BufferSize, "%s%s%s", m_aaStoragePaths[Type], !m_aaStoragePaths[Type][0] ? "" : "/", pDir);
 		return pBuffer;
@@ -395,6 +401,82 @@ public:
 
 		GetPath(Type, pDir, pBuffer, BufferSize);
 	}
+
+	const char *SandboxPath(char *pBuffer, unsigned BufferSize, const char *pPrepend, bool ForcePrepend) const
+	{
+		if(dbg_assert_strict(BufferSize > 0, "SandboxPath: zero-size buffer?!"))
+			return NULL;
+
+		// replace all backslashes with forward slashes
+		for(char *p = pBuffer; p < pBuffer+BufferSize && *p; p++)
+			if(*p == '\\')
+				*p = '/';
+
+		// don't allow entering the root directory / another partition
+		{
+#if defined(CONF_FAMILY_UNIX)
+			char *p = pBuffer;
+			while(p[0] == '/') p++;
+			if(p != pBuffer)
+			{
+				char aTmp[512];
+				str_copyb(aTmp, p);
+				str_copy(pBuffer, aTmp, (int)BufferSize);
+			}
+#elif defined(CONF_FAMILY_WINDOWS)
+			const char *p = str_find_rev(pBuffer, ":");
+			if(p)
+			{
+				char aTmp[512];
+				str_copyb(aTmp, p+1);
+				str_copy(pBuffer, aTmp, (int)BufferSize);
+			}
+#endif
+		}
+
+		// split it into pieces
+		std::vector<std::string> PathStack;
+		StringSplit(pBuffer, "/", &PathStack);
+
+		// reassemble and prettify it
+		std::vector<std::string> FinalResult;
+		for(std::vector<std::string>::iterator it = PathStack.begin(); it != PathStack.end(); it++)
+		{
+			if(*it == "..")
+			{
+				if(!FinalResult.empty())
+					FinalResult.pop_back();
+			}
+			else if(it->length() > 0 && *it != ".")
+				FinalResult.push_back(*it);
+		}
+
+		pBuffer[0] = '\0';
+		if(pPrepend)
+		{
+			if(ForcePrepend || fs_compare(FinalResult[0].c_str(), pPrepend) != 0)
+			{
+				str_copy(pBuffer, pPrepend, BufferSize);
+				if(pPrepend[str_length(pPrepend)-1] != '/')
+					str_append(pBuffer, "/", BufferSize);
+			}
+		}
+
+		for(std::vector<std::string>::iterator it = FinalResult.begin(); it != FinalResult.end(); it++)
+			str_append(pBuffer, (*it + std::string("/")).c_str(), BufferSize);
+		pBuffer[str_length(pBuffer)-1] = '\0'; // remove the trailing slash
+
+		return pBuffer;
+	}
+
+	const char *MakeFullPath(char *pBuffer, unsigned BufferSize, int StorageType) const
+	{
+		char aBuf[768];
+		str_copyb(aBuf, pBuffer); // make a copy because we can't read and write to the same buffer at the same time
+		GetPath(StorageType, aBuf, pBuffer, BufferSize);
+		return pBuffer;
+	}
+
 
 	static IStorage *Create(const char *pApplicationName, int StorageType, int NumArgs, const char **ppArguments)
 	{

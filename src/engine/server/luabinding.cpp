@@ -1,6 +1,7 @@
 #include <lua.hpp>
-#include <engine/shared/config.h>
 #include <base/system.h>
+#include <engine/shared/config.h>
+#include <engine/storage.h>
 
 #include "luabinding.h"
 #include "lua.h"
@@ -73,46 +74,15 @@ int CLuaBinding::Throw(lua_State *L)
 	return result;
 }
 
-
-/**
- * opens all given libraries
- */
-void luaX_openlibs(lua_State *L, const luaL_Reg *lualibs)
+const char *CLuaBinding::SandboxPath(char *pInOutBuffer, unsigned BufferSize, lua_State *L, bool MakeFullPath)
 {
-	/* (following code copied from https://www.lua.org/source/5.1/linit.c.html)
-	 * This is the only correct way to load standard libs!
-	 * For everything non-standard (custom) use luaL_register.
-	 */
-	const luaL_Reg *lib = lualibs;
-	for (; lib->func; lib++) {
-		lua_pushcfunction(L, lib->func);
-		lua_pushstring(L, lib->name);
-		lua_call(L, 1, 0);
-	}
-}
+	const char *pSubdir = g_Config.m_SvGametype;
 
-/**
- * opens a single library
- */
-void luaX_openlib(lua_State *L, const char *name, lua_CFunction func)
-{
-	const luaL_Reg single_lib[] = {
-			{name, func},
-			{NULL, NULL}
-	};
-	luaX_openlibs(L, single_lib);
-}
+	char aFullPath[512];
+	str_formatb(aFullPath, "mods_storage/%s/%s", pSubdir, CLua::Lua()->Storage()->SandboxPath(pInOutBuffer, BufferSize));
+	if(MakeFullPath)
+		CLua::Lua()->Storage()->MakeFullPath(aFullPath, sizeof(aFullPath), IStorage::TYPE_SAVE);
+	str_copy(pInOutBuffer, aFullPath, BufferSize);
 
-/**
- * Publishes the module with given name in the global scope under the same name
- */
-void luaX_register_module(lua_State *L, const char *name)
-{
-	/* adapted from https://www.lua.org/source/5.1/loadlib.c.html function ll_require */
-	lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
-	lua_getfield(L, -1, name);
-	if(!dbg_assert_strict(lua_toboolean(L, -1), "trying to register a lib that has not been opened yet!")) {  /* is it there? */
-		// got whatever 'require' would return on top of the stack now
-		lua_setglobal(L, name);
-	}
+	return pInOutBuffer;
 }

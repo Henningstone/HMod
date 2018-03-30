@@ -2,9 +2,10 @@
 #define HMOD_LUA_CLASS_H
 
 #include <string>
-#include <lua.hpp>
+#include <engine/lua_include.h>
+
 #include <base/system.h>
-#include <engine/external/luabridge/LuaBridge.h>
+
 #include "lua.h"
 
 
