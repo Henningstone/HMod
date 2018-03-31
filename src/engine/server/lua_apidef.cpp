@@ -22,6 +22,8 @@
 #include "lua_class.h"
 #include "lua.h"
 
+#include <engine/server/server.h>
+
 
 void CLua::RegisterLuaCallbacks()
 {
@@ -280,12 +282,17 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("SetClientClan", &IServer::SetClientClan)
 			.addFunction("SetClientCountry", &IServer::SetClientCountry)
 			.addFunction("SetClientScore", &IServer::SetClientScore)
+			.addFunction("SetClientAccessLevel", &IServer::SetClientAccessLevel)
 
 			.addFunction("SetRconCID", &IServer::SetRconCID)
 			.addFunction("IsAuthed", &IServer::IsAuthed)
+			.addFunction("HasAccess", &IServer::HasAccess)
 			.addFunction("Kick", &IServer::Kick)
 
 			.addFunction("SendRconLine", &IServer::SendRconLine)
+		.endClass()
+
+		.deriveClass<CServer, IServer>("CServer")
 		.endClass()
 
 		/// [CCharacterCore].Input
@@ -525,13 +532,15 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("OptFloat", &IConsole::IResult::OptFloat)
 			.addFunction("OptString", &IConsole::IResult::OptString)
 			.addFunction("NumArguments", &IConsole::IResult::NumArguments)
+			.addFunction("GetCID", &IConsole::IResult::GetCID)
 		.endClass()
 
-		// Server.Console
+		// Srv.Console
 		.beginClass<IConsole>("IConsole")
 			.addFunction("Print", &IConsole::PrintLua)
 			.addFunction("LineIsValid", &IConsole::LineIsValid)
 			.addFunction("Register", &IConsole::RegisterLua)
+			.addFunction("SetCommandAccessLevel", &IConsole::SetCommandAccessLevel) // set to > 0xFFFF to give *everyone* access by default
 			.addFunction("ExecuteLine", &IConsole::ExecuteLine)
 		.endClass()
 

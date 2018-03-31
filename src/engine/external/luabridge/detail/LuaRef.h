@@ -733,6 +733,30 @@ public:
 
   //----------------------------------------------------------------------------
   /**
+      returns the result of passing this reference to lua_tonumber
+  */
+  lua_Number tonumber() const
+  {
+    push (m_L);
+    lua_Number result = lua_tonumber(m_L, -1);
+    lua_pop(m_L, 1);
+    return result;
+  }
+
+  //----------------------------------------------------------------------------
+  /**
+      returns the result of passing this reference to lua_tointeger
+  */
+  lua_Integer tointeger() const
+  {
+    push (m_L);
+    lua_Integer result = lua_tointeger(m_L, -1);
+    lua_pop(m_L, 1);
+    return result;
+  }
+
+  //----------------------------------------------------------------------------
+  /**
       Print a text description of the value to a stream.
 
       This is used for diagnostics.
@@ -852,7 +876,24 @@ public:
   inline bool isUserdata () const { return type () == LUA_TUSERDATA; }
   inline bool isThread () const { return type () == LUA_TTHREAD; }
   inline bool isLightUserdata () const { return type () == LUA_TLIGHTUSERDATA; }
-  /** @} */
+  inline bool isNumeric () const
+  { 
+    int result;
+    if (m_ref != LUA_REFNIL)
+    {
+      push (m_L);
+      result = lua_isnumber (m_L, -1);
+      lua_pop (m_L, 1);
+    }
+    else
+    {
+      result = 0;
+    }
+
+    return result != 0;
+  }
+
+    /** @} */
 
   //----------------------------------------------------------------------------
   /**

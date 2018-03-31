@@ -6,8 +6,9 @@
 #include "message.h"
 #include <base/system++/system++.h>
 #include <engine/server/lua.h>
+#include <engine/server/lua_class.h>
 
-class IServer : public IInterface
+class IServer : public IInterface, protected CLuaClass
 {
 	MACRO_INTERFACE("server", 0)
 protected:
@@ -23,6 +24,8 @@ public:
 		const char *m_pName;
 		int m_Latency;
 	};
+
+	IServer() : CLuaClass("Server") {}
 
 	int Tick() const { return m_CurrentGameTick; }
 	int TickSpeed() const { return m_TickSpeed; }
@@ -51,6 +54,7 @@ public:
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;
 	virtual void SetClientCountry(int ClientID, int Country) = 0;
 	virtual void SetClientScore(int ClientID, int Score) = 0;
+	virtual void SetClientAccessLevel(int ClientID, int Level) = 0;
 
 	virtual int SnapNewID() = 0;
 	virtual void SnapFreeID(int ID) = 0;
@@ -65,6 +69,7 @@ public:
 	};
 	virtual void SetRconCID(int ClientID) = 0;
 	virtual bool IsAuthed(int ClientID) = 0;
+	virtual bool HasAccess(int ClientID, int AccessLevel) = 0;
 	virtual void Kick(int ClientID, const char *pReason) = 0;
 
 	virtual void DemoRecorder_HandleAutoStart() = 0;

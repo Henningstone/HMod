@@ -4,6 +4,12 @@
 #define ENGINE_SERVER_SERVER_H
 
 #include <engine/server.h>
+#include <engine/shared/demo.h>
+#include <engine/shared/econ.h>
+#include <engine/shared/mapchecker.h>
+#include <engine/shared/netban.h>
+#include <engine/shared/snapshot.h>
+#include "register.h"
 
 
 class CSnapIDPool
@@ -74,6 +80,7 @@ public:
 		AUTHED_NO=0,
 		AUTHED_MOD,
 		AUTHED_ADMIN,
+		AUTHED_CUSTOM,
 
 		MAX_RCONCMD_SEND=16,
 	};
@@ -121,6 +128,7 @@ public:
 		int m_Score;
 		int m_Authed;
 		int m_AuthTries;
+		int m_AccessLevel;
 
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
 
@@ -156,6 +164,7 @@ public:
 	int m_RconClientID;
 	int m_RconAuthLevel;
 	int m_PrintCBIndex;
+	int m_PrintToCBIndex;
 
 	int64 m_Lastheartbeat;
 	//static NETADDR4 master_server;
@@ -177,6 +186,7 @@ public:
 	virtual void SetClientClan(int ClientID, char const *pClan);
 	virtual void SetClientCountry(int ClientID, int Country);
 	virtual void SetClientScore(int ClientID, int Score);
+	virtual void SetClientAccessLevel(int ClientID, int AccessLevel);
 
 	void Kick(int ClientID, const char *pReason);
 
@@ -191,6 +201,7 @@ public:
 
 	void SetRconCID(int ClientID);
 	bool IsAuthed(int ClientID);
+	bool HasAccess(int ClientID, int AccessLevel);
 	int GetClientInfo(int ClientID, CClientInfo *pInfo);
 	void GetClientAddr(int ClientID, char *pAddrStr, int Size);
 	const char *ClientName(int ClientID);
@@ -211,12 +222,13 @@ public:
 	void SendConnectionReady(int ClientID);
 	void SendRconLine(int ClientID, const char *pLine);
 	static void SendRconLineAuthed(const char *pLine, void *pUser);
+	static void SendRconLineTo(int To, const char *pLine, void *pUser);
 
 	void SendRconCmdAdd(const IConsole::CCommandInfo *pCommandInfo, int ClientID);
 	void SendRconCmdRem(const IConsole::CCommandInfo *pCommandInfo, int ClientID);
 	void UpdateClientRconCommands();
 
-	void ProcessClientPacket(CNetChunk *pPacket);
+	void ProcessClientPacket(class CNetChunk *pPacket);
 
 	void SendServerInfo(const NETADDR *pAddr, int Token);
 	void UpdateServerInfo();

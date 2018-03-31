@@ -204,6 +204,16 @@ int CConsole::RegisterPrintCallback(int OutputLevel, FPrintCallback pfnPrintCall
 	return m_NumPrintCB++;
 }
 
+int CConsole::RegisterPrintToCallback(FPrintToCallback pfnPrintCallback, void *pUserData)
+{
+	if(m_NumPrintToCB == MAX_PRINT_CB)
+		return -1;
+
+	m_aPrintToCB[m_NumPrintToCB].m_pfnPrintToCallback = pfnPrintCallback;
+	m_aPrintToCB[m_NumPrintToCB].m_pPrintToCallbackUserdata = pUserData;
+	return m_NumPrintToCB++;
+}
+
 void CConsole::SetPrintOutputLevel(int Index, int OutputLevel)
 {
 	if(Index >= 0 && Index < MAX_PRINT_CB)
@@ -217,16 +227,65 @@ void CConsole::Print(int Level, const char *pFrom, const char *pStr)
 	{
 		if(Level <= m_aPrintCB[i].m_OutputLevel && m_aPrintCB[i].m_pfnPrintCallback)
 		{
-			char aBuf[1024];
+			char aBuf[2048];
 			str_format(aBuf, sizeof(aBuf), "[%s]: %s", pFrom, pStr);
 			m_aPrintCB[i].m_pfnPrintCallback(aBuf, m_aPrintCB[i].m_pPrintCallbackUserdata);
 		}
 	}
 }
 
-void CConsole::PrintLua(const char *pFrom, const char *pStr)
+void CConsole::PrintTo(int To, const char *pFrom, const char *pStr)
 {
-	Print(IConsole::OUTPUT_LEVEL_STANDARD, pFrom, pStr);
+	char aFrom[64];
+	str_formatb(aFrom, "%s ->%i", pFrom, To);
+	dbg_msg(aFrom ,"%s", pStr);
+	for(int i = 0; i < m_NumPrintToCB; ++i)
+	{
+		if(m_aPrintToCB[i].m_pfnPrintToCallback)
+		{
+			char aBuf[2048];
+			str_format(aBuf, sizeof(aBuf), "[%s]: %s", pFrom, pStr);
+			m_aPrintToCB[i].m_pfnPrintToCallback(To, aBuf, m_aPrintToCB[i].m_pPrintToCallbackUserdata);
+		}
+	}
+}
+
+void CConsole::PrintLua(const char *pFrom, const char *pStr, lua_State *L)
+{
+	/// Expects additional, optional arguments:
+	///   - integers or tables of integers, containing the client IDs of whom to send it.
+	///     If not present, the message will be sent to all authed clients.
+
+	const int HARD_STACK_SIZE = 3; // self, from, str
+	#define IDX(INDEX) ((INDEX) + HARD_STACK_SIZE)
+	int nargs = lua_gettop(L) - HARD_STACK_SIZE;
+
+	if(nargs > 0)
+	{
+		// got additional arguments
+		for(int i = 1; i <= nargs; i++)
+		{
+			luabridge::LuaRef Arg = luabridge::LuaRef::fromStack(L, IDX(i));
+			if(Arg.isNumeric())
+			{
+				// argument is a single number
+				PrintTo((int)Arg.tointeger(), pFrom, pStr);
+			}
+			else if(Arg.isTable())
+			{
+				// argument is a table of (presumably) numbers
+				for(luabridge::Iterator it(Arg); !it.isNil(); ++it)
+				{
+					if((*it).isNumeric())
+						PrintTo((int)((*it).tointeger()), pFrom, pStr);
+				}
+			}
+		}
+	}
+	else
+		Print(IConsole::OUTPUT_LEVEL_STANDARD, pFrom, pStr);
+
+	#undef IDX
 }
 
 void CConsole::Printf(int Level, const char *pFrom, const char *format, ...)
@@ -306,11 +365,11 @@ bool CConsole::LineIsValid(const char *pStr)
 	return true;
 }
 
-void CConsole::ExecuteLineStroked(int Stroke, const char *pStr)
+void CConsole::ExecuteLineStroked(int Stroke, const char *pStr, int Who)
 {
 	while(pStr && *pStr)
 	{
-		CResult Result;
+		CResult Result(Who);
 		const char *pEnd = pStr;
 		const char *pNextPart = 0;
 		int InString = 0;
@@ -364,7 +423,8 @@ void CConsole::ExecuteLineStroked(int Stroke, const char *pStr)
 					{
 						char aBuf[256];
 						str_format(aBuf, sizeof(aBuf), "Invalid arguments... Usage: %s %s", pCommand->m_pName, pCommand->m_pParams);
-						Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+						if(Who < 0) Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+						else PrintTo(Who, "Console", aBuf);
 					}
 					else if(m_StoreCommands && pCommand->m_Flags&CFGFLAG_STORE)
 					{
@@ -379,16 +439,29 @@ void CConsole::ExecuteLineStroked(int Stroke, const char *pStr)
 			}
 			else if(Stroke)
 			{
-				char aBuf[256];
-				str_format(aBuf, sizeof(aBuf), "Access for command %s denied.", Result.m_pCommand);
-				Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+				if(m_AccessLevel <= ACCESS_LEVEL_MOD)
+				{
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "Access for command %s denied.", Result.m_pCommand);
+					if(Who < 0) Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+					else PrintTo(Who, "Console", aBuf);
+				}
+				else
+				{
+					// got fake rights? get fake message.
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "No such command: %s.", Result.m_pCommand);
+					if(Who < 0) Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+					else PrintTo(Who, "Console", aBuf);
+				}
 			}
 		}
 		else if(Stroke)
 		{
 			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "No such command: %s.", Result.m_pCommand);
-			Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+			if(Who < 0) Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+			else PrintTo(Who, "Console", aBuf);
 		}
 
 		pStr = pNextPart;
@@ -421,17 +494,24 @@ CConsole::CCommand *CConsole::FindCommand(const char *pName, int FlagMask)
 	return 0x0;
 }
 
-void CConsole::ExecuteLine(const char *pStr)
+void CConsole::SetCommandAccessLevel(const char *pName, int AccessLevel)
 {
-	CConsole::ExecuteLineStroked(1, pStr); // press it
-	CConsole::ExecuteLineStroked(0, pStr); // then release it
+	CCommand *pCommand = FindCommand(pName, CFGFLAG_SERVER);
+	if(pCommand)
+		pCommand->SetAccessLevel(AccessLevel);
 }
 
-void CConsole::ExecuteLineFlag(const char *pStr, int FlagMask)
+void CConsole::ExecuteLine(const char *pStr, int Who)
+{
+	CConsole::ExecuteLineStroked(1, pStr, Who); // press it
+	CConsole::ExecuteLineStroked(0, pStr, Who); // then release it
+}
+
+void CConsole::ExecuteLineFlag(const char *pStr, int FlagMask, int Who)
 {
 	int Temp = m_FlagMask;
 	m_FlagMask = FlagMask;
-	ExecuteLine(pStr);
+	ExecuteLine(pStr, Who);
 	m_FlagMask = Temp;
 }
 
@@ -502,10 +582,10 @@ void CConsole::ConModCommandAccess(IResult *pResult, void *pUser)
 		if(pResult->NumArguments() == 2)
 		{
 			pCommand->SetAccessLevel(pResult->GetInteger(1));
-			str_format(aBuf, sizeof(aBuf), "moderator access for '%s' is now %s", pResult->GetString(0), pCommand->GetAccessLevel() ? "enabled" : "disabled");
+			str_format(aBuf, sizeof(aBuf), "access level for '%s' is now %i", pResult->GetString(0), pCommand->GetAccessLevel());
 		}
 		else
-			str_format(aBuf, sizeof(aBuf), "moderator access for '%s' is %s", pResult->GetString(0), pCommand->GetAccessLevel() ? "enabled" : "disabled");
+			str_format(aBuf, sizeof(aBuf), "access level for '%s' is %i", pResult->GetString(0), pCommand->GetAccessLevel());
 	}
 	else
 		str_format(aBuf, sizeof(aBuf), "No such command: '%s'.", pResult->GetString(0));
@@ -516,13 +596,13 @@ void CConsole::ConModCommandAccess(IResult *pResult, void *pUser)
 void CConsole::ConModCommandStatus(IResult *pResult, void *pUser)
 {
 	CConsole* pConsole = static_cast<CConsole *>(pUser);
-	char aBuf[240];
+	char aBuf[1024];
 	mem_zero(aBuf, sizeof(aBuf));
 	int Used = 0;
 
 	for(CCommand *pCommand = pConsole->m_pFirstCommand; pCommand; pCommand = pCommand->m_pNext)
 	{
-		if(pCommand->m_Flags&pConsole->m_FlagMask && pCommand->GetAccessLevel() == ACCESS_LEVEL_MOD)
+		if(pCommand->m_Flags&pConsole->m_FlagMask && pCommand->GetAccessLevel() >= ACCESS_LEVEL_MOD)
 		{
 			int Length = str_length(pCommand->m_pName);
 			if(Used + Length + 2 < (int)(sizeof(aBuf)))
@@ -538,7 +618,6 @@ void CConsole::ConModCommandStatus(IResult *pResult, void *pUser)
 			else
 			{
 				pConsole->Print(OUTPUT_LEVEL_STANDARD, "Console", aBuf);
-				mem_zero(aBuf, sizeof(aBuf));
 				str_copy(aBuf, pCommand->m_pName, sizeof(aBuf));
 				Used = Length;
 			}
@@ -584,9 +663,9 @@ static void IntVariableCommand(IConsole::IResult *pResult, void *pUserData)
 	}
 	else
 	{
-		char aBuf[1024];
+		char aBuf[128];
 		str_format(aBuf, sizeof(aBuf), "Value: %d", *(pData->m_pVariable));
-		pData->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+		pData->m_pConsole->PrintTo(pResult->GetCID(), "Console", aBuf);
 	}
 }
 
@@ -621,7 +700,7 @@ static void StrVariableCommand(IConsole::IResult *pResult, void *pUserData)
 	{
 		char aBuf[1024];
 		str_format(aBuf, sizeof(aBuf), "Value: %s", pData->m_pStr);
-		pData->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Console", aBuf);
+		pData->m_pConsole->PrintTo(pResult->GetCID(), "Console", aBuf);
 	}
 }
 
@@ -718,8 +797,8 @@ CConsole::CConsole(int FlagMask)
 	Register("toggle", "sii", CFGFLAG_SERVER|CFGFLAG_CLIENT, ConToggle, this, "Toggle config value");
 	Register("+toggle", "sii", CFGFLAG_CLIENT, ConToggleStroke, this, "Toggle config value via keypress");
 
-	Register("mod_command", "s?i", CFGFLAG_SERVER, ConModCommandAccess, this, "Specify command accessibility for moderators");
-	Register("mod_status", "", CFGFLAG_SERVER, ConModCommandStatus, this, "List all commands which are accessible for moderators");
+	Register("mod_command", "s?i", CFGFLAG_SERVER, ConModCommandAccess, this, "Specify command access level (0=admin, 1=mod, higher=less)");
+	Register("mod_status", "", CFGFLAG_SERVER, ConModCommandStatus, this, "List all commands which are accessible for less entitled people than admin");
 
 	// TODO: this should disappear
 	#define MACRO_CONFIG_INT(Name,ScriptName,Def,Min,Max,Flags,Desc) \
@@ -788,8 +867,7 @@ void CConsole::AddCommandSorted(CCommand *pCommand)
 	}
 }
 
-void CConsole::Register(const char *pName, const char *pParams,
-	int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp)
+void CConsole::Register(const char *pName, const char *pParams, int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp)
 {
 	CCommand *pCommand = FindCommand(pName, Flags);
 	bool DoAdd = false;

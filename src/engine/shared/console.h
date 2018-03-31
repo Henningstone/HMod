@@ -19,7 +19,7 @@ class CConsole : public IConsole
 
 		virtual const CCommandInfo *NextCommandInfo(int AccessLevel, int FlagMask) const;
 
-		void SetAccessLevel(int AccessLevel) { m_AccessLevel = clamp(AccessLevel, (int)(ACCESS_LEVEL_ADMIN), (int)(ACCESS_LEVEL_MOD)); }
+		void SetAccessLevel(int AccessLevel) { m_AccessLevel = max(0, AccessLevel); }
 
 		virtual bool IsLua() const { return false; }
 	};
@@ -72,7 +72,7 @@ class CConsole : public IConsole
 	static void ConModCommandStatus(IConsole::IResult *pResult, void *pUser);
 
 	void ExecuteFileRecurse(const char *pFilename);
-	void ExecuteLineStroked(int Stroke, const char *pStr);
+	void ExecuteLineStroked(int Stroke, const char *pStr, int Who = -1);
 
 	struct
 	{
@@ -81,6 +81,13 @@ class CConsole : public IConsole
 		void *m_pPrintCallbackUserdata;
 	} m_aPrintCB[MAX_PRINT_CB];
 	int m_NumPrintCB;
+
+	struct
+	{
+		FPrintToCallback m_pfnPrintToCallback;
+		void *m_pPrintToCallbackUserdata;
+	} m_aPrintToCB[MAX_PRINT_CB];
+	int m_NumPrintToCB;
 
 	enum
 	{
@@ -97,7 +104,7 @@ class CConsole : public IConsole
 		const char *m_pCommand;
 		const char *m_apArgs[MAX_PARTS];
 
-		CResult() : IResult()
+		CResult(int ExecutingClientID = -1) : IResult(ExecutingClientID)
 		{
 			mem_zero(m_aStringStorage, sizeof(m_aStringStorage));
 			m_pArgsStart = 0;
@@ -177,6 +184,7 @@ public:
 
 	virtual const CCommandInfo *FirstCommandInfo(int AccessLevel, int FlagMask) const;
 	virtual const CCommandInfo *GetCommandInfo(const char *pName, int FlagMask, bool Temp);
+	virtual void SetCommandAccessLevel(const char *pName, int AccessLevel);
 	virtual void PossibleCommands(const char *pStr, int FlagMask, bool Temp, FPossibleCallback pfnCallback, void *pUser);
 
 	virtual void ParseArguments(int NumArgs, const char **ppArguments);
@@ -189,17 +197,19 @@ public:
 	virtual void StoreCommands(bool Store);
 
 	virtual bool LineIsValid(const char *pStr);
-	virtual void ExecuteLine(const char *pStr);
-	virtual void ExecuteLineFlag(const char *pStr, int FlagMask);
+	virtual void ExecuteLine(const char *pStr, int Who = -1);
+	virtual void ExecuteLineFlag(const char *pStr, int FlagMask, int Who = -1);
 	virtual void ExecuteFile(const char *pFilename);
 
 	virtual int RegisterPrintCallback(int OutputLevel, FPrintCallback pfnPrintCallback, void *pUserData);
+	virtual int RegisterPrintToCallback(FPrintToCallback pfnPrintCallback, void *pUserData);
 	virtual void SetPrintOutputLevel(int Index, int OutputLevel);
 	virtual void Print(int Level, const char *pFrom, const char *pStr);
-	virtual void PrintLua(const char *pFrom, const char *pStr);
+	virtual void PrintTo(int To, const char *pFrom, const char *pStr);
+	virtual void PrintLua(const char *pFrom, const char *pStr, lua_State *);
 	virtual void Printf(int Level, const char *pFrom, const char *pFmt, ...);
 
-	void SetAccessLevel(int AccessLevel) { m_AccessLevel = clamp(AccessLevel, (int)(ACCESS_LEVEL_ADMIN), (int)(ACCESS_LEVEL_MOD)); }
+	void SetAccessLevel(int AccessLevel) { m_AccessLevel = max(0, AccessLevel); }
 };
 
 #endif

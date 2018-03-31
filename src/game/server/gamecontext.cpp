@@ -817,8 +817,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if(Length == 0 || (g_Config.m_SvSpamprotection && pPlayer->m_LastChat && pPlayer->m_LastChat+Server()->TickSpeed()*((15+Length)/16) > Server()->Tick()))
 				return;
 
-			luabridge::LuaRef Result(CLua::Lua()->L());
-			MACRO_LUA_CALLBACK_RESULT("OnChat", Result=, pMsg->m_pMessage, ClientID, Team == CGameContext::CHAT_ALL ? 0 : Team == CGameContext::CHAT_SPEC ? -1 : Team+1)
+			MACRO_LUA_CALLBACK_RESULT_REF("OnChat", Result, pMsg->m_pMessage, ClientID, Team == CGameContext::CHAT_ALL ? 0 : Team == CGameContext::CHAT_SPEC ? -1 : Team+1)
 			if(MACRO_LUA_RESULT_BOOL(Result, true))
 			{
 				pPlayer->m_LastChat = Server()->Tick();
@@ -832,8 +831,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 			CNetMsg_Cl_CallVote *pMsg = (CNetMsg_Cl_CallVote *)pRawMsg;
 
-			luabridge::LuaRef Result(CLua::Lua()->L());
-			MACRO_LUA_CALLBACK_RESULT("OnCallVote", Result=, ClientID, pMsg->m_Type, pMsg->m_Value, pMsg->m_Reason)
+			MACRO_LUA_CALLBACK_RESULT_REF("OnCallVote", Result, ClientID, pMsg->m_Type, pMsg->m_Value, pMsg->m_Reason)
 			if(MACRO_LUA_RESULT_BOOL(Result, false))
 				return;
 
@@ -982,8 +980,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			CNetMsg_Cl_Vote *pMsg = (CNetMsg_Cl_Vote *)pRawMsg;
 
-			luabridge::LuaRef Result(CLua::Lua()->L());
-			MACRO_LUA_CALLBACK_RESULT("OnVote", Result=, ClientID, pMsg->m_Vote)
+			MACRO_LUA_CALLBACK_RESULT_REF("OnVote", Result, ClientID, pMsg->m_Vote)
 			if(MACRO_LUA_RESULT_BOOL(Result, false))
 				return;
 
@@ -1007,8 +1004,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if(pPlayer->GetTeam() == pMsg->m_Team || (g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam+Server()->TickSpeed()*g_Config.m_SvSpamprotectionTeam > Server()->Tick()))
 				return;
 
-			luabridge::LuaRef Result(CLua::Lua()->L());
-			MACRO_LUA_CALLBACK_RESULT("OnSetTeam", Result=, ClientID, pMsg->m_Team)
+			MACRO_LUA_CALLBACK_RESULT_REF("OnSetTeam", Result, ClientID, pMsg->m_Team)
 			if(MACRO_LUA_RESULT_BOOL(Result, false))
 				return;
 
@@ -1098,8 +1094,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if(g_Config.m_SvSpamprotection && pPlayer->m_LastEmote && pPlayer->m_LastEmote+Server()->TickSpeed()*g_Config.m_SvSpamprotectionEmote > Server()->Tick())
 				return;
 
-			luabridge::LuaRef Result(CLua::Lua()->L());
-			MACRO_LUA_CALLBACK_RESULT("OnEmote", Result=, ClientID, pMsg->m_Emoticon)
+			MACRO_LUA_CALLBACK_RESULT_REF("OnEmote", Result, ClientID, pMsg->m_Emoticon)
 			if(MACRO_LUA_RESULT_BOOL(Result, false))
 				return;
 

@@ -54,3 +54,7 @@ Gameserver:
   - OnVote(int ClientID, int Vote)  # Vote := { -1; 1 }
   - OnSetTeam(int ClientID, int Team)
   - OnEmote(int ClientID, int Emote)
+
+Server:
+  - OnRconAuth(int ClientID, string GivenPassword)  # return: nothing = handle natively, true = admin, false = rejected, number = custom access level
+  - OnRconCommand(int ClientID, string Command)  # return true if the command was handled by lua (will make c++ comletely ignore it)

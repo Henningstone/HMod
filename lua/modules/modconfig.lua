@@ -118,7 +118,7 @@ function CreateRconString(name, default, description)
     -- register it to the console
     Srv.Console:Register(varname, "?r", description, function(result)
         if result:NumArguments() == 0 then
-            Srv.Console:Print("Console", "Value: " .. Get(name))
+            Srv.Console:Print("Console", "Value: " .. Get(name), result:GetCID())
         else
             Set(name, result:GetString(0))
         end
@@ -152,7 +152,7 @@ function CreateRconInt(name, min, max, default, description)
     -- register it to the console
     Srv.Console:Register(varname, "?i", description, function(result)
         if result:NumArguments() == 0 then
-            Srv.Console:Print("Console", "Value: " .. Get(name))
+            Srv.Console:Print("Console", "Value: " .. Get(name), result:GetCID())
         else
             -- get the new value and clamp it
             local new_val = result:GetInteger(0)

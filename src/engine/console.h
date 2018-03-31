@@ -22,9 +22,10 @@ public:
 
 		ACCESS_LEVEL_ADMIN=0,
 		ACCESS_LEVEL_MOD,
+		ACCESS_LEVEL_WORST=0xFFFF,
 
 		TEMPCMD_NAME_LENGTH=32,
-		TEMPCMD_HELP_LENGTH=96,
+		TEMPCMD_HELP_LENGTH=128,
 		TEMPCMD_PARAMS_LENGTH=16,
 
 		MAX_PRINT_CB=4,
@@ -35,8 +36,9 @@ public:
 	{
 	protected:
 		unsigned m_NumArgs;
+		int m_ExecutingClientID;
 	public:
-		IResult() { m_NumArgs = 0; }
+		IResult(int ExecutingClientID) : m_ExecutingClientID(ExecutingClientID) { m_NumArgs = 0; }
 		virtual ~IResult() {}
 
 		virtual int GetInteger(unsigned Index) = 0;
@@ -47,6 +49,7 @@ public:
 		virtual float OptFloat(unsigned Index, float Default) = 0;
 
 		int NumArguments() const { return m_NumArgs; }
+		int GetCID() const { return m_ExecutingClientID; }
 	};
 
 	class CCommandInfo
@@ -66,12 +69,14 @@ public:
 	};
 
 	typedef void (*FPrintCallback)(const char *pStr, void *pUser);
+	typedef void (*FPrintToCallback)(int To, const char *pStr, void *pUser);
 	typedef void (*FPossibleCallback)(const char *pCmd, void *pUser);
 	typedef void (*FCommandCallback)(IResult *pResult, void *pUserData);
 	typedef void (*FChainCommandCallback)(IResult *pResult, void *pUserData, FCommandCallback pfnCallback, void *pCallbackUserData);
 
 	virtual const CCommandInfo *FirstCommandInfo(int AccessLevel, int Flagmask) const = 0;
 	virtual const CCommandInfo *GetCommandInfo(const char *pName, int FlagMask, bool Temp) = 0;
+	virtual void SetCommandAccessLevel(const char *pName, int AccessLevel) = 0;
 	virtual void PossibleCommands(const char *pStr, int FlagMask, bool Temp, FPossibleCallback pfnCallback, void *pUser) = 0;
 	virtual void ParseArguments(int NumArgs, const char **ppArguments) = 0;
 
@@ -84,15 +89,17 @@ public:
 	virtual void StoreCommands(bool Store) = 0;
 
 	virtual bool LineIsValid(const char *pStr) = 0;
-	virtual void ExecuteLine(const char *Sptr) = 0;
-	virtual void ExecuteLineFlag(const char *Sptr, int FlasgMask) = 0;
-	virtual void ExecuteLineStroked(int Stroke, const char *pStr) = 0;
+	virtual void ExecuteLine(const char *Sptr, int Who = -1) = 0;
+	virtual void ExecuteLineFlag(const char *Sptr, int FlasgMask, int Who = -1) = 0;
+	virtual void ExecuteLineStroked(int Stroke, const char *pStr, int Who = -1) = 0;
 	virtual void ExecuteFile(const char *pFilename) = 0;
 
 	virtual int RegisterPrintCallback(int OutputLevel, FPrintCallback pfnPrintCallback, void *pUserData) = 0;
+	virtual int RegisterPrintToCallback(FPrintToCallback pfnPrintToCallback, void *pUserData) = 0;
 	virtual void SetPrintOutputLevel(int Index, int OutputLevel) = 0;
 	virtual void Print(int Level, const char *pFrom, const char *pStr) = 0;
-	virtual void PrintLua(const char *pFrom, const char *pStr) = 0;
+	virtual void PrintTo(int To, const char *pFrom, const char *pStr) = 0;
+	virtual void PrintLua(const char *pFrom, const char *pStr, lua_State *L /* [, int To ] */) = 0;
 	virtual void Printf(int Level, const char *pFrom, const char *pFmt, ...) = 0;
 
 	virtual void SetAccessLevel(int AccessLevel) = 0;
