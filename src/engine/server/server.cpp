@@ -384,11 +384,75 @@ void CServer::SetClientScore(int ClientID, int Score)
 	m_aClients[ClientID].m_Score = Score;
 }
 
-void CServer::SetClientAccessLevel(int ClientID, int AccessLevel)
+void CServer::SetClientAccessLevel(int ClientID, int AccessLevel, bool SendRconCmds)
 {
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State < CClient::STATE_READY)
 		return;
+
+	int PrevAccessLevel = m_aClients[ClientID].m_AccessLevel;
+
+	// nothing to change
+	if(PrevAccessLevel == AccessLevel)
+		return;
+
+	// check if they've already got an access level or we want to remove it
+	if(m_aClients[ClientID].m_Authed || m_aClients[ClientID].m_Authed && AccessLevel < 0)
+	{
+		CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
+		Msg.AddInt(0);    //authed
+		Msg.AddInt(0);    //cmdlist
+		SendMsgEx(&Msg, MSGFLAG_VITAL, ClientID, true);
+
+		m_aClients[ClientID].m_Authed = AUTHED_NO;
+		m_aClients[ClientID].m_AuthTries = 0;
+		m_aClients[ClientID].m_AccessLevel = IConsole::ACCESS_LEVEL_WORST;
+		m_aClients[ClientID].m_pRconCmdToSend = 0;
+
+		if(AccessLevel < 0)
+		{
+			SendRconLine(ClientID, "Console Access revoked.");
+			char aBuf[32];
+			str_format(aBuf, sizeof(aBuf), "ClientID=%d force-logged out", ClientID);
+			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+
+			return;
+		}
+	}
+
+	// tell them that they're now authed
+	CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
+	Msg.AddInt(1);	/*authed*/
+	Msg.AddInt(1);	/*cmdlist*/
+	SendMsgEx(&Msg, MSGFLAG_VITAL, ClientID, true);
+
+	m_aClients[ClientID].m_Authed = AccessLevel == IConsole::ACCESS_LEVEL_ADMIN
+									? AUTHED_ADMIN
+									: AccessLevel == IConsole::ACCESS_LEVEL_MOD
+									  ? AUTHED_MOD
+									  : AUTHED_CUSTOM;
 	m_aClients[ClientID].m_AccessLevel = AccessLevel;
+	if(SendRconCmds)
+		m_aClients[ClientID].m_pRconCmdToSend = Console()->FirstCommandInfo(AccessLevel, CFGFLAG_SERVER);
+
+	if(PrevAccessLevel == IConsole::ACCESS_LEVEL_WORST)
+	{
+		char aBuf[256];
+		str_format(aBuf, sizeof(aBuf), "Welcome! Access level %i granted, selected commands available.", AccessLevel);
+		SendRconLine(ClientID, aBuf);
+
+		str_format(aBuf, sizeof(aBuf), "ClientID=%d was granted access level %i", ClientID, AccessLevel);
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+	}
+	else
+	{
+		char aBuf[256];
+		str_formatb(aBuf, "Your access level was changed from %i to %i.", PrevAccessLevel, AccessLevel);
+		SendRconLine(ClientID, aBuf);
+
+		str_format(aBuf, sizeof(aBuf), "ClientID=%d was changed from access level %i to %i", ClientID, PrevAccessLevel, AccessLevel);
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+
+	}
 }
 
 void CServer::Kick(int ClientID, const char *pReason)
@@ -1127,20 +1191,9 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 						}
 						else
 						{
-							CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
-							Msg.AddInt(1);	/*authed*/
-							Msg.AddInt(1);	/*cmdlist*/
-							SendMsgEx(&Msg, MSGFLAG_VITAL, ClientID, true);
-
-							m_aClients[ClientID].m_Authed = AUTHED_CUSTOM;
-							m_aClients[ClientID].m_AccessLevel = AccessLevel;
-							int SendRconCmds = Unpacker.GetInt();
-							if(Unpacker.Error() == 0 && SendRconCmds)
-								m_aClients[ClientID].m_pRconCmdToSend = Console()->FirstCommandInfo(AccessLevel, CFGFLAG_SERVER);
-							SendRconLine(ClientID, "Welcome! Access to selected commands available.");
-							char aBuf[256];
-							str_format(aBuf, sizeof(aBuf), "ClientID=%d was granted access level %i", ClientID, AccessLevel);
-							Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+							bool SendRconCmds = Unpacker.GetInt() != 0;
+							SendRconCmds = SendRconCmds && !Unpacker.Error();
+							SetClientAccessLevel(ClientID, AccessLevel, SendRconCmds);
 						}
 					}
 				}
@@ -1861,8 +1914,9 @@ void CServer::ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser)
 void CServer::ConLuaListClasses(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pSelf = ((CServer *)pUser);
+	int ClientID = pResult->GetCID();
 
-	pSelf->Console()->PrintTo(pSelf->m_RconClientID, "lua_listclasses", "----- Begin Loaded User Classes -----");
+	pSelf->Console()->PrintTo(ClientID, "lua_listclasses", "----- Begin Loaded User Classes -----");
 
 	int Num = CLua::Lua()->NumLoadedClasses();
 	for(int i = 0; i < Num; i++)
@@ -1871,28 +1925,29 @@ void CServer::ConLuaListClasses(IConsole::IResult *pResult, void *pUser)
 		pSelf->Console()->Printf(0, "lua_listclasses", "%i: %s", i+1, ObjIdent.c_str());
 	}
 
-	pSelf->Console()->PrintTo(pSelf->m_RconClientID, "lua_listclasses", "-----  End Loaded User Classes  -----");
+	pSelf->Console()->PrintTo(ClientID, "lua_listclasses", "-----  End Loaded User Classes  -----");
 }
 
 void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
+	int ClientID = pResult->GetCID();
 
-	if(pServer->m_RconClientID >= 0 && pServer->m_RconClientID < MAX_CLIENTS &&
-		pServer->m_aClients[pServer->m_RconClientID].m_State != CServer::CClient::STATE_EMPTY)
+	if(ClientID >= 0 && ClientID < MAX_CLIENTS &&
+		pServer->m_aClients[ClientID].m_State != CServer::CClient::STATE_EMPTY)
 	{
 		CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
 		Msg.AddInt(0);	//authed
 		Msg.AddInt(0);	//cmdlist
-		pServer->SendMsgEx(&Msg, MSGFLAG_VITAL, pServer->m_RconClientID, true);
+		pServer->SendMsgEx(&Msg, MSGFLAG_VITAL, ClientID, true);
 
-		pServer->m_aClients[pServer->m_RconClientID].m_Authed = AUTHED_NO;
-		pServer->m_aClients[pServer->m_RconClientID].m_AuthTries = 0;
-		pServer->m_aClients[pServer->m_RconClientID].m_AccessLevel = IConsole::ACCESS_LEVEL_WORST;
-		pServer->m_aClients[pServer->m_RconClientID].m_pRconCmdToSend = 0;
-		pServer->SendRconLine(pServer->m_RconClientID, "Logout successful.");
+		pServer->m_aClients[ClientID].m_Authed = AUTHED_NO;
+		pServer->m_aClients[ClientID].m_AuthTries = 0;
+		pServer->m_aClients[ClientID].m_AccessLevel = IConsole::ACCESS_LEVEL_WORST;
+		pServer->m_aClients[ClientID].m_pRconCmdToSend = 0;
+		pServer->SendRconLine(ClientID, "Logout successful.");
 		char aBuf[32];
-		str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", pServer->m_RconClientID);
+		str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", ClientID);
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
 	}
 }

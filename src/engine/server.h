@@ -54,7 +54,7 @@ public:
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;
 	virtual void SetClientCountry(int ClientID, int Country) = 0;
 	virtual void SetClientScore(int ClientID, int Score) = 0;
-	virtual void SetClientAccessLevel(int ClientID, int Level) = 0;
+	virtual void SetClientAccessLevel(int ClientID, int Level, bool SendRconCmds) = 0;
 
 	virtual int SnapNewID() = 0;
 	virtual void SnapFreeID(int ID) = 0;

@@ -186,7 +186,7 @@ public:
 	virtual void SetClientClan(int ClientID, char const *pClan);
 	virtual void SetClientCountry(int ClientID, int Country);
 	virtual void SetClientScore(int ClientID, int Score);
-	virtual void SetClientAccessLevel(int ClientID, int AccessLevel);
+	virtual void SetClientAccessLevel(int ClientID, int AccessLevel, bool SendRconCmds);
 
 	void Kick(int ClientID, const char *pReason);
 
