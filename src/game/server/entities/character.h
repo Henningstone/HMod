@@ -90,6 +90,24 @@ public:
 		return &m_aWeapons[ID];
 	}
 
+	int m_FreezeTime;
+	bool m_DeepFreeze;
+	bool m_EndlessHook;
+	bool m_SuperJump;
+
+	// ddrace courtesy
+	void DDRaceTick();
+	void DDRacePostCoreTick();
+
+	bool Freeze(int Seconds);
+	void UnFreeze();
+	void DeepFreeze() { m_DeepFreeze = true; }
+	void UnDeep();
+	bool IsFrozen() const { return m_FreezeTime > 0; }
+	bool IsDeep() const { return m_DeepFreeze; }
+	void SetEndlessHook(bool Active) { m_EndlessHook = Active; }
+	void SetSuperJump(bool Active) { m_SuperJump = Active; }
+
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;

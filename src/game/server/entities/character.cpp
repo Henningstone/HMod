@@ -46,6 +46,11 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_Health = 0;
 	m_Armor = 0;
 	m_PhysicsEnabled = true;
+
+	m_FreezeTime = 0;
+	m_DeepFreeze = false;
+	m_EndlessHook = false;
+	m_SuperJump = false;
 }
 
 void CCharacter::Reset()
@@ -456,6 +461,74 @@ void CCharacter::HandleWeapons()
 	return;
 }
 
+void CCharacter::DDRaceTick()
+{
+	if(IsFrozen())
+	{
+		if (m_FreezeTime % Server()->TickSpeed() == Server()->TickSpeed() - 1)
+		{
+			GameServer()->CreateDamageInd(m_Pos, 0, (m_FreezeTime + 1) / Server()->TickSpeed());
+		}
+
+		if(m_FreezeTime > 0)
+			m_FreezeTime--;
+		else
+			m_Ninja.m_ActivationTick = Server()->Tick();
+
+		m_Input.m_Direction = 0;
+		m_Input.m_Jump = 0;
+		m_Input.m_Hook = 0;
+
+		if (m_FreezeTime == 1)
+			UnFreeze();
+	}
+}
+
+void CCharacter::DDRacePostCoreTick()
+{
+	if (m_EndlessHook)
+		m_Core.m_HookTick = 0;
+
+	if (m_DeepFreeze)
+		Freeze(60);
+/*
+	if (m_Core.m_Jumps == 0 && !m_Super)
+		m_Core.m_Jumped = 3;
+	else if (m_Core.m_Jumps == 1 && m_Core.m_Jumped > 0)
+		m_Core.m_Jumped = 3;
+	else if (m_Core.m_JumpedTotal < m_Core.m_Jumps - 1 && m_Core.m_Jumped > 1)
+		m_Core.m_Jumped = 1;
+*/
+	if (m_SuperJump && m_Core.m_Jumped > 1)
+		m_Core.m_Jumped = 1;
+}
+
+
+bool CCharacter::Freeze(int Seconds)
+{
+	if ((Seconds <= 0 || m_FreezeTime > Seconds * Server()->TickSpeed()))
+		 return false;
+
+	m_FreezeTime = Seconds * Server()->TickSpeed();
+	return true;
+}
+
+void CCharacter::UnFreeze()
+{
+	if(!IsFrozen())
+		return;
+
+	m_FreezeTime = 0;
+	if(m_ActiveWeaponSlot == WEAPON_HAMMER)
+		m_ReloadTimer = 0;
+}
+
+void CCharacter::UnDeep()
+{
+	m_DeepFreeze = false;
+	UnFreeze();
+}
+
 bool CCharacter::GiveWeapon(int Weapon, int Ammo)
 {
 	return GiveWeaponSlot(Weapon, Ammo, Weapon);
@@ -560,6 +633,8 @@ void CCharacter::Tick()
 		m_pPlayer->m_ForceBalanced = false;
 	}
 
+	DDRaceTick();
+
 	m_Core.m_Input = m_Input;
 
 	if(m_PhysicsEnabled)
@@ -576,7 +651,11 @@ void CCharacter::Tick()
 	}
 
 	// handle Weapons
-	HandleWeapons();
+	if(!IsFrozen())
+		HandleWeapons();
+
+	// for schtuff
+	DDRacePostCoreTick();
 
 	// Previnput
 	m_PrevInput = m_Input;
@@ -880,7 +959,7 @@ void CCharacter::Snap(int SnappingClient)
 	pCharacter->m_Health = 0;
 	pCharacter->m_Armor = 0;
 
-	pCharacter->m_Weapon = m_aWeapons[m_ActiveWeaponSlot].m_WeaponId;
+	pCharacter->m_Weapon = IsFrozen() ? WEAPON_NINJA : m_aWeapons[m_ActiveWeaponSlot].m_WeaponId;
 	pCharacter->m_AttackTick = m_AttackTick;
 
 	pCharacter->m_Direction = m_Input.m_Direction;
@@ -889,7 +968,7 @@ void CCharacter::Snap(int SnappingClient)
 		(!g_Config.m_SvStrictSpectateMode && m_pPlayer->GetCID() == GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID))
 	{
 		pCharacter->m_Health = m_Health;
-		pCharacter->m_Armor = m_Armor;
+		pCharacter->m_Armor = IsFrozen() ? 10 - (m_FreezeTime/15) : m_Armor;
 		if(m_aWeapons[m_ActiveWeaponSlot].m_Ammo > 0)
 			pCharacter->m_AmmoCount = m_aWeapons[m_ActiveWeaponSlot].m_Ammo;
 	}
