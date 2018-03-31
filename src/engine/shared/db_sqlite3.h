@@ -4,15 +4,18 @@
 #ifndef ENGINE_CLIENT_DB_SQLITE3_H
 #define ENGINE_CLIENT_DB_SQLITE3_H
 
+#include <string>
 #include <vector>
 #include <queue>
-#include <string>
-#include <base/system.h>
-#include <base/system++/threading.h>
-#include <engine/external/sqlite3/sqlite3.h>
-#include <engine/server.h>
 #include <mutex>
 #include <atomic>
+
+#include <base/system.h>
+#include <base/system++/threading.h>
+
+#include <engine/external/sqlite3/sqlite3.h>
+#include <engine/server.h>
+
 
 class CQuery
 {

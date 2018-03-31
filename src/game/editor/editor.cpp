@@ -158,7 +158,7 @@ int CLayerGroup::SwapLayers(int Index0, int Index1)
 	if(Index1 < 0 || Index1 >= m_lLayers.size()) return Index0;
 	if(Index0 == Index1) return Index0;
 	m_pMap->m_Modified = true;
-	swap(m_lLayers[Index0], m_lLayers[Index1]);
+	tl_swap(m_lLayers[Index0], m_lLayers[Index1]);
 	return Index1;
 }
 
