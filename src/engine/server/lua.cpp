@@ -46,6 +46,7 @@ void CLua::OpenLua()
 
 	InitializeLuaState();
 	RegisterLuaCallbacks();
+	InjectOverrides();
 }
 
 void CLua::InitializeLuaState()
@@ -74,6 +75,20 @@ void CLua::InitializeLuaState()
 			";%s/?/init.lua", Path.tostring().c_str(), aCompletePath, aCompletePath);
 
 	Package["path"] = std::string(aBuf);
+}
+
+void CLua::InjectOverrides()
+{
+	// store the original io.open function somewhere secretly
+	// we must store it IN lua, otherwise it won't work anymore :/
+	lua_getregistry(m_pLuaState);                           // STACK: +1
+	lua_getglobal(m_pLuaState, "io");                       // STACK: 2+
+	lua_getfield(m_pLuaState, -1, "open");                  // STACK: 3+
+	lua_setfield(m_pLuaState, -3, LUA_REGINDEX_IO_OPEN);    // STACK: 2-
+	lua_pop(m_pLuaState, 2);                                // STACK: 0-
+
+	// now override it with our own function
+	luaL_dostring(m_pLuaState, "io.open = _io_open");
 }
 
 bool CLua::Reload()

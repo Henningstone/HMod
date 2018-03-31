@@ -14,6 +14,8 @@
 		}
 
 
+#define LUA_REGINDEX_IO_OPEN "TeeModF:io.open"
+
 class CLuaBinding
 {
 	static class CLua *ms_pLua;
@@ -21,12 +23,18 @@ class CLuaBinding
 public:
 	static void StaticInit(CLua *pLua) { ms_pLua = pLua; }
 
+	static int LuaListdirCallback(const char *name, const char *full_path, int is_dir, int dir_type, void *user);
+
 	static int ScriptName(lua_State *L);
 	static int Print(lua_State *L);
 	static int Throw(lua_State *L);
 
+	static int LuaListdir(lua_State *L);
+
+	// io override
+	static int LuaIO_Open(lua_State *L);
+
 	// helper functions
-	static const char *SandboxPath(char *pInOutBuffer, unsigned BufferSize, lua_State *L, bool MakeFullPath = false);
 };
 
 #endif

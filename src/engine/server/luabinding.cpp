@@ -2,6 +2,7 @@
 #include <base/system.h>
 #include <engine/shared/config.h>
 #include <engine/storage.h>
+#include <base/math.h>
 
 #include "luabinding.h"
 #include "lua.h"
@@ -74,15 +75,95 @@ int CLuaBinding::Throw(lua_State *L)
 	return result;
 }
 
-const char *CLuaBinding::SandboxPath(char *pInOutBuffer, unsigned BufferSize, lua_State *L, bool MakeFullPath)
+int CLuaBinding::LuaListdirCallback(const char *name, const char *full_path, int is_dir, int dir_type, void *user)
 {
-	const char *pSubdir = g_Config.m_SvGametype;
+	lua_State *L = (lua_State*)user;
+	lua_pushvalue(L, lua_gettop(L)); // duplicate the callback function which is on top of the stack
+	lua_pushstring(L, name); // push arg 1 (element name)
+	lua_pushstring(L, full_path); // push arg 2 (element path)
+	lua_pushboolean(L, is_dir); // push arg 3 (bool indicating whether element is a folder)
+	lua_call(L, 3, 1); // no pcall so that errors get propagated upwards
+	int ret = 0;
+	if(lua_isnumber(L, -1))
+		ret = round_to_int((float)lua_tonumber(L, -1));
+	lua_pop(L, 1); // pop return
+	return ret;
+}
+
+/* lua call: Listdir(<string> foldername, <string/function> callback) */
+int CLuaBinding::LuaListdir(lua_State *L)
+{
+	int nargs = lua_gettop(L);
+	if(nargs != 2)
+		return luaL_error(L, "Listdir expects 2 arguments");
+
+	argcheck(lua_isstring(L, 1), 1, "string"); // path
+	argcheck(lua_isstring(L, 2) || lua_isfunction(L, 2), 2, "string (function name) or function"); // callback function
+
+	// convert the function name into the actual function
+	if(lua_isstring(L, 2))
+	{
+		lua_getglobal(L, lua_tostring(L, 2)); // check if the given callback function actually exists / retrieve the function
+		argcheck(lua_isfunction(L, -1), 2, "function name (does the given function exist?)");
+	}
+
+	char aSandboxedPath[512];
+	str_copyb(aSandboxedPath, lua_tostring(L, 1)); // arg1
+	const char *pDir = CLua::Lua()->Storage()->SandboxPathMod(aSandboxedPath, sizeof(aSandboxedPath), g_Config.m_SvGametype, true);
+	lua_Number ret = (lua_Number)fs_listdir_verbose(pDir, LuaListdirCallback, IStorage::TYPE_SAVE, L);
+	lua_pushnumber(L, ret);
+	return 1;
+}
+
+int CLuaBinding::LuaIO_Open(lua_State *L)
+{
+	int nargs = lua_gettop(L);
+	if(nargs < 1 || nargs > 3)
+		return luaL_error(L, "io.open expects between 1 and 3 arguments");
+
+	argcheck(lua_isstring(L, 1), 1, "string"); // path
+	if(nargs >= 2)
+		argcheck(lua_isstring(L, 2), 2, "string"); // mode
+	if(nargs == 3)
+		argcheck(lua_isboolean(L, 3), 3, "bool"); // 'shared' flag
+
+	const char *pFilename = lua_tostring(L, 1);
+	const char *pOpenMode = luaL_optstring(L, 2, "r");
+	bool Shared = false;
+	if(nargs == 3)
+	{
+		if(lua_toboolean(L, 3))
+			Shared = true;
+	}
+
+	char aFilename[512];
+	str_copyb(aFilename, pFilename);
+	pFilename = CLua::Lua()->Storage()->SandboxPathMod(aFilename, sizeof(aFilename), Shared ? "_shared" : g_Config.m_SvGametype);
 
 	char aFullPath[512];
-	str_formatb(aFullPath, "mods_storage/%s/%s", pSubdir, CLua::Lua()->Storage()->SandboxPath(pInOutBuffer, BufferSize));
-	if(MakeFullPath)
-		CLua::Lua()->Storage()->MakeFullPath(aFullPath, sizeof(aFullPath), IStorage::TYPE_SAVE);
-	str_copy(pInOutBuffer, aFullPath, BufferSize);
+	CLua::Lua()->Storage()->GetCompletePath(IStorage::TYPE_SAVE, pFilename, aFullPath, sizeof(aFullPath));
+	if(str_find_nocase(pOpenMode, "w"))
+	{
+		if(fs_makedir_rec_for(aFullPath) != 0)
+			return luaL_error(L, "Failed to create path for file '%s'", aFullPath);
+	}
 
-	return pInOutBuffer;
+	// now we make a call to the builtin function 'io.open'
+	lua_pop(L, nargs); // pop our args
+
+	// receive the original io.open that we have saved in the registry
+	lua_getregistry(L);
+	lua_getfield(L, -1, LUA_REGINDEX_IO_OPEN);
+
+	// push the arguments
+	lua_pushstring(L, aFullPath); // he needs the full path
+	lua_pushstring(L, pOpenMode);
+
+	// fire it off
+	// this pops 3 things (function + args) and pushes 1 (resulting file handle)
+	lua_call(L, 2, 1);
+
+	// push an additional argument for the scripter
+	lua_pushstring(L, pFilename);
+	return 2; // we'll leave cleaning the stack up to lua
 }

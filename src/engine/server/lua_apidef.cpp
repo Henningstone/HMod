@@ -32,7 +32,9 @@ void CLua::RegisterLuaCallbacks()
 
 	lua_register(L, "print", CLuaBinding::Print);
 	lua_register(L, "throw", CLuaBinding::Throw); // adds an exception, but doesn't jump out like 'error' does
-	lua_register(L, "script_name", CLuaBinding::ScriptName);
+	lua_register(L, "_io_open", CLuaBinding::LuaIO_Open);
+	lua_register(L, "GetScriptName", CLuaBinding::ScriptName);
+	lua_register(L, "Listdir", CLuaBinding::LuaListdir);
 
 	getGlobalNamespace(L)
 

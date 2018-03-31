@@ -119,6 +119,7 @@ class CLua : public ILua
 {
 	friend class CLuaBinding;
 	friend class CLuaRessourceMgr;
+	friend class CLuaSql;
 
 public:
 	enum
@@ -140,6 +141,7 @@ private:
 	lua_State *m_pLuaState;
 	void InitializeLuaState();
 	void RegisterLuaCallbacks();
+	void InjectOverrides();
 	bool RegisterScript(const char *pFullPath, const char *pObjName, bool Reloading = false);
 	static int ListdirCallback(const char *name, const char *full_path, int is_dir, int dir_type, void *user);
 	bool LoadLuaFile(const char *pFilePath);
