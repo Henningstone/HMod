@@ -1,4 +1,5 @@
 #include <engine/lua_include.h>
+#include <engine/storage.h>
 
 #include <game/server/gamecontroller.h>
 #include <game/server/gamecontext.h>
@@ -535,6 +536,14 @@ void CLua::RegisterLuaCallbacks()
 		.deriveClass<CLuaEntity, CEntity>("CLuaEntity")
 		.endClass()
 
+		/// Srv.Storage
+		.beginClass<IStorage>("IStorage")
+			.addFunction("RemoveFile", &IStorage::RemoveFileLua)
+			.addFunction("RenameFile", &IStorage::RenameFileLua)
+			.addFunction("CreateFolder", &IStorage::CreateFolderLua)
+			.addFunction("GetFullPath", &IStorage::GetFullPathLua)
+		.endClass()
+
 		.beginClass<IConsole::IResult>("IConsole_IResult")
 			.addFunction("GetInteger", &IConsole::IResult::GetInteger)
 			.addFunction("GetFloat", &IConsole::IResult::GetFloat)
@@ -552,7 +561,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("LineIsValid", &IConsole::LineIsValid)
 			.addFunction("Register", &IConsole::RegisterLua)
 			.addFunction("SetCommandAccessLevel", &IConsole::SetCommandAccessLevel) // set to > 0xFFFF to give *everyone* access by default
-			.addFunction("ExecuteLine", &IConsole::ExecuteLine)
+			//.addFunction("ExecuteLine", &IConsole::ExecuteLine) // peeps pls no use dis hacky shit
 		.endClass()
 
 
@@ -561,6 +570,7 @@ void CLua::RegisterLuaCallbacks()
 			.addVariable("Lua", &CLua::ms_pSelf, false)
 			.addVariable("Game", &CLua::ms_pSelf->m_pGameServer, false)
 			.addVariable("Server", &CLua::ms_pSelf->m_pServer, false)
+			.addVariable("Storage", &CLua::ms_pSelf->m_pStorage, false)
 		.endNamespace()
 
 		/// Config.<var_name>

@@ -3,6 +3,8 @@
 #ifndef ENGINE_STORAGE_H
 #define ENGINE_STORAGE_H
 
+#include <string>
+#include <lua.hpp>
 #include "kernel.h"
 
 class IStorage : public IInterface
@@ -29,6 +31,11 @@ public:
 	virtual const char *MakeFullPath(char *pBuffer, unsigned BufferSize, int StorageType) const = 0;
 	virtual const char *SandboxPath(char *pBuffer, unsigned BufferSize, const char *pPrepend = 0, bool ForcePrepend = false) const = 0;
 	virtual const char *SandboxPathMod(char *pInOutBuffer, unsigned BufferSize, const char *pSubdir, bool MakeFullPath = false) const = 0;
+
+	virtual bool RemoveFileLua(const char *pFilename) = 0;
+	virtual bool RenameFileLua(const char *pOldFilename, const char *pNewFilename) = 0;
+	virtual bool CreateFolderLua(const char *pFoldername) = 0;
+	virtual std::string GetFullPathLua(const char *pPath) = 0;
 };
 
 extern IStorage *CreateStorage(const char *pApplicationName, int StorageType, int NumArgs, const char **ppArguments);

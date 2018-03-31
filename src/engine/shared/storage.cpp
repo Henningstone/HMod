@@ -7,8 +7,10 @@
 #include <base/system++/system++.h>
 
 #include <engine/storage.h>
+#include <engine/lua_include.h>
 
 #include "linereader.h"
+#include "config.h"
 
 // compiled-in data-dir path
 #define DATA_DIR "data"
@@ -19,7 +21,7 @@ public:
 	enum
 	{
 		MAX_PATHS = 16,
-		MAX_PATH_LENGTH = 512
+		MAX_PATH_LENGTH = 1024
 	};
 
 	char m_aaStoragePaths[MAX_PATHS][MAX_PATH_LENGTH];
@@ -497,6 +499,48 @@ public:
 		GetPath(StorageType, aBuf, pBuffer, BufferSize);
 		return pBuffer;
 	}
+
+
+	bool RemoveFileLua(const char *pFilename)
+	{
+		char aBuf[MAX_PATH_LENGTH];
+		str_copyb(aBuf, pFilename);
+		SandboxPathMod(aBuf, sizeof(aBuf), g_Config.m_SvGametype, false);
+
+		return RemoveFile(aBuf, TYPE_SAVE);
+	}
+
+	bool RenameFileLua(const char *pOldFilename, const char *pNewFilename)
+	{
+		char aOld[MAX_PATH_LENGTH];
+		str_copyb(aOld, pOldFilename);
+		SandboxPathMod(aOld, sizeof(aOld), g_Config.m_SvGametype, false);
+
+		char aNew[MAX_PATH_LENGTH];
+		str_copyb(aNew, pNewFilename);
+		SandboxPathMod(aNew, sizeof(aNew), g_Config.m_SvGametype, false);
+
+		return RenameFile(aOld, aNew, TYPE_SAVE);
+	}
+
+	bool CreateFolderLua(const char *pFoldername)
+	{
+		char aBuf[MAX_PATH_LENGTH];
+		str_copyb(aBuf, pFoldername);
+		SandboxPathMod(aBuf, sizeof(aBuf), g_Config.m_SvGametype, false);
+
+		return CreateFolder(aBuf, TYPE_SAVE);
+	}
+
+	std::string GetFullPathLua(const char *pPath)
+	{
+		char aBuf[MAX_PATH_LENGTH];
+		str_copyb(aBuf, pPath);
+		SandboxPathMod(aBuf, sizeof(aBuf), g_Config.m_SvGametype, true);
+
+		return std::string(aBuf);
+	}
+
 
 	bool GenerateStorageCfg() const
 	{
