@@ -479,7 +479,8 @@ void CLua::RegisterLuaCallbacks()
 
 			.addData("Health", &CCharacter::m_Health)
 			.addData("Armor", &CCharacter::m_Armor)
-			.addData("Jumped", &CCharacter::m_Jumped)
+//			.addData("Jumped", &CCharacter::m_Jumped)
+			.addData("ExtraJumps", &CCharacter::m_ExtraJumps)
 
 			.addFunction("Freeze", &CCharacter::Freeze)
 			.addFunction("UnFreeze", &CCharacter::UnFreeze)

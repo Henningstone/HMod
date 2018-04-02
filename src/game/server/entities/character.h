@@ -94,6 +94,8 @@ public:
 	bool m_DeepFreeze;
 	bool m_EndlessHook;
 	bool m_SuperJump;
+	int m_ExtraJumps;
+	int m_AirjumpsLeft;
 
 	// ddrace courtesy
 	void DDRaceTick();
@@ -144,7 +146,7 @@ private:
 	CNetObj_PlayerInput m_PrevInput;
 	CNetObj_PlayerInput m_Input;
 	int m_NumInputs;
-	int m_Jumped;
+//	int m_Jumped;
 
 	int m_DamageTakenTick;
 

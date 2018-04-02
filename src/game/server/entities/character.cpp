@@ -51,6 +51,8 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_DeepFreeze = false;
 	m_EndlessHook = false;
 	m_SuperJump = false;
+	m_ExtraJumps = 0;
+	m_AirjumpsLeft = 0;
 }
 
 void CCharacter::Reset()
@@ -463,6 +465,7 @@ void CCharacter::HandleWeapons()
 
 void CCharacter::DDRaceTick()
 {
+	// handle freeze
 	if(IsFrozen())
 	{
 		if (m_FreezeTime % Server()->TickSpeed() == Server()->TickSpeed() - 1)
@@ -482,6 +485,12 @@ void CCharacter::DDRaceTick()
 		if (m_FreezeTime == 1)
 			UnFreeze();
 	}
+
+	// handle multijump
+	if(IsGrounded())
+	{
+		m_AirjumpsLeft = m_ExtraJumps;
+	}
 }
 
 void CCharacter::DDRacePostCoreTick()
@@ -499,8 +508,16 @@ void CCharacter::DDRacePostCoreTick()
 	else if (m_Core.m_JumpedTotal < m_Core.m_Jumps - 1 && m_Core.m_Jumped > 1)
 		m_Core.m_Jumped = 1;
 */
-	if (m_SuperJump && m_Core.m_Jumped > 1)
-		m_Core.m_Jumped = 1;
+	if(m_Core.m_Jumped > 1)
+	{
+		if(m_SuperJump)
+			m_Core.m_Jumped = 1;
+		else if(m_AirjumpsLeft > 0)
+		{
+			m_Core.m_Jumped = 1;
+			m_AirjumpsLeft--;
+		}
+	}
 }
 
 
