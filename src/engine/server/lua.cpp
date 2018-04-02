@@ -22,17 +22,20 @@ CLua::CLua()
 	m_pLuaState = NULL;
 }
 
-void CLua::Init()
+void CLua::FirstInit()
 {
 	CLua::ms_pSelf = this;
 	CLuaBinding::StaticInit(this);
+}
 
+bool CLua::InitAndStart()
+{
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pGameServer = dynamic_cast<CGameContext *>(Kernel()->RequestInterface<IGameServer>());
 
-	OpenLua();
+	return CleanLaunchLua();
 }
 
 void CLua::OpenLua()
@@ -91,10 +94,11 @@ void CLua::InjectOverrides()
 	luaL_dostring(m_pLuaState, "io.open = _io_open");
 }
 
-bool CLua::Reload()
+bool CLua::CleanLaunchLua()
 {
 	GetResMan()->FreeAll();
-	lua_close(m_pLuaState);
+	if(m_pLuaState)
+		lua_close(m_pLuaState);
 	m_lLuaObjects.clear();
 	OpenLua();
 

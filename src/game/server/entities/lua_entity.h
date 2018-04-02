@@ -16,7 +16,7 @@ public:
 	void Snap(int SnappingClient);
 
 protected:
-	void OnCreate();
+	void OnInsert();
 };
 
 #endif

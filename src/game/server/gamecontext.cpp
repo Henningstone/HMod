@@ -1672,40 +1672,19 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_Layers.Init(Kernel());
 	m_Collision.Init(&m_Layers);
 
-	// reset everything here
-	//world = new GAMEWORLD;
-	//players = new CPlayer[MAX_CLIENTS];
-
-	// select gametype
-/*	if(str_comp(g_Config.m_SvGametype, "mod") == 0)
-		m_pController = new CGameControllerMOD(this);
-	else if(str_comp(g_Config.m_SvGametype, "ctf") == 0)
-		m_pController = new CGameControllerCTF(this);
-	else if(str_comp(g_Config.m_SvGametype, "tdm") == 0)
-		m_pController = new CGameControllerTDM(this);
-	else
-		m_pController = new CGameControllerDM(this);*/
-
 	// this is a friggin lua server, this shit is always modded bro!
 	m_pController = new CGameControllerMOD(this);
 
+	// all set, fire it up!
+	if(!CLua::Lua()->InitAndStart())
+	{
+		Server()->ReloadLuaGametype(); // this will cause the server to stop if it fails again (and if it doesn't, even better!)
+	}
 
-	// setup core world
-	//for(int i = 0; i < MAX_CLIENTS; i++)
-	//	game.players[i].core.world = &game.world.core;
 
 	// create all entities from the game layer
 	CMapItemLayerTilemap *pTileMap = m_Layers.GameLayer();
 	CTile *pTiles = (CTile *)Kernel()->RequestInterface<IMap>()->GetData(pTileMap->m_Data);
-
-
-
-
-	/*
-	num_spawn_points[0] = 0;
-	num_spawn_points[1] = 0;
-	num_spawn_points[2] = 0;
-	*/
 
 	for(int y = 0; y < pTileMap->m_Height; y++)
 	{
@@ -1725,6 +1704,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
+	MACRO_LUA_CALLBACK("OnShutdown")
+
 	delete m_pController;
 	m_pController = 0;
 	Clear();

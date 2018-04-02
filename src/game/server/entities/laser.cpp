@@ -120,7 +120,7 @@ void CLaser::Snap(int SnappingClient)
 	pObj->m_StartTick = m_EvalTick;
 }
 
-void CLaser::OnCreate()
+void CLaser::OnInsert()
 {
 	MACRO_LUA_EVENT()
 }

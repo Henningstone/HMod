@@ -31,7 +31,7 @@ private:
 	int m_SpawnTick;
 
 protected:
-	void OnCreate();
+	void OnInsert();
 };
 
 #endif

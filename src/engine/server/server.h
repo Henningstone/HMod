@@ -193,6 +193,8 @@ public:
 	void DemoRecorder_HandleAutoStart();
 	bool DemoRecorder_IsRecording();
 
+	virtual void ReloadLuaGametype() { m_GametypeReloaded = true; }
+
 	//int Tick()
 	int64 TickStartTime(int Tick);
 	//int TickSpeed()

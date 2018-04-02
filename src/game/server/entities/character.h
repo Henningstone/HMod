@@ -170,7 +170,7 @@ private:
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
 
 protected:
-	void OnCreate();
+	void OnInsert();
 };
 
 #endif

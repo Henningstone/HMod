@@ -89,7 +89,7 @@ public:
 
 	// helper functions
 	class CCharacter *GetPlayerChar(int ClientID);
-	CPlayer *GetPlayer(int ClientID) { return m_apPlayers[ClientID]; };
+	CPlayer *GetPlayer(int ClientID) { return m_apPlayers[ClientID]; }
 	CGameWorld *GetGameWorld() { return &m_World; }
 
 	int m_LockTeams;

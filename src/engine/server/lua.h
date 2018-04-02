@@ -139,9 +139,15 @@ private:
 	CGameContext *GameServer() { return m_pGameServer; }
 
 	lua_State *m_pLuaState;
+
+	bool CleanLaunchLua();
+
+	void OpenLua();
 	void InitializeLuaState();
 	void RegisterLuaCallbacks();
 	void InjectOverrides();
+
+	bool LoadGametype();
 	bool RegisterScript(const char *pFullPath, const char *pObjName, bool Reloading = false);
 	static int ListdirCallback(const char *name, const char *full_path, int is_dir, int dir_type, void *user);
 	bool LoadLuaFile(const char *pFilePath);
@@ -161,14 +167,13 @@ private:
 
 public:
 	CLua();
-	void Init();
-	void OpenLua();
-	bool Reload();
-	bool LoadGametype();
 	lua_State *L() { return m_pLuaState; }
 	CLuaRessourceMgr *GetResMan() { return &m_ResMan; }
 
+	void FirstInit();
+	bool InitAndStart();
 	void ReloadSingleObject(int ObjectID);
+
 	int NumLoadedClasses() const { return (int)m_lLuaObjects.size(); }
 	std::string GetObjectIdentifier(int ID) const { return m_lLuaObjects[ID].GetIdent(); }
 	const char *GetObjectName(int ID) const { return m_lLuaObjects[ID].name.c_str(); }

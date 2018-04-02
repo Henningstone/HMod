@@ -476,6 +476,6 @@ set(SOURCE_FILES
         src/engine/server/lua/luajson.h
         src/engine/server/lua/luasql.cpp
         src/engine/server/lua/luasql.h
-        src/engine/lua_include.h)
+        src/engine/lua_include.h src/game/server/dummy.cpp src/game/server/dummy.h)
 
 add_executable(HMod ${SOURCE_FILES})

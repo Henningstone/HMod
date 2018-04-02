@@ -44,7 +44,7 @@ private:
 	int m_Owner;
 
 protected:
-	void OnCreate();
+	void OnInsert();
 };
 
 #endif

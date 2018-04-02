@@ -11,9 +11,10 @@
 class CPlayer : protected CLuaClass
 {
 	MACRO_ALLOC_POOL_ID()
+	friend class CPlayerDummy;
 
 public:
-	CPlayer(CGameContext *pGameServer, int ClientID, int Team);
+	CPlayer(CGameContext *pGameServer, int ClientID, int Team, bool IsBot = false);
 	~CPlayer();
 
 	void Init(int CID);
@@ -34,6 +35,7 @@ public:
 
 	void KillCharacter(int Weapon = WEAPON_GAME);
 	CCharacter *GetCharacter();
+	bool IsBot() const { return m_pBotController != NULL; }
 
 	//---------------------------------------------------------
 	// this is used for snapping so we know how we can clip the view for the player
@@ -106,13 +108,16 @@ private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;
 
-	CGameContext *GameServer() const { return m_pGameServer; }
-	IServer *Server() const;
+	class CPlayerDummy * const m_pBotController;
 
 	//
 	bool m_Spawning;
 	int m_ClientID;
 	int m_Team;
+
+protected:
+	CGameContext *GameServer() const { return m_pGameServer; }
+	IServer *Server() const;
 };
 
 #endif

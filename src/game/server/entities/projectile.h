@@ -65,7 +65,7 @@ private:
 	bool m_Explosive;
 
 protected:
-	void OnCreate();
+	void OnInsert();
 };
 
 #endif

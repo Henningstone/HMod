@@ -396,7 +396,7 @@ void CServer::SetClientAccessLevel(int ClientID, int AccessLevel, bool SendRconC
 		return;
 
 	// check if they've already got an access level or we want to remove it
-	if(m_aClients[ClientID].m_Authed || m_aClients[ClientID].m_Authed && AccessLevel < 0)
+	if(m_aClients[ClientID].m_Authed || (m_aClients[ClientID].m_Authed && AccessLevel < 0))
 	{
 		CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
 		Msg.AddInt(0);    //authed
@@ -1498,7 +1498,6 @@ int CServer::Run()
 				{
 					// new map loaded
 					GameServer()->OnShutdown();
-					m_GametypeReloaded = true;
 
 					for(int c = 0; c < MAX_CLIENTS; c++)
 					{
@@ -1534,12 +1533,13 @@ int CServer::Run()
 			if(m_GametypeReloaded)
 			{
 				m_GametypeReloaded = false;
-				if(!CLua::Lua()->Reload())
+				if(!CLua::Lua()->InitAndStart())
 				{
 					str_format(aBuf, sizeof(aBuf), "failed to load gametype. gametype='%s'", g_Config.m_SvGametype);
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", aBuf);
 					break;
 				}
+				dbg_msg("lua", "non-initial gametype loading complete.");
 			}
 
 			while(t > TickStartTime(m_CurrentGameTick+1))
@@ -2141,7 +2141,7 @@ int main(int argc, const char **argv) // ignore_convention
 	pServer->RegisterCommands();
 
 	// init lua
-	pLua->Init();
+	pLua->FirstInit();
 
 	// execute autoexec file
 	pConsole->ExecuteFile("autoexec.cfg");
@@ -2157,9 +2157,7 @@ int main(int argc, const char **argv) // ignore_convention
 
 	// run the server
 	dbg_msg("server", "starting...");
-	bool Restart = false;
-	if(pLua->LoadGametype())
-		Restart = (bool)pServer->Run();
+	bool Restart = (bool)pServer->Run();
 
 	// free
 	delete pServer;

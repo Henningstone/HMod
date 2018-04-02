@@ -117,7 +117,7 @@ void CProjectile::Snap(int SnappingClient)
 		FillInfo(pProj);
 }
 
-void CProjectile::OnCreate()
+void CProjectile::OnInsert()
 {
 	MACRO_LUA_EVENT()
 }

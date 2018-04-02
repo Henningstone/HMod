@@ -72,7 +72,7 @@ protected:
 	bool m_MarkedForDestroy;
 	int m_ID;
 	int m_ObjType;
-	virtual void OnCreate() = 0;
+	virtual void OnInsert() = 0;
 
 public:
 	CEntity(CGameWorld *pGameWorld, int Objtype, const char *m_pLuaClass);

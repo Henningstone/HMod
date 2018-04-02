@@ -76,7 +76,7 @@ void CGameWorld::InsertEntity(CEntity *pEnt)
 	pEnt->m_pPrevTypeEntity = 0x0;
 	m_apFirstEntityTypes[pEnt->m_ObjType] = pEnt;
 
-	pEnt->OnCreate();
+	pEnt->OnInsert();
 }
 
 void CGameWorld::DestroyEntity(CEntity *pEnt)

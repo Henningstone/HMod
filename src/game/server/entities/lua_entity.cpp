@@ -37,7 +37,7 @@ void CLuaEntity::Snap(int SnappingClient)
 	MACRO_LUA_EVENT(SnappingClient)
 }
 
-void CLuaEntity::OnCreate()
+void CLuaEntity::OnInsert()
 {
 	MACRO_LUA_EVENT()
 }

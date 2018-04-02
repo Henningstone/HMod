@@ -2,7 +2,8 @@
 
 
 Entity:
-  - OnCreate()  # always applies to all entities
+  - [Entity]()  # a function with the same name as the luaclass acts as a constructor
+  - OnInsert()  # always applies to all entities
 
   - Destroy()
   - Reset()
@@ -49,6 +50,7 @@ Player:
   - SetTeam(int Team, bool DoChatMsg)
 
 Gameserver:
+  - OnShutdown()
   - OnChat(string Msg, int ClientID, int Team)  # Team can be: -1 -> Spec, 0 -> Global, 1 -> Red, 2 -> Blue
   - OnCallVote(int ClientID, string Type, string Value, string Reason)  # Type := { "option"; "kick"; "spectate" }
   - OnVote(int ClientID, int Vote)  # Vote := { -1; 1 }

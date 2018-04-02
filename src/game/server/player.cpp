@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <new>
 #include <engine/shared/config.h>
+#include "dummy.h"
+
 #include "player.h"
 
 
@@ -9,13 +11,15 @@ MACRO_ALLOC_POOL_ID_IMPL(CPlayer, MAX_CLIENTS)
 
 IServer *CPlayer::Server() const { return m_pGameServer->Server(); }
 
-CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team) : CLuaClass("Player")
+CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team, bool IsBot)
+		: CLuaClass("Player")
+		, m_pBotController(IsBot ? new CPlayerDummy(this) : NULL)
 {
 	m_pGameServer = pGameServer;
 	m_RespawnTick = Server()->Tick();
 	m_DieTick = Server()->Tick();
 	m_ScoreStartTick = Server()->Tick();
-	m_pCharacter = 0;
+	m_pCharacter = NULL;
 	m_ClientID = ClientID;
 	m_Team = GameServer()->m_pController->ClampTeam(Team);
 	m_SpectatorID = SPEC_FREEVIEW;

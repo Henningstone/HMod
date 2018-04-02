@@ -50,7 +50,7 @@ void CFlag::Snap(int SnappingClient)
 	pFlag->m_Team = m_Team;
 }
 
-void CFlag::OnCreate()
+void CFlag::OnInsert()
 {
 	MACRO_LUA_EVENT()
 }
