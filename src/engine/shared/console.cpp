@@ -787,6 +787,7 @@ CConsole::CConsole(int FlagMask)
 	m_pFirstExec = 0;
 	mem_zero(m_aPrintCB, sizeof(m_aPrintCB));
 	m_NumPrintCB = 0;
+	m_NumPrintToCB = 0;
 
 	m_pStorage = 0;
 
