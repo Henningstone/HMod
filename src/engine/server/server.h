@@ -160,7 +160,6 @@ public:
 	char m_aShutdownReason[128];
 	int m_MapReload;
 	int m_LuaReinit; // 0 = off, <0 = all, >0 = ID
-	bool m_GametypeReloaded;
 	int m_RconClientID;
 	int m_RconAuthLevel;
 	int m_PrintCBIndex;
@@ -172,7 +171,7 @@ public:
 	char m_aCurrentMap[64];
 	unsigned m_CurrentMapCrc;
 	unsigned char *m_pCurrentMapData;
-	int m_CurrentMapSize;
+	unsigned m_CurrentMapSize;
 
 	CDemoRecorder m_DemoRecorder;
 	CRegister m_Register;
@@ -192,8 +191,6 @@ public:
 
 	void DemoRecorder_HandleAutoStart();
 	bool DemoRecorder_IsRecording();
-
-	virtual void ReloadLuaGametype() { m_GametypeReloaded = true; }
 
 	//int Tick()
 	int64 TickStartTime(int Tick);
@@ -258,7 +255,6 @@ public:
 	static void ConLogout(IConsole::IResult *pResult, void *pUser);
 	static void ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMapChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-	static void ConchainGametypeChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainModCommandUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainConsoleOutputLevelUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);

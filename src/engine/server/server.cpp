@@ -285,7 +285,6 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 
 	m_MapReload = 0;
 	m_LuaReinit = 0;
-	m_GametypeReloaded = false;
 
 	m_RconClientID = IServer::RCON_CID_SERV;
 	m_RconAuthLevel = AUTHED_ADMIN;
@@ -1408,7 +1407,7 @@ int CServer::LoadMap(const char *pMapName)
 	// load complete map into memory for download
 	{
 		IOHANDLE File = Storage()->OpenFile(aBuf, IOFLAG_READ, IStorage::TYPE_ALL);
-		m_CurrentMapSize = (int)io_length(File);
+		m_CurrentMapSize = (unsigned)io_length(File);
 		if(m_pCurrentMapData)
 			mem_free(m_pCurrentMapData);
 		m_pCurrentMapData = (unsigned char *)mem_alloc(m_CurrentMapSize, 1);
@@ -1461,13 +1460,11 @@ int CServer::Run()
 
 	m_Econ.Init(Console(), &m_ServerBan);
 
-	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "server name is '%s'", g_Config.m_SvName);
-	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+	if(!GameServer()->OnInit())
+		return 0;
 
-	GameServer()->OnInit();
-	str_format(aBuf, sizeof(aBuf), "version %s", GameServer()->NetVersion());
-	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+	Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "server", "server name is '%s'", g_Config.m_SvName);
+	Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "server", "version %s", GameServer()->NetVersion());
 
 	// process pending commands
 	m_pConsole->StoreCommands(false);
@@ -1480,6 +1477,7 @@ int CServer::Run()
 		m_Lastheartbeat = 0;
 		m_GameStartTime = time_get();
 
+		char aBuf[256];
 		str_format(aBuf, sizeof(aBuf), "baseline memory usage %dk", mem_stats()->allocated/1024);
 		Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "server", aBuf);
 
@@ -1530,18 +1528,7 @@ int CServer::Run()
 				CLua::Lua()->ReloadSingleObject(ID);
 			}
 
-			if(m_GametypeReloaded)
-			{
-				m_GametypeReloaded = false;
-				if(!CLua::Lua()->InitAndStart())
-				{
-					str_format(aBuf, sizeof(aBuf), "failed to load gametype. gametype='%s'", g_Config.m_SvGametype);
-					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver", aBuf);
-					break;
-				}
-				dbg_msg("lua", "non-initial gametype loading complete.");
-			}
-
+			// main loop
 			while(t > TickStartTime(m_CurrentGameTick+1))
 			{
 				m_CurrentGameTick++;
@@ -1966,13 +1953,6 @@ void CServer::ConchainMapChange(IConsole::IResult *pResult, void *pUserData, ICo
 		((CServer *)pUserData)->m_MapReload = 1;
 }
 
-void CServer::ConchainGametypeChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
-{
-	pfnCallback(pResult, pCallbackUserData);
-	if(pResult->NumArguments())
-		((CServer *)pUserData)->m_GametypeReloaded = 1;
-}
-
 void CServer::ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	pfnCallback(pResult, pCallbackUserData);
@@ -2048,7 +2028,7 @@ void CServer::RegisterCommands()
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
 
 	Console()->Chain("sv_map", ConchainMapChange, this);
-	Console()->Chain("sv_gametype", ConchainGametypeChange, this);
+	Console()->Chain("sv_gametype", ConchainMapChange, this); // map change also reloads lua and everything
 
 	Console()->Chain("sv_max_clients_per_ip", ConchainMaxclientsperipUpdate, this);
 	Console()->Chain("mod_command", ConchainModCommandUpdate, this);

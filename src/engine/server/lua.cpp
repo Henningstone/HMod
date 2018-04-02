@@ -28,7 +28,7 @@ void CLua::FirstInit()
 	CLuaBinding::StaticInit(this);
 }
 
-bool CLua::InitAndStart()
+bool CLua::InitAndStartGametype()
 {
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();

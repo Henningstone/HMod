@@ -1656,7 +1656,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 }
 
-void CGameContext::OnInit(/*class IKernel *pKernel*/)
+bool CGameContext::OnInit(/*class IKernel *pKernel*/)
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
@@ -1676,9 +1676,10 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_pController = new CGameControllerMOD(this);
 
 	// all set, fire it up!
-	if(!CLua::Lua()->InitAndStart())
+	if(!CLua::Lua()->InitAndStartGametype())
 	{
-		Server()->ReloadLuaGametype(); // this will cause the server to stop if it fails again (and if it doesn't, even better!)
+		Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "luaserver/ERROR", "failed to load gametype. gametype='%s'", g_Config.m_SvGametype);
+		return false;
 	}
 
 
@@ -1700,6 +1701,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		}
 	}
 
+	return true;
 }
 
 void CGameContext::OnShutdown()

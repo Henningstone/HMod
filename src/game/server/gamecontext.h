@@ -155,7 +155,7 @@ public:
 	void SwapTeams();
 
 	// engine events
-	virtual void OnInit();
+	virtual bool OnInit();
 	virtual void OnConsoleInit();
 	virtual void OnShutdown();
 

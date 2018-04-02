@@ -74,8 +74,6 @@ public:
 
 	virtual void DemoRecorder_HandleAutoStart() = 0;
 	virtual bool DemoRecorder_IsRecording() = 0;
-
-	virtual void ReloadLuaGametype() = 0;
 };
 
 class IGameServer : public IInterface
@@ -83,7 +81,7 @@ class IGameServer : public IInterface
 	MACRO_INTERFACE("gameserver", 0)
 protected:
 public:
-	virtual void OnInit() = 0;
+	virtual bool OnInit() = 0;
 	virtual void OnConsoleInit() = 0;
 	virtual void OnShutdown() = 0;
 

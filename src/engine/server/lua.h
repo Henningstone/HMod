@@ -171,7 +171,7 @@ public:
 	CLuaRessourceMgr *GetResMan() { return &m_ResMan; }
 
 	void FirstInit();
-	bool InitAndStart();
+	bool InitAndStartGametype();
 	void ReloadSingleObject(int ObjectID);
 
 	int NumLoadedClasses() const { return (int)m_lLuaObjects.size(); }
