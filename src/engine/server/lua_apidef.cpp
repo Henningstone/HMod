@@ -467,6 +467,9 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("WeaponSlot", &CCharacter::WeaponSlot)
 			.addFunction("ActiveWeaponSlot", &CCharacter::GetActiveWeaponSlot)
 
+			.addData("AttackTick", &CCharacter::m_AttackTick)
+			.addData("ReloadTimer", &CCharacter::m_ReloadTimer)
+
 			.addFunction("SetEmote", &CCharacter::SetEmote)
 
 			.addProperty("IsAlive", &CCharacter::IsAlive)
