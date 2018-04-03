@@ -291,9 +291,8 @@ void CCharacter::FireWeapon()
 
 	vec2 ProjStartPos = m_Pos+Direction*m_ProximityRadius*0.75f;
 
-	bool PreventFire = false;
-	MACRO_LUA_CALLBACK_RESULT("OnWeaponFire", PreventFire=, m_ActiveWeaponSlot, ProjStartPos, Direction)
-	if(PreventFire)
+	MACRO_LUA_CALLBACK_RESULT_REF("OnWeaponFire", Result, m_ActiveWeaponSlot, ProjStartPos, Direction)
+	if(MACRO_LUA_RESULT_BOOL(Result, false))
 		return;
 
 	switch(m_aWeapons[m_ActiveWeaponSlot].m_WeaponId)
