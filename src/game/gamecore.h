@@ -41,7 +41,7 @@ public:
 	float GetTuneI_##Name() const { return m_##Name.Get(); } \
 	float GetTuneF_##Name() const { return m_##Name.GetLua(); } \
 	void SetTuneI_##Name(int v) { m_##Name.Set(v); }\
-    void SetTuneF_##Name(float v) { m_##Name.Set((int)v*100); }
+	void SetTuneF_##Name(float v) { m_##Name.Set((int)v*100); }
 
 	#include "tuning.h"
 	#undef MACRO_TUNING_PARAM
