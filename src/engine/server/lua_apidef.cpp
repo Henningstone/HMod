@@ -1,6 +1,7 @@
 #include <engine/lua_include.h>
 #include <engine/storage.h>
 
+#include <game/gamecore.h>
 #include <game/server/gamecontroller.h>
 #include <game/server/gamecontext.h>
 #include <game/server/gameworld.h>
@@ -24,7 +25,6 @@
 #include "lua.h"
 
 #include <engine/server/server.h>
-
 
 void CLua::RegisterLuaCallbacks()
 {
@@ -202,8 +202,17 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GetTileRaw", &CCollision::GetTileRaw)
 		.endClass()
 
+		/// Srv.Game.Tuning
+#define MACRO_TUNING_PARAM(Name,ScriptName,Value) \
+		.addProperty(#Name, &CTuningParams::GetTuneF_##Name, &CTuningParams::SetTuneF_##Name) \
+		.addProperty(#ScriptName, &CTuningParams::GetTuneF_##Name, &CTuningParams::SetTuneF_##Name)\
+		.addProperty(("_"#Name), &CTuningParams::GetTuneI_##Name, &CTuningParams::SetTuneI_##Name)\
+		.addProperty(("_"#ScriptName), &CTuningParams::GetTuneI_##Name, &CTuningParams::SetTuneI_##Name)
+
 		.beginClass<CTuningParams>("CTuningParams")
+			#include <game/tuning.h>
 		.endClass()
+#undef MACRO_TUNING_PARAM
 
 		/// Srv.Game.World
 		.beginClass<CGameWorld>("CGameWorld")
@@ -466,6 +475,9 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("SetWeaponAutoFire", &CCharacter::SetWeaponAutoFire)
 			.addFunction("WeaponSlot", &CCharacter::WeaponSlot)
 			.addFunction("ActiveWeaponSlot", &CCharacter::GetActiveWeaponSlot)
+
+			.addData("AttackTick", &CCharacter::m_AttackTick)
+			.addData("ReloadTimer", &CCharacter::m_ReloadTimer)
 
 			.addData("AttackTick", &CCharacter::m_AttackTick)
 			.addData("ReloadTimer", &CCharacter::m_ReloadTimer)
