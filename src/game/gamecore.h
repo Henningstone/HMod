@@ -18,7 +18,6 @@ class CTuneParam
 public:
 	void Set(int v) { m_Value = v; }
 	int Get() const { return m_Value; }
-	float GetLua() const { return m_Value/100.0f; }
 	CTuneParam &operator = (int v) { m_Value = (int)(v*100.0f); return *this; }
 	CTuneParam &operator = (float v) { m_Value = (int)(v*100.0f); return *this; }
 	operator float() const { return m_Value/100.0f; }
@@ -39,9 +38,9 @@ public:
 
 	#define MACRO_TUNING_PARAM(Name,ScriptName,Value) CTuneParam m_##Name;\
 	float GetTuneI_##Name() const { return m_##Name.Get(); } \
-	float GetTuneF_##Name() const { return m_##Name.GetLua(); } \
+	float GetTuneF_##Name() const { return ((float)m_##Name.Get())/100.0f; } \
 	void SetTuneI_##Name(int v) { m_##Name.Set(v); }\
-	void SetTuneF_##Name(float v) { m_##Name.Set((int)v*100); }
+	void SetTuneF_##Name(float v) { m_##Name.Set(round_to_int(v*100.0f)); }
 
 	#include "tuning.h"
 	#undef MACRO_TUNING_PARAM

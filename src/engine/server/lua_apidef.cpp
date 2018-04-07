@@ -26,6 +26,7 @@
 
 #include <engine/server/server.h>
 
+
 void CLua::RegisterLuaCallbacks()
 {
 	using namespace luabridge;
