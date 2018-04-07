@@ -1077,7 +1077,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 			{
 				MACRO_LUA_CALLBACK_RESULT_REF("OnRconCommand", Result, ClientID, pCmd)
 
-				if(MACRO_LUA_RESULT_BOOL(Result, ! true))
+				if(MACRO_LUA_RESULT_BOOL(Result, ! true, true))
 				{
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d rcon='%s'", ClientID, pCmd);

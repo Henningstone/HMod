@@ -818,7 +818,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				return;
 
 			MACRO_LUA_CALLBACK_RESULT_REF("OnChat", Result, pMsg->m_pMessage, ClientID, Team == CGameContext::CHAT_ALL ? 0 : Team == CGameContext::CHAT_SPEC ? -1 : Team+1)
-			if(MACRO_LUA_RESULT_BOOL(Result, true))
+			if(MACRO_LUA_RESULT_BOOL(Result, true, true))
 			{
 				pPlayer->m_LastChat = Server()->Tick();
 				SendChat(ClientID, Team, pMsg->m_pMessage);
@@ -832,7 +832,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			CNetMsg_Cl_CallVote *pMsg = (CNetMsg_Cl_CallVote *)pRawMsg;
 
 			MACRO_LUA_CALLBACK_RESULT_REF("OnCallVote", Result, ClientID, pMsg->m_Type, pMsg->m_Value, pMsg->m_Reason)
-			if(MACRO_LUA_RESULT_BOOL(Result, false))
+			if(MACRO_LUA_RESULT_BOOL(Result, false, false))
 				return;
 
 			int64 Now = Server()->Tick();
@@ -981,7 +981,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			CNetMsg_Cl_Vote *pMsg = (CNetMsg_Cl_Vote *)pRawMsg;
 
 			MACRO_LUA_CALLBACK_RESULT_REF("OnVote", Result, ClientID, pMsg->m_Vote)
-			if(MACRO_LUA_RESULT_BOOL(Result, false))
+			if(MACRO_LUA_RESULT_BOOL(Result, false, false))
 				return;
 
 			if(!m_VoteCloseTime)
@@ -1005,7 +1005,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				return;
 
 			MACRO_LUA_CALLBACK_RESULT_REF("OnSetTeam", Result, ClientID, pMsg->m_Team)
-			if(MACRO_LUA_RESULT_BOOL(Result, false))
+			if(MACRO_LUA_RESULT_BOOL(Result, false, false))
 				return;
 
 			if(pMsg->m_Team != TEAM_SPECTATORS && m_LockTeams)
@@ -1095,7 +1095,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				return;
 
 			MACRO_LUA_CALLBACK_RESULT_REF("OnEmote", Result, ClientID, pMsg->m_Emoticon)
-			if(MACRO_LUA_RESULT_BOOL(Result, false))
+			if(MACRO_LUA_RESULT_BOOL(Result, false, false))
 				return;
 
 			pPlayer->m_LastEmote = Server()->Tick();
