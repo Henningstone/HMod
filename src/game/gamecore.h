@@ -36,7 +36,12 @@ public:
 
 	static const char *m_apNames[];
 
-	#define MACRO_TUNING_PARAM(Name,ScriptName,Value) CTuneParam m_##Name;
+	#define MACRO_TUNING_PARAM(Name,ScriptName,Value) CTuneParam m_##Name;\
+	float GetTuneI_##Name() const { return m_##Name.Get(); } \
+	float GetTuneF_##Name() const { return ((float)m_##Name.Get())/100.0f; } \
+	void SetTuneI_##Name(int v) { m_##Name.Set(v); }\
+	void SetTuneF_##Name(float v) { m_##Name.Set(round_to_int(v*100.0f)); }
+
 	#include "tuning.h"
 	#undef MACRO_TUNING_PARAM
 
