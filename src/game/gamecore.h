@@ -5,11 +5,12 @@
 
 #include <base/system.h>
 #include <base/math.h>
+#include <base/system++/system++.h>
 
-#include <math.h>
-#include "collision.h"
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
+
+#include "collision.h"
 
 
 class CTuneParam
@@ -29,18 +30,21 @@ public:
 	CTuningParams()
 	{
 		const float TicksPerSecond = 50.0f;
-		#define MACRO_TUNING_PARAM(Name,ScriptName,Value) m_##Name.Set((int)(Value*100.0f));
+		#define MACRO_TUNING_PARAM(Name,ScriptName,Value) m_##Name.Set((int)((Value)*100.0f));
 		#include "tuning.h"
 		#undef MACRO_TUNING_PARAM
 	}
 
 	static const char *m_apNames[];
 
-	#define MACRO_TUNING_PARAM(Name,ScriptName,Value) CTuneParam m_##Name;\
+	#define MACRO_TUNING_PARAM(Name,ScriptName,Value) \
+	CTuneParam m_##Name; \
 	float GetTuneI_##Name() const { return m_##Name.Get(); } \
 	float GetTuneF_##Name() const { return ((float)m_##Name.Get())/100.0f; } \
 	void SetTuneI_##Name(int v) { m_##Name.Set(v); }\
 	void SetTuneF_##Name(float v) { m_##Name.Set(round_to_int(v*100.0f)); }
+
+	CTuningParams LuaCopy() const { return *this; }
 
 	#include "tuning.h"
 	#undef MACRO_TUNING_PARAM
@@ -50,6 +54,79 @@ public:
 	bool Set(const char *pName, float Value);
 	bool Get(int Index, float *pValue);
 	bool Get(const char *pName, float *pValue);
+};
+
+
+class CTuningParamsDiff
+{
+public:
+	CTuningParams m_Data;
+
+private:
+	const CTuningParams *m_pOrigin;
+	CTuningParams m_MergedImageCache;
+
+	// for simple apply/restore
+	std::vector< std::pair<CTuningParams*, CTuningParams> > m_lAppliedToStorage;
+
+public:
+	CTuningParamsDiff(CTuningParams *pOrigin) : m_pOrigin(pOrigin)
+	{
+		dbg_assert(pOrigin != NULL, "CTuningParamsDiff::CTuningParamsDiff pOrigin == NULL");
+	}
+
+	CTuningParams GetMerged()
+	{
+		CTuningParams Merged;
+		const CTuningParams Default;
+
+		int * const pParams = reinterpret_cast<int*>(&Merged);
+		const int * const pOriginParams = reinterpret_cast<const int*>(m_pOrigin); // world
+		const int * const pOwnParams = reinterpret_cast<const int*>(&m_Data); // tee
+		const int * const pDefaultParams = reinterpret_cast<const int*>(&Default);
+
+		const int * const m_apMapping[2] = { pOriginParams, pOwnParams };
+
+		const unsigned Len = sizeof(CTuningParams)/sizeof(int);
+		for(unsigned i = 0; i < Len; i++)
+		{
+			//dbg_msg("tunemerger/dbg", "%i -> %i (%i vs %i chose %x)", pParams[i], m_apMapping[ pOwnParams[i] != pDefaultParams[i] ][i], pOriginParams[i], pOwnParams[i], pOwnParams[i] != pDefaultParams[i]);
+			pParams[i] = m_apMapping[ pOwnParams[i] != pDefaultParams[i] ][i];
+		}
+
+		m_MergedImageCache = Merged;
+		return Merged;
+	}
+
+	bool ApplyTo(CTuningParams *pDst, bool UseCached)
+	{
+		if(!pDst)
+			return false;
+
+		m_lAppliedToStorage.emplace_back(std::make_pair(pDst, *pDst));
+		if(UseCached)
+			*pDst = m_MergedImageCache;
+		else
+			*pDst = GetMerged();
+
+		return true;
+	}
+
+	bool RestoreApplied()
+	{
+		if(m_lAppliedToStorage.empty())
+			return false;
+
+		// restore everything
+		for(auto it = m_lAppliedToStorage.begin(); it != m_lAppliedToStorage.end(); ++it)
+		{
+			*(it->first) = it->second;
+		}
+		m_lAppliedToStorage.clear();
+
+		return true;
+	}
+
 };
 
 
@@ -179,9 +256,10 @@ public:
 
 class CCharacterCore
 {
-	CWorldCore *m_pWorld;
 	CCollision *m_pCollision;
 public:
+	CWorldCore *m_pWorld;
+
 	vec2 m_Pos;
 	vec2 m_Vel;
 

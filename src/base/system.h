@@ -155,6 +155,7 @@ void mem_move(void *dest, const void *source, unsigned size);
 		size - Size of the block
 */
 void mem_zero(void *block, unsigned size);
+#define mem_zerob(BUF) mem_zero(BUF, sizeof(BUF))
 
 void mem_set(void *block, char value, unsigned size);
 

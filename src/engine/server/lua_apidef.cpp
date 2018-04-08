@@ -211,6 +211,7 @@ void CLua::RegisterLuaCallbacks()
 		.addProperty(("_"#ScriptName), &CTuningParams::GetTuneI_##Name, &CTuningParams::SetTuneI_##Name)
 
 		.beginClass<CTuningParams>("CTuningParams")
+			.addFunction("Copy", &CTuningParams::LuaCopy)
 			#include <game/tuning.h>
 		.endClass()
 #undef MACRO_TUNING_PARAM
@@ -492,6 +493,7 @@ void CLua::RegisterLuaCallbacks()
 			.addData("PhysicsEnabled", &CCharacter::m_PhysicsEnabled)
 			.addFunction("GetCore", &CCharacter::GetCore) // -> [CCharacterCore]
 			.addProperty("Core", &CCharacter::GetCore)
+			.addProperty("Tuning", &CCharacter::LuaGetTuning, &CCharacter::LuaWriteTuning)
 
 			.addData("Health", &CCharacter::m_Health)
 			.addData("Armor", &CCharacter::m_Armor)

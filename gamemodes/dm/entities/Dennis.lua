@@ -12,7 +12,7 @@ Dennis.ents = {}  -- 2-dimensional table to store all entites by [ringID][index]
 Dennis.captured = {}  -- contains the CIDs of player's we've captured
 Dennis.fired = 0
 
-function Dennis.OnCreate()
+function Dennis.OnInsert()
 	print("ASDONASODJASJIODAJIOSDJIOASJIODJIOASJIOD Dennis.OnCreate", self.__dbgId, tostring(self.ents))
 
 	-- allocate all the entities, but hide them from the world

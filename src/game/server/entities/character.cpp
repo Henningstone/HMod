@@ -40,7 +40,8 @@ MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
 // Character, "physical" player's part
 CCharacter::CCharacter(CGameWorld *pWorld)
-: CEntity(pWorld, CGameWorld::ENTTYPE_CHARACTER, "Character")
+: CEntity(pWorld, CGameWorld::ENTTYPE_CHARACTER, "Character"),
+  m_TuningDiff(pWorld->GameServer()->Tuning())
 {
 	m_ProximityRadius = ms_PhysSize;
 	m_Health = 0;
@@ -95,7 +96,7 @@ void CCharacter::Destroy()
 {
 	MACRO_LUA_EVENT()
 
-	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
+	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = NULL;
 	m_Alive = false;
 }
 
@@ -654,7 +655,11 @@ void CCharacter::Tick()
 	m_Core.m_Input = m_Input;
 
 	if(m_PhysicsEnabled)
+	{
+		m_TuningDiff.ApplyTo(&m_Core.m_pWorld->m_Tuning, false);
 		m_Core.Tick(true);
+		m_TuningDiff.RestoreApplied();
+	}
 
 	// handle death-tiles and leaving gamelayer
 	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x+m_ProximityRadius/3.f, m_Pos.y-m_ProximityRadius/3.f)&CCollision::COLFLAG_DEATH ||
@@ -681,6 +686,10 @@ void CCharacter::Tick()
 void CCharacter::TickDefered()
 {
 	MACRO_LUA_EVENT()
+
+	m_TuningDiff.ApplyTo(&m_Core.m_pWorld->m_Tuning, false);
+	m_TuningDiff.ApplyTo(&m_ReckoningCore.m_pWorld->m_Tuning, true);
+	DEFER([this](){ m_TuningDiff.RestoreApplied(); });
 
 	// advance the dummy
 	if(m_PhysicsEnabled)
@@ -837,7 +846,7 @@ void CCharacter::Die(int Killer, int Weapon)
 
 	m_Alive = false;
 	GameServer()->m_World.RemoveEntity(this);
-	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
+	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = NULL;
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID());
 
 	MACRO_LUA_CALLBACK("OnDeath", Killer, Weapon)
@@ -947,6 +956,11 @@ void CCharacter::Snap(int SnappingClient)
 	CNetObj_Character *pCharacter = static_cast<CNetObj_Character *>(Server()->SnapNewItem(NETOBJTYPE_CHARACTER, m_pPlayer->GetCID(), sizeof(CNetObj_Character)));
 	if(!pCharacter)
 		return;
+
+	m_TuningDiff.ApplyTo(&m_Core.m_pWorld->m_Tuning, false);
+	m_TuningDiff.ApplyTo(&m_ReckoningCore.m_pWorld->m_Tuning, true);
+	m_TuningDiff.ApplyTo(&m_SendCore.m_pWorld->m_Tuning, true);
+	DEFER([this](){ m_TuningDiff.RestoreApplied(); });
 
 	// write down the m_Core
 	if(!m_ReckoningTick || GameServer()->m_World.m_Paused)

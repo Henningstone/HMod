@@ -3,7 +3,7 @@ Pickup._count = 3
 
 Pickup.CanNotBePickedUp = false
 
-function Pickup.OnCreate()
+function Pickup.OnInsert()
 
 	Pickup._count = Pickup._count + 1
 

@@ -110,6 +110,10 @@ public:
 	void SetEndlessHook(bool Active) { m_EndlessHook = Active; }
 	void SetSuperJump(bool Active) { m_SuperJump = Active; }
 
+	// for per-tee tuning
+	CTuningParams *LuaGetTuning() const { return const_cast<CTuningParams*>((const CTuningParams *)&m_TuningDiff.m_Data); }
+	void LuaWriteTuning(const CTuningParams& NewTuning) { m_TuningDiff.m_Data = NewTuning; }
+
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;
@@ -119,6 +123,8 @@ private:
 	// weapon info
 	CEntity *m_apHitObjects[10];
 	int m_NumObjectsHit;
+
+	CTuningParamsDiff m_TuningDiff;
 
 	WeaponStat m_aWeapons[NUM_WEAPONS];
 
