@@ -37,14 +37,14 @@ bool _LUA_EVENT_HANDLED = false; \
 			/* make sure we don't end up in infinite recursion */ \
 			lua_getregistry(L); \
 			lua_rawgetp(L, -1, this); \
-			bool NotFromLua = lua_isnil(L, -1); \
+			bool FromLua = lua_isnumber(L, -1) && lua_tonumber(L, -1) == __LINE__; \
 			lua_pop(L, 2); /* pop result and registry */ \
-			if(NotFromLua) \
+			if(!FromLua) \
 			{ \
 				/* set from-lua marker */ \
 				lua_getregistry(L); \
 				lua_pushlightuserdata(L, this); \
-				lua_pushboolean(L, 1); \
+				lua_pushnumber(L, __LINE__); \
 				lua_rawset(L, -3); \
 				lua_pop(L, 1); /* pop the registry table */ \
 \
