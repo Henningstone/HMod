@@ -161,37 +161,39 @@ template<class T>
 int CServerBan::BanExt(T *pBanPool, const typename T::CDataType *pData, int Seconds, const char *pReason)
 {
 	// validate address
-	if(Server()->m_RconClientID >= 0 && Server()->m_RconClientID < MAX_CLIENTS &&
-		Server()->m_aClients[Server()->m_RconClientID].m_State != CServer::CClient::STATE_EMPTY)
+	if(Server()->m_RconExecClientID >= 0 && Server()->m_RconExecClientID < MAX_CLIENTS &&
+		Server()->m_aClients[Server()->m_RconExecClientID].m_State != CServer::CClient::STATE_EMPTY)
 	{
-		if(NetMatch(pData, Server()->m_NetServer.ClientAddr(Server()->m_RconClientID)))
+		if(NetMatch(pData, Server()->m_NetServer.ClientAddr(Server()->m_RconExecClientID)))
 		{
-			Console()->PrintTo(Server()->m_RconClientID, "net_ban", "ban error (you can't ban yourself)");
+			Console()->PrintTo(Server()->m_RconExecClientID, "net_ban", "ban error (you can't ban yourself)");
 			return -1;
 		}
 
 		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
-			if(i == Server()->m_RconClientID || Server()->m_aClients[i].m_State == CServer::CClient::STATE_EMPTY)
+			if(i == Server()->m_RconExecClientID || Server()->m_aClients[i].m_State == CServer::CClient::STATE_EMPTY)
 				continue;
 
-			if(Server()->m_aClients[i].m_Authed >= Server()->m_RconAuthLevel && NetMatch(pData, Server()->m_NetServer.ClientAddr(i)))
+			if(Server()->m_aClients[i].m_Authed >= Server()->m_aClients[Server()->m_RconExecClientID].m_Authed &&
+			   NetMatch(pData, Server()->m_NetServer.ClientAddr(i)))
 			{
-				Console()->PrintTo(Server()->m_RconClientID, "net_ban", "ban error (command denied)");
+				Console()->PrintTo(Server()->m_RconExecClientID, "net_ban", "ban error (command denied)");
 				return -1;
 			}
 		}
 	}
-	else if(Server()->m_RconClientID == IServer::RCON_CID_VOTE)
+	else if(Server()->m_RconExecClientID == IServer::RCON_CID_VOTE) // vote ban
 	{
 		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
 			if(Server()->m_aClients[i].m_State == CServer::CClient::STATE_EMPTY)
 				continue;
 
-			if(Server()->m_aClients[i].m_Authed != CServer::AUTHED_NO && NetMatch(pData, Server()->m_NetServer.ClientAddr(i)))
+			if((Server()->m_aClients[i].m_Authed == CServer::AUTHED_ADMIN || Server()->m_aClients[i].m_Authed == CServer::AUTHED_MOD) &&
+			   NetMatch(pData, Server()->m_NetServer.ClientAddr(i)))
 			{
-				Console()->PrintTo(Server()->m_RconClientID, "net_ban", "ban error (command denied)");
+				Console()->PrintTo(Server()->m_RconExecClientID, "net_ban", "ban error (command denied)");
 				return -1;
 			}
 		}
@@ -230,7 +232,7 @@ int CServerBan::BanRange(const CNetRange *pRange, int Seconds, const char *pReas
 	if(pRange->IsValid())
 		return BanExt(&m_BanRangePool, pRange, Seconds, pReason);
 
-	Console()->PrintTo(Server()->m_RconClientID, "net_ban", "ban failed (invalid range)");
+	Console()->PrintTo(Server()->m_RconExecClientID, "net_ban", "ban failed (invalid range)");
 	return -1;
 }
 
@@ -246,7 +248,7 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 	{
 		int ClientID = str_toint(pStr);
 		if(ClientID < 0 || ClientID >= MAX_CLIENTS || pThis->Server()->m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
-			pThis->Console()->PrintTo(pThis->Server()->m_RconClientID, "net_ban", "ban error (invalid client id)");
+			pThis->Console()->PrintTo(pThis->Server()->m_RconExecClientID, "net_ban", "ban error (invalid client id)");
 		else
 			pThis->BanAddr(pThis->Server()->m_NetServer.ClientAddr(ClientID), Minutes*60, pReason);
 	}
@@ -286,8 +288,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	m_MapReload = 0;
 	m_LuaReinit = 0;
 
-	m_RconClientID = IServer::RCON_CID_SERV;
-	m_RconAuthLevel = AUTHED_ADMIN;
+	m_RconExecClientID = IServer::RCON_CID_SERV;
 
 	Init();
 }
@@ -458,17 +459,17 @@ void CServer::Kick(int ClientID, const char *pReason)
 {
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CClient::STATE_EMPTY)
 	{
-		Console()->PrintTo(m_RconClientID, "server", "invalid client id to kick");
+		Console()->PrintTo(m_RconExecClientID, "server", "invalid client id to kick");
 		return;
 	}
-	else if(m_RconClientID == ClientID)
+	else if(m_RconExecClientID == ClientID)
 	{
-		Console()->PrintTo(m_RconClientID, "server", "you can't kick yourself");
+		Console()->PrintTo(m_RconExecClientID, "server", "you can't kick yourself");
  		return;
 	}
-	else if(m_aClients[ClientID].m_Authed > m_RconAuthLevel)
+	else if(m_aClients[m_RconExecClientID].m_Authed < m_aClients[ClientID].m_Authed)
 	{
-		Console()->PrintTo(m_RconClientID, "server", "kick command denied");
+		Console()->PrintTo(m_RconExecClientID, "server", "kick command denied");
  		return;
 	}
 
@@ -508,7 +509,7 @@ int CServer::Init()
 
 void CServer::SetRconCID(int ClientID)
 {
-	m_RconClientID = ClientID;
+	m_RconExecClientID = ClientID;
 }
 
 bool CServer::IsAuthed(int ClientID)
@@ -850,7 +851,8 @@ void CServer::SendRconLineAuthed(const char *pLine, void *pUser)
 
 	for(i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(pThis->m_aClients[i].m_State != CClient::STATE_EMPTY && pThis->m_aClients[i].m_Authed >= pThis->m_RconAuthLevel)
+		if(pThis->m_aClients[i].m_State != CClient::STATE_EMPTY &&
+		   (pThis->m_aClients[i].m_Authed == AUTHED_ADMIN || pThis->m_aClients[i].m_Authed == AUTHED_MOD))
 			pThis->SendRconLine(i, pLine);
 	}
 
@@ -1081,9 +1083,8 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				{
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d rcon='%s'", ClientID, pCmd);
+					m_RconExecClientID = ClientID;
 					Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBuf);
-					m_RconClientID = ClientID;
-					m_RconAuthLevel = m_aClients[ClientID].m_Authed;
 					Console()->SetAccessLevel(m_aClients[ClientID].m_Authed == AUTHED_ADMIN
 											  ? IConsole::ACCESS_LEVEL_ADMIN
 											  : m_aClients[ClientID].m_Authed == AUTHED_MOD
@@ -1091,8 +1092,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 												: m_aClients[ClientID].m_AccessLevel);
 					Console()->ExecuteLineFlag(pCmd, CFGFLAG_SERVER, ClientID);
 					Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
-					m_RconClientID = IServer::RCON_CID_SERV;
-					m_RconAuthLevel = AUTHED_ADMIN;
+					m_RconExecClientID = IServer::RCON_CID_SERV;
 				}
 			}
 		}
@@ -1666,7 +1666,7 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 			}
 			else
 				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s connecting", i, aAddrStr);
-			pThis->Console()->PrintTo(pThis->m_RconClientID, "Server", aBuf);
+			pThis->Console()->PrintTo(pThis->m_RconExecClientID, "Server", aBuf);
 		}
 	}
 }

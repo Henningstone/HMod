@@ -199,7 +199,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("TestBox", &CCollision::TestBox)
 
 			.addFunction("IsTileSolid", &CCollision::IsTileSolid)
-			.addFunction("GetTile", &CCollision::GetTileRaw)
+			.addFunction("GetTile", &CCollision::GetTile)
 			.addFunction("GetTileRaw", &CCollision::GetTileRaw)
 		.endClass()
 
