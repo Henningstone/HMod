@@ -60,3 +60,6 @@ Gameserver:
 Server:
   - OnRconAuth(int ClientID, string GivenPassword)  # return: nothing = handle natively, true = admin, false = rejected, number = custom access level
   - OnRconCommand(int ClientID, string Command)  # return true if the command was handled by lua (will make c++ comletely ignore it)
+
+GameController:
+  - OnEntity(int Index, vec2 Pos)  # Called for each unknown gamelayer tile when loading the map - return true if handled, false if not

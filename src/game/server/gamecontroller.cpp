@@ -10,7 +10,7 @@
 #include "gamecontext.h"
 
 
-IGameController::IGameController(class CGameContext *pGameServer)
+IGameController::IGameController(class CGameContext *pGameServer) : CLuaClass("GameController")
 {
 	m_pGameServer = pGameServer;
 	m_pServer = m_pGameServer->Server();
@@ -167,6 +167,17 @@ bool IGameController::OnEntity(int Index, vec2 Pos)
 		CPickup *pPickup = new CPickup(&GameServer()->m_World, Type, SubType);
 		pPickup->m_Pos = Pos;
 		return true;
+	}
+	else
+	{
+		MACRO_LUA_CALLBACK_RESULT_V_REF("OnEntity", Result, Index, Pos);
+		if(_LUA_EVENT_HANDLED)
+		{
+			if(Result.isBoolean())
+				return Result.cast<bool>();
+			else
+				luaL_error(CLua::Lua()->L(), "event callback GameController.OnEntity has to return either true or false");
+		}
 	}
 
 	return false;

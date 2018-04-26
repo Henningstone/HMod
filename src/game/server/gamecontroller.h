@@ -4,13 +4,14 @@
 #define GAME_SERVER_GAMECONTROLLER_H
 
 #include <base/vmath.h>
+#include <engine/server/lua_class.h>
 
 /*
 	Class: Game Controller
 		Controls the main game logic. Keeping track of team and player score,
 		winning conditions and specific game logic.
 */
-class IGameController
+class IGameController : public CLuaClass
 {
 	vec2 m_aaSpawnPoints[3][64];
 	int m_aNumSpawnPoints[3];
