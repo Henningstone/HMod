@@ -70,7 +70,9 @@ private:
 	std::vector< std::pair<CTuningParams*, CTuningParams> > m_lAppliedToStorage;
 
 public:
-	CTuningParamsDiff(CTuningParams *pOrigin) : m_pOrigin(pOrigin)
+	bool m_Updated;
+
+	CTuningParamsDiff(CTuningParams *pOrigin) : m_pOrigin(pOrigin), m_Updated(false)
 	{
 		dbg_assert(pOrigin != NULL, "CTuningParamsDiff::CTuningParamsDiff pOrigin == NULL");
 	}
@@ -79,6 +81,8 @@ public:
 	{
 		CTuningParams Merged;
 		const CTuningParams Default;
+
+		m_Updated = false;
 
 		int * const pParams = reinterpret_cast<int*>(&Merged);
 		const int * const pOriginParams = reinterpret_cast<const int*>(m_pOrigin); // world
@@ -92,6 +96,7 @@ public:
 		{
 			//dbg_msg("tunemerger/dbg", "%i -> %i (%i vs %i chose %x)", pParams[i], m_apMapping[ pOwnParams[i] != pDefaultParams[i] ][i], pOriginParams[i], pOwnParams[i], pOwnParams[i] != pDefaultParams[i]);
 			pParams[i] = m_apMapping[ pOwnParams[i] != pDefaultParams[i] ][i];
+			m_Updated |= pParams[i] != reinterpret_cast<int*>(&m_MergedImageCache)[i];
 		}
 
 		m_MergedImageCache = Merged;

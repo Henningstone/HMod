@@ -657,6 +657,8 @@ void CCharacter::Tick()
 	if(m_PhysicsEnabled)
 	{
 		m_TuningDiff.ApplyTo(&m_Core.m_pWorld->m_Tuning, false);
+		if(m_TuningDiff.m_Updated)
+			GameServer()->SendTuningParams(m_pPlayer->GetCID(), &m_Core.m_pWorld->m_Tuning);
 		m_Core.Tick(true);
 		m_TuningDiff.RestoreApplied();
 	}

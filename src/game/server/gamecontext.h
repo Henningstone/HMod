@@ -149,7 +149,7 @@ public:
 
 	//
 	void CheckPureTuning();
-	void SendTuningParams(int ClientID);
+	void SendTuningParams(int ClientID, const class CTuningParams *pTuning = 0);
 
 	//
 	void SwapTeams();

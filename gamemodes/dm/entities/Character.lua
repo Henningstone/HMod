@@ -6,10 +6,10 @@ function Character.OnInsert()
 	print("Character", tostring(this), "has been created")
 	this:GetPlayer():GetSelf():enableDennis()
 
-	--if this:GetPlayer():GetSelf().prev_tuning ~= nil then
+	if this:GetPlayer():GetSelf().prev_tuning ~= nil then
 		print("applying previous tuning!!")
 		this.Tuning = this:GetPlayer():GetSelf().prev_tuning:Copy()
-	--end
+	end
 end
 
 --[[
