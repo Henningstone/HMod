@@ -43,6 +43,8 @@ public:
 	 * Uses the defined deletion method to free all registered objects
 	 */
 	void FreeAll();
+
+	int GetCount() const;
 };
 
 #endif

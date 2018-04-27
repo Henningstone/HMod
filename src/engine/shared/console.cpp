@@ -316,6 +316,34 @@ void CConsole::Printf(int Level, const char *pFrom, const char *format, ...)
 	}
 }
 
+void CConsole::PrintfTo(int Target, const char *pFrom, const char *format, ...)
+{
+	char buffer[1024];
+#if defined(CONF_FAMILY_WINDOWS)
+	va_list ap;
+	va_start(ap, format);
+	_vsnprintf(buffer, sizeof(buffer), format, ap);
+	va_end(ap);
+#else
+	va_list ap;
+	va_start(ap, format);
+	vsnprintf(buffer, sizeof(buffer), format, ap);
+	va_end(ap);
+#endif
+	buffer[sizeof(buffer)-1] = 0; // null termination
+
+	dbg_msg(pFrom ,"%s", buffer);
+	for(int i = 0; i < m_NumPrintToCB; ++i)
+	{
+		if(m_aPrintToCB[i].m_pfnPrintToCallback)
+		{
+			char aBuf[1024];
+			str_format(aBuf, sizeof(aBuf), "[%s]: %s", pFrom, buffer);
+			m_aPrintToCB[i].m_pfnPrintToCallback(Target, aBuf, m_aPrintToCB[i].m_pPrintToCallbackUserdata);
+		}
+	}
+}
+
 bool CConsole::LineIsValid(const char *pStr)
 {
 	if(!pStr || *pStr == 0)

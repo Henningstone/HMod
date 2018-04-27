@@ -19,3 +19,14 @@ void CLuaRessourceMgr::FreeAll()
 	#include "luaresmandef.h"
 	#undef REGISTER_RESSOURCE
 }
+
+int CLuaRessourceMgr::GetCount() const
+{
+	int Count = 0;
+
+	#define REGISTER_RESSOURCE(TYPE, VARNAME, DELETION) \
+			Count += (int)m_##VARNAME.size();
+
+	#include "luaresmandef.h"
+	#undef REGISTER_RESSOURCE
+}

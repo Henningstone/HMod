@@ -152,18 +152,21 @@ private:
 	static int ListdirCallback(const char *name, const char *full_path, int is_dir, int dir_type, void *user);
 	bool LoadLuaFile(const char *pFilePath);
 
-	struct LuaObject
+	struct LuaClass
 	{
-		LuaObject(const std::string& path, const std::string& name) : name(name), path(path) {}
+		LuaClass(const std::string& path, const std::string& name) : name(name), path(path) {}
 
 		std::string name;
 		std::string path;
 
 		std::string GetIdent() const { return std::string(name + ":" + path); }
 	};
-	std::vector<LuaObject> m_lLuaObjects;
+	std::vector<LuaClass> m_lLuaClasses;
 
 	CLuaRessourceMgr m_ResMan;
+
+	// for debugging
+	int m_NumLuaObjects;
 
 public:
 	CLua();
@@ -174,12 +177,13 @@ public:
 	bool InitAndStartGametype();
 	void ReloadSingleObject(int ObjectID);
 
-	int NumLoadedClasses() const { return (int)m_lLuaObjects.size(); }
-	std::string GetObjectIdentifier(int ID) const { return m_lLuaObjects[ID].GetIdent(); }
-	const char *GetObjectName(int ID) const { return m_lLuaObjects[ID].name.c_str(); }
+	int NumLoadedClasses() const { return (int)m_lLuaClasses.size(); }
+	std::string GetObjectIdentifier(int ID) const { return m_lLuaClasses[ID].GetIdent(); }
+	const char *GetObjectName(int ID) const { return m_lLuaClasses[ID].name.c_str(); }
 
 	static luabridge::LuaRef GetSelfTable(lua_State *L, const class CLuaClass *pLC);
 	static void FreeSelfTable(lua_State *L, const class CLuaClass *pLC);
+	int NumLuaObjects() const { return m_NumLuaObjects; }
 
 	static void HandleException(luabridge::LuaException& e);
 	static int ErrorFunc(lua_State *L);

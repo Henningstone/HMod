@@ -99,7 +99,7 @@ bool CLua::CleanLaunchLua()
 	GetResMan()->FreeAll();
 	if(m_pLuaState)
 		lua_close(m_pLuaState);
-	m_lLuaObjects.clear();
+	m_lLuaClasses.clear();
 	OpenLua();
 
 	return LoadGametype();
@@ -108,11 +108,11 @@ bool CLua::CleanLaunchLua()
 bool CLua::RegisterScript(const char *pFullPath, const char *pObjName, bool Reloading)
 {
 	// make sure we don't have duplicate classes
-	for(std::vector<LuaObject>::iterator it = m_lLuaObjects.begin(); it != m_lLuaObjects.end(); ++it)
+	for(std::vector<LuaClass>::iterator it = m_lLuaClasses.begin(); it != m_lLuaClasses.end(); ++it)
 	{
 		if(it->name == pObjName && it->path != pFullPath)
 		{
-			dbg_msg("lua", "ERROR: duplicate declaraction of class '%s' in '%s' and '%s'", pObjName, pFullPath, it->path.c_str());
+			dbg_msg("lua", "ERROR: duplicate declaration of class '%s' in '%s' and '%s'", pObjName, pFullPath, it->path.c_str());
 			return false;
 		}
 	}
@@ -124,9 +124,9 @@ bool CLua::RegisterScript(const char *pFullPath, const char *pObjName, bool Relo
 
 	if(!Reloading)
 	{
-		m_lLuaObjects.emplace_back(pFullPath, pObjName);
+		m_lLuaClasses.emplace_back(pFullPath, pObjName);
 
-		dbg_msg("lua/objectmgr", "loaded object '%s' from file '%s'", pObjName, pFullPath);
+		dbg_msg("lua/objectmgr", "loaded object class '%s' from file '%s'", pObjName, pFullPath);
 	}
 
 	return true;
@@ -212,14 +212,14 @@ void CLua::ReloadSingleObject(int ObjectID)
 		int Num = NumLoadedClasses();
 		for(int i = 0; i < Num; i++)
 		{
-			RegisterScript(m_lLuaObjects[i].path.c_str(), m_lLuaObjects[i].name.c_str(), true);
-			Console()->Printf(0, "luaserver", "reloading %s", m_lLuaObjects[i].GetIdent().c_str());
+			RegisterScript(m_lLuaClasses[i].path.c_str(), m_lLuaClasses[i].name.c_str(), true);
+			Console()->Printf(0, "luaserver", "reloading %s", m_lLuaClasses[i].GetIdent().c_str());
 		}
 	}
 	else
 	{
-		RegisterScript(m_lLuaObjects[ObjectID].path.c_str(), m_lLuaObjects[ObjectID].name.c_str(), true);
-		Console()->Printf(0, "luaserver", "reloading %s", m_lLuaObjects[ObjectID].GetIdent().c_str());
+		RegisterScript(m_lLuaClasses[ObjectID].path.c_str(), m_lLuaClasses[ObjectID].name.c_str(), true);
+		Console()->Printf(0, "luaserver", "reloading %s", m_lLuaClasses[ObjectID].GetIdent().c_str());
 	}
 }
 
@@ -363,6 +363,8 @@ luabridge::LuaRef CLua::GetSelfTable(lua_State *L, const CLuaClass *pLC)
 		Self.push(L);
 		lua_pushfstring(L, "%s->%p", pClassName, pLC);
 		lua_call(L, 2, 0);
+
+		CLua::Lua()->m_NumLuaObjects++;
 	}
 
 	return Self;
@@ -374,6 +376,8 @@ void CLua::FreeSelfTable(lua_State *L, const CLuaClass *pLC)
 	str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", pLC);
 	lua_pushnil(L);
 	lua_setglobal(L, aSelfVarName);
+
+	CLua::Lua()->m_NumLuaObjects--;
 }
 
 void CLua::HandleException(luabridge::LuaException& e)

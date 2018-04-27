@@ -101,6 +101,7 @@ public:
 	virtual void PrintTo(int To, const char *pFrom, const char *pStr) = 0;
 	virtual void PrintLua(const char *pFrom, const char *pStr, lua_State *L /* [, int To ] */) = 0;
 	virtual void Printf(int Level, const char *pFrom, const char *pFmt, ...) = 0;
+	virtual void PrintfTo(int Target, const char *pFrom, const char *pFmt, ...) = 0;
 
 	virtual void SetAccessLevel(int AccessLevel) = 0;
 };

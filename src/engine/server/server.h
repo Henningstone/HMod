@@ -248,6 +248,7 @@ public:
 	static void ConMapReload(IConsole::IResult *pResult, void *pUser);
 	static int LuaConLuaDoStringPrintOverride(class lua_State *L);
 	static void ConLuaDoString(IConsole::IResult *pResult, void *pUser);
+	static void ConLuaStatus(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaReinit(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaListClasses(IConsole::IResult *pResult, void *pUser);

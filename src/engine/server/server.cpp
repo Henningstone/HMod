@@ -27,6 +27,7 @@
 
 #include <mastersrv/mastersrv.h>
 #include <engine/lua.h>
+#include <functional>
 
 #include "register.h"
 #include "server.h"
@@ -1749,7 +1750,7 @@ int CServer::LuaConLuaDoStringPrintOverride(lua_State *L)
 	for(int i = 1; i <= nargs; i++)
 	{
 		LuaRef Val = luabridge::LuaRef::fromStack(L, i);
-		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "(print %i/%i):  %s", i, nargs, Val.tostring().c_str());
+		pSelf->Console()->PrintfTo(pSelf->m_RconExecClientID, "lua", "(print %i/%i):  %s", i, nargs, Val.tostring().c_str());
 	}
 
 	return 0;
@@ -1773,7 +1774,7 @@ void CServer::ConLuaDoString(IConsole::IResult *pResult, void *pUser)
 	lua_setglobal(L, "print");
 
 	// execute!
-	pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "> %s", pResult->GetString(0));
+	pSelf->Console()->PrintfTo(pResult->GetCID(), "lua", "> %s", pResult->GetString(0));
 	int oldtop = lua_gettop(L);
 	int Success = luaL_dostring(L, pResult->GetString(0)) == 0;
 	int newtop = lua_gettop(L);
@@ -1782,15 +1783,126 @@ void CServer::ConLuaDoString(IConsole::IResult *pResult, void *pUser)
 		for(int i = oldtop+1; i <= newtop; i++)
 		{
 			LuaRef Val = luabridge::LuaRef::fromStack(L, i);
-			pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "<- %2i:  %s", i - oldtop, Val.tostring().c_str());
+			pSelf->Console()->PrintfTo(pResult->GetCID(), "lua", "<- %2i:  %s", i - oldtop, Val.tostring().c_str());
 		}
 	}
 	else
-		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lua", "ERROR: %s", lua_tostring(L, -1));
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua", "ERROR: %s", lua_tostring(L, -1));
 	lua_pop(L, newtop-oldtop);
 
 	// restore the old print
 	lua_register(L, "print", CLuaBinding::Print);
+}
+
+void CServer::ConLuaStatus(IConsole::IResult *pResult, void *pUser)
+{
+	CServer *pSelf = ((CServer *)pUser);
+	lua_State *L = CLua::Lua()->L();
+
+	struct StatusCommand
+	{
+		const char * const pCommand;
+		const char * const pArgList;
+		const char * const pHelp;
+		std::function<void()> pfnCallback;
+	} aCommands[] = {
+			{
+				"help",
+				"",
+				"shows this help",
+				[&](){
+					if(pResult->NumArguments() == 1)
+					{
+						pSelf->Console()->PrintTo(pResult->GetCID(), "lua_status/help", "Available commands: help, gc");
+						pSelf->Console()->PrintTo(pResult->GetCID(), "lua_status/help", "ONLY USE FOR DEBUGGING AND IF YOU KNOW WHAT YOU ARE DOING");
+					}
+					else
+					{
+						// help to a specific command
+						for(int i = 0; i < 2 /* XXX  increase this number when more commands are added */; i++)
+						{
+							if(str_comp_nocase(pResult->GetString(1), aCommands[i].pCommand) == 0)
+							{
+								pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status/help", "Command '%s': %s (possible arguments: %s)", aCommands[i].pCommand, aCommands[i].pHelp, aCommands[i].pArgList[0] != '\0' ? aCommands[i].pArgList : "<none>");
+								return;
+							}
+						}
+						pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status/help", "Command '%s' not found", pResult->GetString(1));
+					}
+				}
+			},
+			{
+				"gc",
+				"stop / restart / collect / step",
+				"controls the garbage collector",
+				[&](){
+					if(str_comp_nocase(pResult->GetString(1), "stop") == 0)
+					{
+						lua_gc(L, LUA_GCSTOP, 0);
+						pSelf->Console()->PrintTo(pResult->GetCID(), "lua_status/gc", "garbage collector stopped!");
+					}
+					else if(str_comp_nocase(pResult->GetString(1), "restart") == 0)
+					{
+						lua_gc(L, LUA_GCRESTART, 0);
+						pSelf->Console()->PrintTo(pResult->GetCID(), "lua_status/gc", "garbage collector restarted!");
+					}
+					else if(str_comp_nocase(pResult->GetString(1), "collect") == 0)
+					{
+						int MemBefore = lua_gc(L, LUA_GCCOUNT, 0)*1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+						lua_gc(L, LUA_GCCOLLECT, 0);
+						int MemAfter = lua_gc(L, LUA_GCCOUNT, 0)*1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+						pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status/gc", "full cycle performed; %i bytes collected, %i bytes (%i KB) in use", MemBefore-MemAfter, MemAfter, MemAfter/1024);
+					}
+					else if(str_comp_nocase(pResult->GetString(1), "step") == 0)
+					{
+						int MemBefore = lua_gc(L, LUA_GCCOUNT, 0)*1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+						bool CycleFinished = lua_gc(L, LUA_GCSTEP, 1) == 1;
+						int MemAfter = lua_gc(L, LUA_GCCOUNT, 0)*1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+						pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status/gc", "did one gc step%s; %i bytes collected, %i bytes in use",
+												   CycleFinished ? " which finished the current cycle" : "",
+												   MemBefore-MemAfter, MemAfter);
+					}
+					else
+					{
+						if(pResult->GetString(1)[0] == '\0')
+							pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status/gc", "the command 'gc' needs an argument; see 'lua_status help gc'", pResult->GetString(1));
+						else
+							pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status/gc", "invalid argument '%s'", pResult->GetString(1));
+					}
+				}
+			}
+	};
+
+	if(pResult->NumArguments() > 0)
+	{
+		// debug command given
+		bool Found = false;
+		for(unsigned i = 0; i < sizeof(aCommands)/sizeof(aCommands[0]); i++)
+		{
+			if(str_comp_nocase(pResult->GetString(0), aCommands[i].pCommand) == 0)
+			{
+				aCommands[i].pfnCallback();
+				Found = true;
+				break;
+			}
+		}
+
+		if(!Found)
+			pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "Command '%s' not found", pResult->GetString(0));
+	}
+	else
+	{
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "--- Lua engine status ---");
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "Loaded user classes: %i", CLua::Lua()->NumLoadedClasses());
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "Alive lua objects: %i", CLua::Lua()->NumLuaObjects());
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "Registered resources: %i", CLua::Lua()->GetResMan()->GetCount());
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "VM Memory Usage: %i,%i KB+b", lua_gc(L, LUA_GCCOUNT, 0), lua_gc(L, LUA_GCCOUNTB, 0));
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "Unprotected stack size: %i", lua_gettop(L));
+		luaL_dostring(L, "count = 0 for k,v in next,_G do count = count+1 end return count");
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_status", "State-global variables: %i", lua_tointeger(L, -1));
+		lua_pop(L, 1);
+	}
+
 }
 
 void CServer::ConLuaReinit(IConsole::IResult *pResult, void *pUser)
@@ -1804,7 +1916,7 @@ void CServer::ConLuaReinit(IConsole::IResult *pResult, void *pUser)
 	if(What <= CLua::Lua()->NumLoadedClasses())
 		pSelf->m_LuaReinit = What;
 	else
-		pSelf->Console()->Printf(0, "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedClasses());
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_reload", "ID out of range (choose 1..%i)", CLua::Lua()->NumLoadedClasses());
 }
 
 void CServer::ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser)
@@ -1834,7 +1946,8 @@ void CServer::ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser)
 		{
 			// exact match, execute immediately
 			pSelf->m_LuaReinit = i;
-			pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "lr", "exact match '%s' found!", pObjName);
+			if(g_Config.m_Debug)
+				pSelf->Console()->PrintfTo(pResult->GetCID(), "lr", "exact match '%s' found", pObjName);
 			return;
 		}
 		else if(int ThisPrefixMatch = str_comp_match_len(pObjName, pGivenHint) >= LongestPrefixMatch)
@@ -1869,13 +1982,15 @@ void CServer::ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser)
 	if(pUsedCandidates->empty())
 	{
 		// got nothing at all
-		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lr", "no matches found for hint '%s'", pGivenHint);
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lr", "no matches found for hint '%s'", pGivenHint);
 		return;
 	}
 	else if(pUsedCandidates->size() == 1)
 	{
 		// got exactly one match, perfect!
-		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "lr", "match found '%s' for given hint '%s'", CLua::Lua()->GetObjectName((*pUsedCandidates)[0]-1), pGivenHint);
+		if(g_Config.m_Debug)
+			pSelf->Console()->PrintfTo(pResult->GetCID(), "lr", "match found '%s' for given hint '%s'",
+									   CLua::Lua()->GetObjectName((*pUsedCandidates)[0]-1), pGivenHint);
 		pSelf->m_LuaReinit = (*pUsedCandidates)[0];
 		return;
 	}
@@ -1892,7 +2007,7 @@ void CServer::ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser)
 			str_append(aMatches, ", ", sizeof(aMatches));
 		}
 		aMatches[str_length(aMatches)-1 - 1] = '\0';
-		pSelf->Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "lr", "found multiple candidates for hint '%s': %s", pGivenHint, aMatches);
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lr", "found multiple candidates for hint '%s': %s", pGivenHint, aMatches);
 		return;
 	}
 
@@ -1909,7 +2024,7 @@ void CServer::ConLuaListClasses(IConsole::IResult *pResult, void *pUser)
 	for(int i = 0; i < Num; i++)
 	{
 		std::string ObjIdent = CLua::Lua()->GetObjectIdentifier(i);
-		pSelf->Console()->Printf(0, "lua_listclasses", "%i: %s", i+1, ObjIdent.c_str());
+		pSelf->Console()->PrintfTo(pResult->GetCID(), "lua_listclasses", "%i: %s", i+1, ObjIdent.c_str());
 	}
 
 	pSelf->Console()->PrintTo(ClientID, "lua_listclasses", "-----  End Loaded User Classes  -----");
@@ -2019,6 +2134,7 @@ void CServer::RegisterCommands()
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
 
 	Console()->Register("lua", "r", CFGFLAG_SERVER, ConLuaDoString, this, "Execute the given line of lua code");
+	Console()->Register("lua_status", "?s?r", CFGFLAG_SERVER, ConLuaStatus, this, "Get status information about the lua engine or execute debug commands (try 'lua_status help')");
 	Console()->Register("lua_reload", "?i", CFGFLAG_SERVER, ConLuaReinit, this, "Reload the specified lua class by ID (or all if none given) - see lua_listclasses");
 	Console()->Register("lr", "?r", CFGFLAG_SERVER, ConLuaReinitQuick, this, "Reload the specified lua class (via partial string matching algorithm)");
 	Console()->Register("lua_listclasses", "", CFGFLAG_SERVER, ConLuaListClasses, this, "View all loaded lua classes with their IDs");
