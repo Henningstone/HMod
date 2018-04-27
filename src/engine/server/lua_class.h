@@ -23,7 +23,10 @@ protected:
 		m_IntegrityCheck = 0x539;
 	}
 
-	virtual ~CLuaClass(){}
+	virtual ~CLuaClass()
+	{
+		CLua::FreeSelfTable(CLua::Lua()->L(), this);
+	}
 
 	inline const char *GetLuaClassName() const { dbg_assert_strict(m_IntegrityCheck == 0x539, "bad mem"); return m_LuaClass.c_str(); }
 

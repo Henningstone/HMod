@@ -368,6 +368,14 @@ luabridge::LuaRef CLua::GetSelfTable(lua_State *L, const CLuaClass *pLC)
 	return Self;
 }
 
+void CLua::FreeSelfTable(lua_State *L, const CLuaClass *pLC)
+{
+	char aSelfVarName[64];
+	str_format(aSelfVarName, sizeof(aSelfVarName), "__xData%p", pLC);
+	lua_pushnil(L);
+	lua_setglobal(L, aSelfVarName);
+}
+
 void CLua::HandleException(luabridge::LuaException& e)
 {
 	// pop the error message if there is any
@@ -411,7 +419,7 @@ LuaRef CLua::CopyTable(const LuaRef& Src, LuaRef *pSeenTables)
 {
 	lua_State *L = Src.state();
 	if(!Src.isTable())
-		luaL_error(L, "given variable is not a table @ CopyTable");
+		luaL_error(L, "given variable is not a table @ CopyTable (got type: %s)", lua_typename(L, Src.type()));
 
 	LuaRef Copy = luabridge::newTable(L);
 	LuaRef SeenTables = luabridge::newTable(L);

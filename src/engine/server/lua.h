@@ -179,6 +179,7 @@ public:
 	const char *GetObjectName(int ID) const { return m_lLuaObjects[ID].name.c_str(); }
 
 	static luabridge::LuaRef GetSelfTable(lua_State *L, const class CLuaClass *pLC);
+	static void FreeSelfTable(lua_State *L, const class CLuaClass *pLC);
 
 	static void HandleException(luabridge::LuaException& e);
 	static int ErrorFunc(lua_State *L);

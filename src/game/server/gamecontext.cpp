@@ -510,7 +510,7 @@ void CGameContext::CheckPureTuning()
 void CGameContext::SendTuningParams(int ClientID, const CTuningParams *pTuning)
 {
 	CheckPureTuning();
-dbg_msg("debugdennis", "sending tuning params %p to %i", pTuning, ClientID);
+
 	CMsgPacker Msg(NETMSGTYPE_SV_TUNEPARAMS);
 	int *pParams = pTuning ? (int *)pTuning : (int *)&m_Tuning;
 	for(unsigned i = 0; i < sizeof(m_Tuning)/sizeof(int); i++)
