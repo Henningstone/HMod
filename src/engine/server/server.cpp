@@ -591,41 +591,49 @@ int CServer::MaxClients() const
 	return m_NetServer.MaxClients();
 }
 
-IDMap CServer::GetIdMap()
+int *CServer::GetIdMap(int ClientID)
 {
-	return m_IDMap;
+	return (int*)(m_aIDMap + ClientID*DDNET_MAX_CLIENTS);
 }
 
-bool IServer::IDTranslate(int *pTarget, int ClientID)
+bool IServer::IDTranslate(int *pTarget, int ForClientID)
 {
 	CClientInfo Info;
-	GetClientInfo(ClientID, &Info);
-	if(ClientID > DDNET_MAX_CLIENTS && Info.m_Is128)
+	GetClientInfo(ForClientID, &Info);
+	if(ForClientID > DDNET_MAX_CLIENTS-1 && Info.m_Is128)
 		return true;
-	if(ClientID > VANILLA_MAX_CLIENTS && (Info.m_Is64 || Info.m_Is128))
+	if(ForClientID > VANILLA_MAX_CLIENTS-1 && (Info.m_Is64 || Info.m_Is128))
 		return true;
 
-	int MappedID = GetIdMap()[ClientID];
-	if(MappedID == -1)
-		return false;
+	// we need to translate
+	int *aMap = GetIdMap(ForClientID);
+	bool Found = false;
+	for(int i = 0; i < (Info.m_Is64 ? DDNET_MAX_CLIENTS : VANILLA_MAX_CLIENTS); i++)
+	{
+		if(*pTarget == aMap[i])
+		{
+			*pTarget = i;
+			Found = true;
+			break;
+		}
+	}
 
-	*pTarget = MappedID;
-
-	return true;
+	return Found;
 }
 
-bool IServer::IDTranslateReverse(int *pTarget, int ClientID)
+bool IServer::IDTranslateReverse(int *pTarget, int ForClientID)
 {
 	CClientInfo Info;
-	GetClientInfo(ClientID, &Info);
+	GetClientInfo(ForClientID, &Info);
 	if(Info.m_Is64)
 		return true;
 
-	IDMap Map = GetIdMap();
-	if(!Map[*pTarget].IsSet())
+	int *aMap = GetIdMap(ForClientID);
+	if (aMap[*pTarget] == -1)
 		return false;
 
-	*pTarget = Map[*pTarget];
+	*pTarget = aMap[*pTarget];
+
 	return true;
 }
 

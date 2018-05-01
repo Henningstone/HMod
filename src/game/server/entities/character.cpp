@@ -955,7 +955,11 @@ void CCharacter::Snap(int SnappingClient)
 	if(NetworkClipped(SnappingClient))
 		return;
 
-	CNetObj_Character *pCharacter = static_cast<CNetObj_Character *>(Server()->SnapNewItem(NETOBJTYPE_CHARACTER, m_pPlayer->GetCID(), sizeof(CNetObj_Character)));
+	int CID = m_pPlayer->GetCID();
+	if(!Server()->IDTranslate(&CID, SnappingClient))
+		return;
+
+	CNetObj_Character *pCharacter = static_cast<CNetObj_Character *>(Server()->SnapNewItem(NETOBJTYPE_CHARACTER, CID, sizeof(CNetObj_Character)));
 	if(!pCharacter)
 		return;
 
@@ -983,6 +987,13 @@ void CCharacter::Snap(int SnappingClient)
 	{
 		m_EmoteType = EMOTE_NORMAL;
 		m_EmoteStop = -1;
+	}
+
+	// hooked player ID translation
+	if(pCharacter->m_HookedPlayer != -1)
+	{
+		if(!Server()->IDTranslate(&pCharacter->m_HookedPlayer, SnappingClient))
+			pCharacter->m_HookedPlayer = -1;
 	}
 
 	pCharacter->m_Emote = m_EmoteType;

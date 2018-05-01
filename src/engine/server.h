@@ -57,10 +57,10 @@ public:
 	int SendPackMsgTranslate(CNetMsg_Sv_Chat *pMsg, int Flags, int ClientID);
 	int SendPackMsgTranslate(CNetMsg_Sv_KillMsg *pMsg, int Flags, int ClientID);*/
 
-	bool IDTranslate(int *pTarget, int ClientID);
-	bool IDTranslateReverse(int *pTarget, int ClientID);
+	bool IDTranslate(int *pTarget, int ForClientID);
+	bool IDTranslateReverse(int *pTarget, int ForClientID);
 
-	virtual IDMap GetIdMap(int ClientID) = 0;
+	virtual int *GetIdMap(int ClientID) = 0;
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;

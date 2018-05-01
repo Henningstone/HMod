@@ -149,7 +149,7 @@ public:
 	};
 
 	CClient m_aClients[MAX_CLIENTS];
-	IDMapT m_IDMap;
+	TypeWrapper<int, -1> m_aIDMap[MAX_CLIENTS * DDNET_MAX_CLIENTS];
 
 	CSnapshotDelta m_SnapshotDelta;
 	CSnapshotBuilder m_SnapshotBuilder;
@@ -225,7 +225,7 @@ public:
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID);
 	int SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System);
 
-	IDMap GetIdMap();
+	int *GetIdMap(int ClientID);
 
 	void DoSnapshot();
 
