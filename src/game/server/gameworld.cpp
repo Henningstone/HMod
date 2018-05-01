@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 
+#include <engine/shared/config.h>
 #include "gameworld.h"
 #include "entity.h"
 #include "gamecontext.h"
@@ -249,4 +250,88 @@ CCharacter *CGameWorld::ClosestCharacter(vec2 Pos, float Radius, CEntity *pNotTh
 	}
 
 	return pClosest;
+}
+
+static bool distCompare(std::pair<float,int> a, std::pair<float,int> b)
+{
+	return (a.first < b.first);
+}
+
+void CGameWorld::UpdatePlayerMaps()
+{
+	if (Server()->Tick() % g_Config.m_SvMapUpdateRate != 0) return;
+
+	std::pair<float,int> dist[MAX_CLIENTS];
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (!Server()->ClientIngame(i))
+			continue;
+
+		IDMap map = Server()->GetIdMap();
+
+		// compute distances
+		for (int j = 0; j < MAX_CLIENTS; j++)
+		{
+			dist[j].second = j;
+			dist[j].first = 1e10;
+			if (!Server()->ClientIngame(j))
+				continue;
+			CCharacter* ch = GameServer()->m_apPlayers[j]->GetCharacter();
+			if (!ch)
+				continue;
+			// copypasted chunk from character.cpp Snap() follows
+			int SnappingClient = i;
+			CCharacter* SnapChar = GameServer()->GetPlayerChar(SnappingClient);
+			if(SnapChar &&
+			   GameServer()->m_apPlayers[SnappingClient]->GetTeam() != -1/* &&
+				!ch->CanCollide(SnappingClient) &&
+				(!GameServer()->m_apPlayers[SnappingClient]->m_IsUsingDDRaceClient ||
+					(GameServer()->m_apPlayers[SnappingClient]->m_IsUsingDDRaceClient &&
+					!GameServer()->m_apPlayers[SnappingClient]->m_ShowOthers
+                                	)
+				)*/
+					) continue;
+
+			dist[j].first = distance(GameServer()->m_apPlayers[i]->m_ViewPos, GameServer()->m_apPlayers[j]->m_ViewPos);
+		}
+
+		// always send the player himself
+		dist[i].first = 0;
+
+		// compute reverse map
+		int rMap[MAX_CLIENTS];
+		for (int j = 0; j < MAX_CLIENTS; j++)
+		{
+			rMap[j] = -1;
+		}
+		for (int j = 0; j < VANILLA_MAX_CLIENTS; j++)
+		{
+			if (map[j] == -1) continue;
+			if (dist[map[j]].first > 1e9) map[j] = -1;
+			else rMap[map[j]] = j;
+		}
+
+		std::nth_element(&dist[0], &dist[VANILLA_MAX_CLIENTS - 1], &dist[MAX_CLIENTS], distCompare);
+
+		int mapc = 0;
+		int demand = 0;
+		for (int j = 0; j < VANILLA_MAX_CLIENTS - 1; j++)
+		{
+			int k = dist[j].second;
+			if (rMap[k] != -1 || dist[j].first > 1e9) continue;
+			while (mapc < VANILLA_MAX_CLIENTS && map[mapc] != -1) mapc++;
+			if (mapc < VANILLA_MAX_CLIENTS - 1)
+				map[mapc] = k;
+			else
+			if (dist[j].first < 1300) // dont bother freeing up space for players which are too far to be displayed anyway
+				demand++;
+		}
+		for (int j = MAX_CLIENTS - 1; j > VANILLA_MAX_CLIENTS - 2; j--)
+		{
+			int k = dist[j].second;
+			if (rMap[k] != -1 && demand-- > 0)
+				map[rMap[k]] = -1;
+		}
+		map[VANILLA_MAX_CLIENTS - 1] = -1; // player with empty name to say chat msgs
+	}
 }

@@ -5,8 +5,14 @@
 #include "kernel.h"
 #include "message.h"
 #include <base/system++/system++.h>
+#include <base/system++/typewrapper.h>
 #include <engine/server/lua.h>
 #include <engine/server/lua_class.h>
+#include <game/generated/protocol.h>
+#include <engine/shared/protocol.h>
+
+typedef std::map< int, TypeWrapper<int, -1>[VANILLA_MAX_CLIENTS] > IDMapT;
+typedef IDMapT& IDMap;
 
 class IServer : public IInterface, protected CLuaClass
 {
@@ -23,6 +29,9 @@ public:
 	{
 		const char *m_pName;
 		int m_Latency;
+
+		bool m_Is64;
+		bool m_Is128;
 	};
 
 	IServer() : CLuaClass("Server") {}
@@ -41,14 +50,17 @@ public:
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID) = 0;
 	virtual void SendRconLine(int ClientID, const char *pLine) = 0;
 
-	template<class T>
-	int SendPackMsg(T *pMsg, int Flags, int ClientID)
-	{
-		CMsgPacker Packer(pMsg->MsgID());
-		if(pMsg->Pack(&Packer))
-			return -1;
-		return SendMsg(&Packer, Flags, ClientID);
-	}
+	/*template<class T> int SendPackMsg(T *pMsg, int Flags, int ClientID);
+	template<class T> int SendPackMsgTranslate(T *pMsg, int Flags, int ClientID);
+	template<class T> int SendPackMsgOne(T *pMsg, int Flags, int ClientID);
+	int SendPackMsgTranslate(CNetMsg_Sv_Emoticon *pMsg, int Flags, int ClientID);
+	int SendPackMsgTranslate(CNetMsg_Sv_Chat *pMsg, int Flags, int ClientID);
+	int SendPackMsgTranslate(CNetMsg_Sv_KillMsg *pMsg, int Flags, int ClientID);*/
+
+	bool IDTranslate(int *pTarget, int ClientID);
+	bool IDTranslateReverse(int *pTarget, int ClientID);
+
+	virtual IDMap GetIdMap(int ClientID) = 0;
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;
@@ -74,6 +86,73 @@ public:
 
 	virtual void DemoRecorder_HandleAutoStart() = 0;
 	virtual bool DemoRecorder_IsRecording() = 0;
+
+
+	template <class T>
+	int SendPackMsg(T *pMsg, int Flags, int ClientID)
+	{
+		int result = 0;
+		T tmp;
+		if (ClientID == -1)
+		{
+			for(int i = 0; i < MAX_CLIENTS; i++)
+			{
+				if(ClientIngame(i))
+				{
+					mem_copy(&tmp, pMsg, sizeof(T));
+					result = SendPackMsgTranslate(&tmp, Flags, i);
+				}
+			}
+		}
+		else
+		{
+			mem_copy(&tmp, pMsg, sizeof(T));
+			result = SendPackMsgTranslate(&tmp, Flags, ClientID);
+		}
+		return result;
+	}
+
+	template<class T>
+	int SendPackMsgTranslate(T *pMsg, int Flags, int ClientID)
+	{
+		return SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+	int SendPackMsgTranslate(CNetMsg_Sv_Emoticon *pMsg, int Flags, int ClientID)
+	{
+		return IDTranslate(&pMsg->m_ClientID, ClientID) && SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+
+	int SendPackMsgTranslate(CNetMsg_Sv_Chat *pMsg, int Flags, int ClientID)
+	{
+		if (pMsg->m_ClientID >= 0 && !IDTranslate(&pMsg->m_ClientID, ClientID))
+		{
+			char aMsgBuf[1024];
+			str_format(aMsgBuf, sizeof(aMsgBuf), "%s: %s", ClientName(pMsg->m_ClientID), pMsg->m_pMessage);
+			pMsg->m_pMessage = aMsgBuf;
+			pMsg->m_ClientID = VANILLA_MAX_CLIENTS - 1;
+		}
+		return SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+	int SendPackMsgTranslate(CNetMsg_Sv_KillMsg *pMsg, int Flags, int ClientID)
+	{
+		if (!IDTranslate(&pMsg->m_Victim, ClientID))
+			return 0;
+		if (!IDTranslate(&pMsg->m_Killer, ClientID))
+			pMsg->m_Killer = pMsg->m_Victim;
+		return SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+	template<class T>
+	int SendPackMsgOne(T *pMsg, int Flags, int ClientID)
+	{
+		CMsgPacker Packer(pMsg->MsgID());
+		if(pMsg->Pack(&Packer))
+			return -1;
+		return SendMsg(&Packer, Flags, ClientID);
+	}
 };
 
 class IGameServer : public IInterface

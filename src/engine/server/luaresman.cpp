@@ -29,4 +29,6 @@ int CLuaRessourceMgr::GetCount() const
 
 	#include "luaresmandef.h"
 	#undef REGISTER_RESSOURCE
+
+	return Count;
 }

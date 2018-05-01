@@ -2,6 +2,7 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "eventhandler.h"
 #include "gamecontext.h"
+#include "cmask.h"
 
 //////////////////////////////////////////////////
 // Event handler
@@ -17,18 +18,21 @@ void CEventHandler::SetGameServer(CGameContext *pGameServer)
 	m_pGameServer = pGameServer;
 }
 
-void *CEventHandler::Create(int Type, int Size, int Mask)
+void *CEventHandler::Create(int Type, int Size, Cmask *pMask)
 {
 	if(m_NumEvents == MAX_EVENTS)
-		return 0;
+		return NULL;
 	if(m_CurrentOffset+Size >= MAX_DATASIZE)
-		return 0;
+		return NULL;
 
 	void *p = &m_aData[m_CurrentOffset];
 	m_aOffsets[m_NumEvents] = m_CurrentOffset;
 	m_aTypes[m_NumEvents] = Type;
 	m_aSizes[m_NumEvents] = Size;
-	m_aClientMasks[m_NumEvents] = Mask;
+	if(pMask)
+		m_aClientMasks[m_NumEvents] = *pMask;
+	else
+		m_aClientMasks[m_NumEvents] = CmaskAll();
 	m_CurrentOffset += Size;
 	m_NumEvents++;
 	return p;

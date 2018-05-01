@@ -3,6 +3,8 @@
 #ifndef GAME_SERVER_EVENTHANDLER_H
 #define GAME_SERVER_EVENTHANDLER_H
 
+#include "cmask.h"
+
 //
 class CEventHandler
 {
@@ -12,7 +14,7 @@ class CEventHandler
 	int m_aTypes[MAX_EVENTS]; // TODO: remove some of these arrays
 	int m_aOffsets[MAX_EVENTS];
 	int m_aSizes[MAX_EVENTS];
-	int m_aClientMasks[MAX_EVENTS];
+	Cmask m_aClientMasks[MAX_EVENTS];
 	char m_aData[MAX_DATASIZE];
 
 	class CGameContext *m_pGameServer;
@@ -24,7 +26,7 @@ public:
 	void SetGameServer(CGameContext *pGameServer);
 
 	CEventHandler();
-	void *Create(int Type, int Size, int Mask = -1);
+	void *Create(int Type, int Size, Cmask *Mask = 0);
 	void Clear();
 	void Snap(int SnappingClient);
 };

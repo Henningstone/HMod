@@ -3,6 +3,7 @@
 #ifndef ENGINE_SERVER_SERVER_H
 #define ENGINE_SERVER_SERVER_H
 
+#include <map>
 #include <engine/server.h>
 #include <engine/shared/demo.h>
 #include <engine/shared/econ.h>
@@ -130,12 +131,25 @@ public:
 		int m_AuthTries;
 		int m_AccessLevel;
 
+		enum
+		{
+			SUPPORTS_64P    = 1U << 0U,
+			SUPPORTS_128P   = 1U << 1U,
+			SUPPORTS_NETGUI = 1U << 2U, //dummy; still unused
+		};
+
+		unsigned int m_ClientSupportFlags;
+		bool SupportsAny(unsigned int BitMask) const { return (m_ClientSupportFlags&BitMask) != 0; }
+		bool SupportsAll(unsigned int BitMask) const { return (m_ClientSupportFlags&BitMask) == BitMask; }
+		bool Supports(unsigned int BitMask) const { return SupportsAny(BitMask); }
+
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
 
 		void Reset();
 	};
 
 	CClient m_aClients[MAX_CLIENTS];
+	IDMapT m_IDMap;
 
 	CSnapshotDelta m_SnapshotDelta;
 	CSnapshotBuilder m_SnapshotBuilder;
@@ -211,6 +225,8 @@ public:
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID);
 	int SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System);
 
+	IDMap GetIdMap();
+
 	void DoSnapshot();
 
 	static int NewClientCallback(int ClientID, void *pUser);
@@ -228,7 +244,14 @@ public:
 
 	void ProcessClientPacket(class CNetChunk *pPacket);
 
-	void SendServerInfo(const NETADDR *pAddr, int Token);
+	enum
+	{
+		SRVINFO_VANILLA,
+		SRVINFO_EXTENDED_64,
+		SRVINFO_EXTENDED_128
+	};
+
+	void SendServerInfo(const NETADDR *pAddr, int Token, int InfoType=SRVINFO_VANILLA, int Offset=0);
 	void UpdateServerInfo();
 
 	void PumpNetwork();
