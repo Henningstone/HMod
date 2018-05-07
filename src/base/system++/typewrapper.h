@@ -23,6 +23,7 @@ public:
 	void reset() { value = Default; }
 
 	operator T() { return value; }
+	operator const T() const { return value; }
 };
 
 #define MAKE_TYPE(TYPE, NAME, DEFAULT) \

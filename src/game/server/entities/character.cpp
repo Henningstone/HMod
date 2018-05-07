@@ -995,7 +995,7 @@ void CCharacter::Snap(int SnappingClient)
 		int Translated = pCharacter->m_HookedPlayer;
 		if(!Server()->IDTranslate(&Translated, SnappingClient))
 			Translated = -1;
-		dbg_msg("DEBUGDENNIS", "%i hooked %i (-> %i)", GetPlayer()->GetCID(), pCharacter->m_HookedPlayer, Translated);
+		dbg_msg("DEBUGDENNIS", "%i hooked %3i (-> %2i) for %3i", GetPlayer()->GetCID(), pCharacter->m_HookedPlayer, Translated, SnappingClient);
 		pCharacter->m_HookedPlayer = Translated;
 	}
 

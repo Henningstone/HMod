@@ -1739,6 +1739,9 @@ void CGameContext::OnSnap(int ClientID)
 		if(m_apPlayers[i])
 			m_apPlayers[i]->Snap(ClientID);
 	}
+
+	if(ClientID > -1)
+		m_apPlayers[ClientID]->FakeSnap();
 }
 void CGameContext::OnPreSnap() {}
 void CGameContext::OnPostSnap()

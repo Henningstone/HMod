@@ -611,7 +611,7 @@ bool IServer::IDTranslate(int *pTarget, int ForClientID)
 		return true;
 
 	// we need to translate
-	IDMapT *aMap = GetIdMap(ForClientID);
+	const IDMapT *aMap = GetIdMap(ForClientID);
 	bool Found = false;
 	for(int i = 0; i < (Info.m_Is64 ? DDNET_MAX_CLIENTS : VANILLA_MAX_CLIENTS); i++)
 	{

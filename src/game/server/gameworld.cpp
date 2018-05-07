@@ -400,7 +400,7 @@ void CGameWorld::UpdatePlayerMappings()
 		}
 
 		const int EXTENDED_HIGHEST_ID = MAX_CLIENTS-1;
-		for(int i = EXTENDED_HIGHEST_ID; i > DDNET_HIGHEST_ID - 1; i--)
+		for(int i = EXTENDED_HIGHEST_ID; i > DDNET_HIGHEST_ID; i--)
 		{
 			int ToCID = aDists[i].ToCID;
 			int ReverseID = aReverseMap[ToCID];
@@ -408,6 +408,5 @@ void CGameWorld::UpdatePlayerMappings()
 			if(aReverseMap[ToCID] != -1 && Demand-- > 0)
 				aMap[ReverseID] = -1;
 		}
-		aMap[DDNET_HIGHEST_ID] = -1; // player with empty name to say chat msgs
 	}
 }
