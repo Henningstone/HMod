@@ -20,6 +20,8 @@ public:
 		value = val;
 	}
 
+	void reset() { value = Default; }
+
 	operator T() { return value; }
 };
 

@@ -26,6 +26,11 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team, bool IsBot)
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
 
+	IDMapT *aIDMap = Server()->GetIdMap(ClientID);
+	for(int i = 1; i < DDNET_MAX_CLIENTS; i++)
+		aIDMap[i].reset();
+	aIDMap[0] = ClientID;
+
 	MACRO_LUA_CALLBACK("Player")
 }
 

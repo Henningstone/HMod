@@ -547,11 +547,13 @@ void CGameContext::OnTick()
 			int added = 0;
 			for(int i = s_LastNumDummies; i < g_Config.m_DbgDummies; i++)
 			{
+				int DummyCID = MAX_CLIENTS - i - 1;
 				try {
-					OnClientConnected(MAX_CLIENTS - i - 1);
+					OnClientConnected(DummyCID);
 				} catch(CTWException&) {
 					break;
 				}
+				Server()->InitDummy(DummyCID);
 				added++;
 			}
 			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies added", added);
@@ -563,6 +565,7 @@ void CGameContext::OnTick()
 			for(int i = MAX_CLIENTS-(s_LastNumDummies-g_Config.m_DbgDummies); i < MAX_CLIENTS-g_Config.m_DbgDummies; i++)
 			{
 				OnClientDrop(i, "dummy purged"); // TODO: this doesn't clean it up properly
+				Server()->PurgeDummy(i);
 				removed++;
 			}
 			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies removed", removed);

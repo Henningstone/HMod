@@ -11,8 +11,9 @@
 #include <game/generated/protocol.h>
 #include <engine/shared/protocol.h>
 
-typedef std::map< int, TypeWrapper<int, -1>[VANILLA_MAX_CLIENTS] > IDMapT;
-typedef IDMapT& IDMap;
+//typedef std::map< int, TypeWrapper<int, -1>[VANILLA_MAX_CLIENTS] > IDMapT;
+//typedef IDMapT& IDMap;
+typedef TypeWrapper<int, -1> IDMapT;
 
 class IServer : public IInterface, protected CLuaClass
 {
@@ -44,6 +45,7 @@ public:
 	virtual const char *ClientClan(int ClientID) = 0;
 	virtual int ClientCountry(int ClientID) = 0;
 	virtual bool ClientIngame(int ClientID) = 0;
+	virtual bool ClientIsDummy(int ClientID) = 0;
 	virtual int GetClientInfo(int ClientID, CClientInfo *pInfo) = 0;
 	virtual void GetClientAddr(int ClientID, char *pAddrStr, int Size) = 0;
 
@@ -60,13 +62,16 @@ public:
 	bool IDTranslate(int *pTarget, int ForClientID);
 	bool IDTranslateReverse(int *pTarget, int ForClientID);
 
-	virtual int *GetIdMap(int ClientID) = 0;
+	virtual IDMapT *GetIdMap(int ClientID) = 0;
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;
 	virtual void SetClientCountry(int ClientID, int Country) = 0;
 	virtual void SetClientScore(int ClientID, int Score) = 0;
 	virtual void SetClientAccessLevel(int ClientID, int Level, bool SendRconCmds) = 0;
+
+	virtual void InitDummy(int ClientID) = 0;
+	virtual void PurgeDummy(int ClientID) = 0;
 
 	virtual int SnapNewID() = 0;
 	virtual void SnapFreeID(int ID) = 0;

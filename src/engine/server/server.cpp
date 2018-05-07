@@ -583,7 +583,12 @@ int CServer::ClientCountry(int ClientID)
 
 bool CServer::ClientIngame(int ClientID)
 {
-	return ClientID >= 0 && ClientID < MAX_CLIENTS && m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME;
+	return ClientID >= 0 && ClientID < MAX_CLIENTS && m_aClients[ClientID].m_State >= CServer::CClient::STATE_INGAME;
+}
+
+bool CServer::ClientIsDummy(int ClientID)
+{
+	return ClientID >= 0 && ClientID < MAX_CLIENTS && m_aClients[ClientID].m_State == CServer::CClient::STATE_DUMMY;
 }
 
 int CServer::MaxClients() const
@@ -591,9 +596,9 @@ int CServer::MaxClients() const
 	return m_NetServer.MaxClients();
 }
 
-int *CServer::GetIdMap(int ClientID)
+IDMapT *CServer::GetIdMap(int ClientID)
 {
-	return (int*)(m_aIDMap + ClientID*DDNET_MAX_CLIENTS);
+	return m_aaIDMap[ClientID];
 }
 
 bool IServer::IDTranslate(int *pTarget, int ForClientID)
@@ -606,7 +611,7 @@ bool IServer::IDTranslate(int *pTarget, int ForClientID)
 		return true;
 
 	// we need to translate
-	int *aMap = GetIdMap(ForClientID);
+	IDMapT *aMap = GetIdMap(ForClientID);
 	bool Found = false;
 	for(int i = 0; i < (Info.m_Is64 ? DDNET_MAX_CLIENTS : VANILLA_MAX_CLIENTS); i++)
 	{
@@ -628,7 +633,7 @@ bool IServer::IDTranslateReverse(int *pTarget, int ForClientID)
 	if(Info.m_Is64)
 		return true;
 
-	int *aMap = GetIdMap(ForClientID);
+	IDMapT *aMap = GetIdMap(ForClientID);
 	if (aMap[*pTarget] == -1)
 		return false;
 
@@ -868,6 +873,16 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	pThis->m_aClients[ClientID].m_Snapshots.PurgeAll();
 	return 0;
+}
+
+void CServer::InitDummy(int ClientID)
+{
+	m_aClients[ClientID].m_State = CClient::STATE_DUMMY;
+}
+
+void CServer::PurgeDummy(int ClientID)
+{
+	m_aClients[ClientID].m_State = CClient::STATE_EMPTY;
 }
 
 void CServer::SendMap(int ClientID)
@@ -2172,6 +2187,21 @@ void CServer::ConLuaListClasses(IConsole::IResult *pResult, void *pUser)
 	pSelf->Console()->PrintTo(ClientID, "lua_listclasses", "-----  End Loaded User Classes  -----");
 }
 
+void CServer::ConDbgDumpIDMap(IConsole::IResult *pResult, void *pUser)
+{
+	CServer *pServer = (CServer *)pUser;
+	int ClientID = pResult->GetCID();
+	int MapOfID = pResult->NumArguments() > 0 ? pResult->GetInteger(0) : ClientID;
+
+	IDMapT *aIDMap = pServer->GetIdMap(MapOfID);
+	pServer->Console()->PrintfTo(ClientID, "debug", "------------------[ ID MAP OF %i ]-----------------------", MapOfID);
+	for(int i = 0; i < DDNET_MAX_CLIENTS/2; i++)
+	{
+		pServer->Console()->PrintfTo(ClientID, "debug", "  %3i -> %2i        %3i -> %2i", aIDMap[i],i , aIDMap[i+DDNET_MAX_CLIENTS/2],i+DDNET_MAX_CLIENTS/2);
+	}
+	pServer->Console()->PrintTo(ClientID, "debug", "end ID map");
+}
+
 void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
@@ -2275,12 +2305,16 @@ void CServer::RegisterCommands()
 
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
 
+	// lua
 	Console()->Register("lua", "r", CFGFLAG_SERVER, ConLuaDoString, this, "Execute the given line of lua code");
 	Console()->Register("lua_status", "?s?r", CFGFLAG_SERVER, ConLuaStatus, this, "Get status information about the lua engine or execute debug commands (try 'lua_status help')");
 	Console()->Register("lua_reload", "?i", CFGFLAG_SERVER, ConLuaReinit, this, "Reload the specified lua class by ID (or all if none given) - see lua_listclasses");
 	Console()->Register("lr", "?r", CFGFLAG_SERVER, ConLuaReinitQuick, this, "Reload the specified lua class (via partial string matching algorithm)");
 	Console()->Register("lua_listclasses", "", CFGFLAG_SERVER, ConLuaListClasses, this, "View all loaded lua classes with their IDs");
 	Console()->Register("lsc", "", CFGFLAG_SERVER, ConLuaListClasses, this, "View all loaded lua classes with their IDs (short version of lua_listclasses) ");
+
+	// debug
+	Console()->Register("debug_dump_id_map", "?i", CFGFLAG_SERVER, ConDbgDumpIDMap, this, "");
 
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);

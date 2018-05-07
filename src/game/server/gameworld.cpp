@@ -18,7 +18,7 @@ CGameWorld::CGameWorld()
 	m_Paused = false;
 	m_ResetRequested = false;
 	for(int i = 0; i < NUM_ENTTYPES; i++)
-		m_apFirstEntityTypes[i] = 0;
+		m_apFirstEntityTypes[i] = NULL;
 }
 
 CGameWorld::~CGameWorld()
@@ -193,6 +193,8 @@ void CGameWorld::Tick()
 	}
 
 	RemoveEntities();
+
+	UpdatePlayerMappings();
 }
 
 
@@ -253,53 +255,72 @@ CCharacter *CGameWorld::ClosestCharacter(vec2 Pos, float Radius, CEntity *pNotTh
 	return pClosest;
 }
 
-static bool distCompare(const std::pair<float,int>& a, const std::pair<float,int>& b)
+struct SClientDist{
+	float Dist;
+	int ToCID;
+};
+
+static bool distCompare(const SClientDist& a, const SClientDist& b)
 {
-	return a.first < b.first;
+	return a.Dist < b.Dist;
 }
 
-void CGameWorld::UpdatePlayerMaps()
+void CGameWorld::UpdatePlayerMappings()
 {
-	if(Server()->Tick() % g_Config.m_SvMapUpdateRate != 0) return;
+	if(Server()->Tick() % g_Config.m_SvIDMapUpdateRate != 0)
+		return;
 
-	std::pair<float,int> dist[MAX_CLIENTS];
-	for(int CID = 0; CID < MAX_CLIENTS; CID++)
+	SClientDist aDists[MAX_CLIENTS];
+	const float DIST_INVALID = 1e10;
+	const float DIST_DEAD = 1e9;
+	const float DIST_OUTOFRANGE = 1e8;
+
+	for(int FromCID = 0; FromCID < MAX_CLIENTS; FromCID++)
 	{
-		if(!Server()->ClientIngame(CID))
+		if(!Server()->ClientIngame(FromCID) || GameServer()->m_apPlayers[FromCID] == NULL)
 			continue;
 
-		int *aMap = Server()->GetIdMap(CID);
-
 		// compute distances
-		for(int i = 0; i < MAX_CLIENTS; i++)
+		for(int ToCID = 0; ToCID < MAX_CLIENTS; ToCID++)
 		{
-			dist[i].second = i;
-			dist[i].first = 1e10;
-			if(!Server()->ClientIngame(i))
-				continue;
+			aDists[ToCID].ToCID = ToCID;
+			aDists[ToCID].Dist = 0.0f;
 
-			CCharacter *pChr = GameServer()->m_apPlayers[i]->GetCharacter();
-			if(!pChr)
+			if(!Server()->ClientIngame(ToCID) || !GameServer()->m_apPlayers[ToCID])
+			{
+				aDists[ToCID].Dist = DIST_INVALID;
 				continue;
+			}
+
+			CCharacter *pChr = GameServer()->m_apPlayers[ToCID]->GetCharacter();
+			if(!pChr)
+			{
+				aDists[ToCID].Dist = DIST_DEAD;
+				continue;
+			}
 
 			// copypasted chunk from character.cpp Snap() follows
-			int SnappingClient = CID;
-			CCharacter *pSnapChar = GameServer()->GetPlayerChar(SnappingClient);
-			if(pSnapChar &&
-			   GameServer()->m_apPlayers[SnappingClient]->GetTeam() != -1/* &&
-				!pChr->CanCollide(SnappingClient) &&
-				(!GameServer()->m_apPlayers[SnappingClient]->m_IsUsingDDRaceClient ||
-					(GameServer()->m_apPlayers[SnappingClient]->m_IsUsingDDRaceClient &&
-					!GameServer()->m_apPlayers[SnappingClient]->m_ShowOthers
-                                	)
+			CPlayer *pPlayer = GameServer()->m_apPlayers[FromCID];
+			CCharacter *pSnapChar = GameServer()->GetPlayerChar(FromCID);
+			if(pSnapChar &&  pPlayer->GetTeam() != -1 /*&&
+				!pPlayer->IsPaused() && !pSnapChar->m_Super &&
+				!pChr->CanCollide(i) &&
+				(!pPlayer ||
+					pPlayer->m_ClientVersion == VERSION_VANILLA ||
+					(pPlayer->m_ClientVersion >= VERSION_DDRACE &&
+					!pPlayer->m_ShowOthers
+					)
 				)*/
-					) continue;
+			)
+				aDists[ToCID].Dist = DIST_OUTOFRANGE;
+			else
+				aDists[ToCID].Dist = 0.0f;
 
-			dist[i].first = distance(GameServer()->m_apPlayers[CID]->m_ViewPos, GameServer()->m_apPlayers[i]->m_ViewPos);
+			aDists[ToCID].Dist += distance(GameServer()->m_apPlayers[FromCID]->m_ViewPos, GameServer()->m_apPlayers[ToCID]->GetCharacter()->m_Pos);
 		}
 
 		// always send the player himself
-		dist[CID].first = 0;
+		aDists[FromCID].Dist = 0;
 
 		// compute reverse map
 
@@ -307,25 +328,33 @@ void CGameWorld::UpdatePlayerMaps()
 		for(int i = 0; i < MAX_CLIENTS; i++)
 			aReverseMap[i] = -1;
 
+		IDMapT *aMap = Server()->GetIdMap(FromCID);
 		for(int i = 0; i < DDNET_MAX_CLIENTS; i++)
 		{
-			if(aMap[i] == -1)
+			if(aMap[i] == IDMapT::DEFAULT)
 				continue;
 
-			if(dist[aMap[i]].first > 1e9)
+			int MappedTo = aMap[i];
+			if(aDists[MappedTo].Dist > 1e9)
 				aMap[i] = -1;
 			else
-				aReverseMap[aMap[i]] = i;
+				aReverseMap[MappedTo] = i;
 		}
 
-		std::nth_element(&dist[0], &dist[DDNET_MAX_CLIENTS - 1], &dist[MAX_CLIENTS], distCompare);
-		std::nth_element(&dist[0], &dist[VANILLA_MAX_CLIENTS - 1], &dist[DDNET_MAX_CLIENTS - 2], distCompare);
+		// seperate all the IDs for vanilla, ddnet and extended from each others
+		const int DDNET_HIGHEST_ID = DDNET_MAX_CLIENTS-1;
+		const int VANILLA_HIGHEST_ID = VANILLA_MAX_CLIENTS-1;
+		std::nth_element(&aDists[0], &aDists[DDNET_HIGHEST_ID], &aDists[MAX_CLIENTS], distCompare);
+		std::nth_element(&aDists[0], &aDists[VANILLA_HIGHEST_ID], &aDists[DDNET_MAX_CLIENTS - 1], distCompare);
 
-		int demand = 0;
+
+		// do calculations for vanilla
+
+		int Demand = 0;
 		for(int i = 0; i < VANILLA_MAX_CLIENTS - 1; i++)
 		{
-			int k = dist[i].second;
-			if(aReverseMap[k] != -1 || dist[i].first > 1e9)
+			int ToCID = aDists[i].ToCID;
+			if(aReverseMap[ToCID] != -1 || aDists[i].Dist > 1e9)
 				continue;
 
 			// search first free slot
@@ -334,25 +363,29 @@ void CGameWorld::UpdatePlayerMaps()
 				mapc++;
 
 			if(mapc < VANILLA_MAX_CLIENTS - 1)
-				aMap[mapc] = k;
-			else if(dist[i].first < 1300) // dont bother freeing up space for players which are too far to be displayed anyway
-				demand++;
+				aMap[mapc] = ToCID;
+			else if(aDists[i].Dist < 1300.0f)
+				Demand++;
 		}
 
-		for(int j = DDNET_MAX_CLIENTS - 1; j > VANILLA_MAX_CLIENTS - 2; j--)
+		for(int i = DDNET_HIGHEST_ID; i > VANILLA_HIGHEST_ID - 1; i--)
 		{
-			int k = dist[j].second;
-			if(aReverseMap[k] != -1 && demand-- > 0)
-				aMap[aReverseMap[k]] = -1;
-		}
-		aMap[VANILLA_MAX_CLIENTS - 1] = -1; // player with empty name to say chat msgs
+			int ToCID = aDists[i].ToCID;
+			int ReverseID = aReverseMap[ToCID];
 
-		// again for ddnet
-		demand = 0;
+			if(ReverseID != -1 && Demand-- > 0)
+				aMap[ReverseID] = -1;
+		}
+		aMap[VANILLA_HIGHEST_ID] = -1; // player with empty name to say chat msgs
+
+
+		// do calculations again for ddnet
+
+		Demand = 0;
 		for(int i = VANILLA_MAX_CLIENTS; i < DDNET_MAX_CLIENTS - 1; i++)
 		{
-			int k = dist[i].second;
-			if(aReverseMap[k] != -1 || dist[i].first > 1e9)
+			int ToCID = aDists[i].ToCID;
+			if(aReverseMap[ToCID] != -1 || aDists[i].Dist > 1e9)
 				continue;
 
 			// search first free slot
@@ -360,18 +393,21 @@ void CGameWorld::UpdatePlayerMaps()
 			while(mapc < DDNET_MAX_CLIENTS && aMap[mapc] != -1)
 				mapc++;
 
-			if(mapc < DDNET_MAX_CLIENTS - 1)
-				aMap[mapc] = k;
-			else if(dist[i].first < 1300) // dont bother freeing up space for players which are too far to be displayed anyway
-				demand++;
+			if(mapc < DDNET_HIGHEST_ID)
+				aMap[mapc] = ToCID;
+			else if(aDists[i].Dist < 1300.0f)
+				Demand++;
 		}
 
-		for(int j = MAX_CLIENTS - 1; j > DDNET_MAX_CLIENTS - 2; j--)
+		const int EXTENDED_HIGHEST_ID = MAX_CLIENTS-1;
+		for(int i = EXTENDED_HIGHEST_ID; i > DDNET_HIGHEST_ID - 1; i--)
 		{
-			int k = dist[j].second;
-			if(aReverseMap[k] != -1 && demand-- > 0)
-				aMap[aReverseMap[k]] = -1;
+			int ToCID = aDists[i].ToCID;
+			int ReverseID = aReverseMap[ToCID];
+
+			if(aReverseMap[ToCID] != -1 && Demand-- > 0)
+				aMap[ReverseID] = -1;
 		}
-		aMap[DDNET_MAX_CLIENTS - 1] = -1; // player with empty name to say chat msgs
+		aMap[DDNET_HIGHEST_ID] = -1; // player with empty name to say chat msgs
 	}
 }

@@ -97,6 +97,7 @@ public:
 			STATE_CONNECTING,
 			STATE_READY,
 			STATE_INGAME,
+			STATE_DUMMY,
 
 			SNAPRATE_INIT=0,
 			SNAPRATE_FULL,
@@ -149,7 +150,7 @@ public:
 	};
 
 	CClient m_aClients[MAX_CLIENTS];
-	TypeWrapper<int, -1> m_aIDMap[MAX_CLIENTS * DDNET_MAX_CLIENTS];
+	IDMapT m_aaIDMap[MAX_CLIENTS][DDNET_MAX_CLIENTS];
 
 	CSnapshotDelta m_SnapshotDelta;
 	CSnapshotBuilder m_SnapshotBuilder;
@@ -220,17 +221,20 @@ public:
 	const char *ClientClan(int ClientID);
 	int ClientCountry(int ClientID);
 	bool ClientIngame(int ClientID);
+	bool ClientIsDummy(int ClientID);
 	int MaxClients() const;
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID);
 	int SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System);
 
-	int *GetIdMap(int ClientID);
+	IDMapT *GetIdMap(int ClientID);
 
 	void DoSnapshot();
 
 	static int NewClientCallback(int ClientID, void *pUser);
 	static int DelClientCallback(int ClientID, const char *pReason, void *pUser);
+	void InitDummy(int ClientID);
+	void PurgeDummy(int ClientID);
 
 	void SendMap(int ClientID);
 	void SendConnectionReady(int ClientID);
@@ -275,6 +279,7 @@ public:
 	static void ConLuaReinit(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaReinitQuick(IConsole::IResult *pResult, void *pUser);
 	static void ConLuaListClasses(IConsole::IResult *pResult, void *pUser);
+	static void ConDbgDumpIDMap(IConsole::IResult *pResult, void *pUser);
 	static void ConLogout(IConsole::IResult *pResult, void *pUser);
 	static void ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMapChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
