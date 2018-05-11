@@ -5,6 +5,11 @@
 #include <algorithm>
 #include "gameworld.h"
 #include "entity.h"
+#include "entities/character.h"
+#include "entities/flag.h"
+#include "entities/laser.h"
+#include "entities/pickup.h"
+#include "entities/projectile.h"
 #include "gamecontext.h"
 
 //////////////////////////////////////////////////
@@ -39,6 +44,34 @@ CEntity *CGameWorld::FindFirst(int Type)
 {
 	return Type < 0 || Type >= NUM_ENTTYPES ? 0 : m_apFirstEntityTypes[Type];
 }
+
+// for lua
+
+CCharacter *CGameWorld::cast_CCharacter(CEntity *pEnt)
+{
+	return dynamic_cast<CCharacter *>(pEnt);
+}
+
+CFlag *CGameWorld::cast_CFlag(CEntity *pEnt)
+{
+	return dynamic_cast<CFlag *>(pEnt);
+}
+
+CLaser *CGameWorld::cast_CLaser(CEntity *pEnt)
+{
+	return dynamic_cast<CLaser *>(pEnt);
+}
+
+CPickup *CGameWorld::cast_CPickup(CEntity *pEnt)
+{
+	return dynamic_cast<CPickup *>(pEnt);
+}
+
+CProjectile *CGameWorld::cast_CProjectile(CEntity *pEnt)
+{
+	return dynamic_cast<CProjectile *>(pEnt);
+}
+
 
 int CGameWorld::FindEntities(vec2 Pos, float Radius, CEntity **ppEnts, int Max, int Type)
 {
@@ -205,7 +238,7 @@ CCharacter *CGameWorld::IntersectCharacter(vec2 Pos0, vec2 Pos1, float Radius, v
 	float ClosestLen = distance(Pos0, Pos1) * 100.0f;
 	CCharacter *pClosest = 0;
 
-	CCharacter *p = (CCharacter *)FindFirst(ENTTYPE_CHARACTER);
+	CCharacter *p = dynamic_cast<CCharacter *>(FindFirst(ENTTYPE_CHARACTER));
 	for(; p; p = (CCharacter *)p->TypeNext())
  	{
 		if(p == pNotThis)
@@ -235,7 +268,7 @@ CCharacter *CGameWorld::ClosestCharacter(vec2 Pos, float Radius, CEntity *pNotTh
 	float ClosestRange = Radius*2;
 	CCharacter *pClosest = 0;
 
-	CCharacter *p = (CCharacter *)GameServer()->m_World.FindFirst(ENTTYPE_CHARACTER);
+	CCharacter *p = dynamic_cast<CCharacter *>(GameServer()->m_World.FindFirst(ENTTYPE_CHARACTER));
 	for(; p; p = (CCharacter *)p->TypeNext())
  	{
 		if(p == pNotThis)

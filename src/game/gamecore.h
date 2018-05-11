@@ -290,6 +290,8 @@ public:
 	void Read(const CNetObj_CharacterCore *pObjCore);
 	void Write(CNetObj_CharacterCore *pObjCore);
 	void Quantize();
+
+	CCharacterCore copy() const { return *this; }
 };
 
 #endif

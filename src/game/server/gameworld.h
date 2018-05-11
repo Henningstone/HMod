@@ -53,6 +53,11 @@ public:
 	void SetGameServer(CGameContext *pGameServer);
 
 	CEntity *FindFirst(int Type);
+	CCharacter *cast_CCharacter(CEntity *pEnt);
+	class CFlag *cast_CFlag(CEntity *pEnt);
+	class CLaser *cast_CLaser(CEntity *pEnt);
+	class CPickup *cast_CPickup(CEntity *pEnt);
+	class CProjectile *cast_CProjectile(CEntity *pEnt);
 
 	/*
 		Function: find_entities

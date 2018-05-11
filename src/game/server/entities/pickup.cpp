@@ -102,7 +102,7 @@ void CPickup::Tick()
 						RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
 
 						// loop through all players, setting their emotes
-						CCharacter *pC = static_cast<CCharacter *>(GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_CHARACTER));
+						CCharacter *pC = dynamic_cast<CCharacter *>(GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_CHARACTER));
 						for(; pC; pC = (CCharacter *)pC->TypeNext())
 						{
 							if (pC != pChr)
