@@ -357,19 +357,17 @@ void CGameWorld::UpdatePlayerMappings()
 
 		// compute reverse map
 
-		int aReverseMap[MAX_CLIENTS];
-		for(int i = 0; i < MAX_CLIENTS; i++)
-			aReverseMap[i] = -1;
-
+		IDMapT aReverseMap[MAX_CLIENTS];
 		IDMapT *aMap = Server()->GetIdMap(FromCID);
+
 		for(int i = 0; i < DDNET_MAX_CLIENTS; i++)
 		{
 			if(aMap[i] == IDMapT::DEFAULT)
 				continue;
 
 			int MappedTo = aMap[i];
-			if(aDists[MappedTo].Dist > 1e9)
-				aMap[i] = -1;
+			if(aDists[MappedTo].Dist > 5e9)
+				aMap[i] = IDMapT::DEFAULT;
 			else
 				aReverseMap[MappedTo] = i;
 		}
@@ -387,12 +385,12 @@ void CGameWorld::UpdatePlayerMappings()
 		for(int i = 0; i < VANILLA_MAX_CLIENTS - 1; i++)
 		{
 			int ToCID = aDists[i].ToCID;
-			if(aReverseMap[ToCID] != -1 || aDists[i].Dist > 1e9)
+			if(aReverseMap[ToCID] != IDMapT::DEFAULT || aDists[i].Dist > 5e9)
 				continue;
 
 			// search first free slot
 			int mapc = 0;
-			while(mapc < VANILLA_MAX_CLIENTS && aMap[mapc] != -1)
+			while(mapc < VANILLA_MAX_CLIENTS && aMap[mapc] != IDMapT::DEFAULT)
 				mapc++;
 
 			if(mapc < VANILLA_MAX_CLIENTS - 1)
@@ -406,10 +404,10 @@ void CGameWorld::UpdatePlayerMappings()
 			int ToCID = aDists[i].ToCID;
 			int ReverseID = aReverseMap[ToCID];
 
-			if(ReverseID != -1 && Demand-- > 0)
-				aMap[ReverseID] = -1;
+			if(ReverseID != IDMapT::DEFAULT && Demand-- > 0)
+				aMap[ReverseID] = IDMapT::DEFAULT;
 		}
-		aMap[VANILLA_HIGHEST_ID] = -1; // player with empty name to say chat msgs
+		aMap[VANILLA_HIGHEST_ID] = IDMapT::DEFAULT; // player with empty name to say chat msgs
 
 
 		// do calculations again for ddnet
@@ -418,12 +416,12 @@ void CGameWorld::UpdatePlayerMappings()
 		for(int i = VANILLA_MAX_CLIENTS; i < DDNET_MAX_CLIENTS - 1; i++)
 		{
 			int ToCID = aDists[i].ToCID;
-			if(aReverseMap[ToCID] != -1 || aDists[i].Dist > 1e9)
+			if(aReverseMap[ToCID] != IDMapT::DEFAULT || aDists[i].Dist > 5e9)
 				continue;
 
 			// search first free slot
 			int mapc = 0;
-			while(mapc < DDNET_MAX_CLIENTS && aMap[mapc] != -1)
+			while(mapc < DDNET_MAX_CLIENTS && aMap[mapc] != IDMapT::DEFAULT)
 				mapc++;
 
 			if(mapc < DDNET_HIGHEST_ID)
@@ -438,8 +436,8 @@ void CGameWorld::UpdatePlayerMappings()
 			int ToCID = aDists[i].ToCID;
 			int ReverseID = aReverseMap[ToCID];
 
-			if(aReverseMap[ToCID] != -1 && Demand-- > 0)
-				aMap[ReverseID] = -1;
+			if(aReverseMap[ToCID] != IDMapT::DEFAULT && Demand-- > 0)
+				aMap[ReverseID] = IDMapT::DEFAULT;
 		}
 	}
 }
