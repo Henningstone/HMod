@@ -14,6 +14,29 @@ Srv.Console:Register("dennis_is_krass", "r", "much dennis!", function(result)
     Srv.Console:Print("you dennissed!", "with: " .. result:GetString(0)) 
 end)
 
+Srv.Console:Register("tele_all_here", "", "some legit shit SeemsGood", function(result)
+    local me = Srv.Game:GetPlayerChar(result:GetCID())
+    if me == nil then
+        Srv.Console:Print("tele_all_here", "you must be alive") 
+        return
+    end
+
+    local num = 0
+    for CID = 0, 128 do
+        local chr = Srv.Game:GetPlayerChar(CID)
+        if chr ~= nil then
+            print("tele " .. CID .. " from " .. tostring(chr.Pos) .. " to " .. tostring(me.Pos))
+            chr.Pos = me.Pos
+            chr.Core.Pos = me.Core.Pos
+            --chr:Tick()
+            num = num + 1
+        end
+    end
+
+    Srv.Console:Print("tele_all_here", "teleported " .. num .. " people to you!") 
+
+end)
+
 Srv.Console:Register("make_dennis", "", "dew it!", function(result)
     local ninjadude = Srv.Game:CreateEntityPickup(2, 3) -- 3 5
     ninjadude:BindClass("Dennis")

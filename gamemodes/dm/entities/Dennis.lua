@@ -110,7 +110,7 @@ end
 local function FindClosestPlayer(Pos)
 	local ClosestID = -1
 	local ClosestDist = 9999
-	for CID = 0, 15 do
+	for CID = 0, 127 do
 		local chr
 		local pl = Srv.Game:GetPlayer(CID)
 		print(CID, 'pl', tostring(pl))

@@ -293,9 +293,11 @@ struct SClientDist{
 	int ToCID;
 };
 
-static bool distCompare(const SClientDist& a, const SClientDist& b)
+static int distCompare(const void *pa, const void *pb)
 {
-	return a.Dist < b.Dist;
+	const SClientDist& a = *static_cast<const SClientDist*>(pa);
+	const SClientDist& b = *static_cast<const SClientDist*>(pb);
+	return a.Dist < b.Dist ? -1 : a.Dist > b.Dist ? 1 : 0;
 }
 
 void CGameWorld::UpdatePlayerMappings()
@@ -303,21 +305,25 @@ void CGameWorld::UpdatePlayerMappings()
 	if(Server()->Tick() % g_Config.m_SvIDMapUpdateRate != 0)
 		return;
 
-	SClientDist aDists[MAX_CLIENTS];
-	const float DIST_INVALID = 1e10;
-	const float DIST_DEAD = 1e9;
-	const float DIST_OUTOFRANGE = 1e8;
-
+	// calculate for everyone
 	for(int FromCID = 0; FromCID < MAX_CLIENTS; FromCID++)
 	{
 		if(!Server()->ClientIngame(FromCID) || GameServer()->m_apPlayers[FromCID] == NULL)
 			continue;
+
+		SClientDist aDists[MAX_CLIENTS];
+		const float DIST_INVALID = 1e10;
+		const float DIST_DEAD = 1e9;
+		const float DIST_OUTOFRANGE = 1e8;
 
 		// compute distances
 		for(int ToCID = 0; ToCID < MAX_CLIENTS; ToCID++)
 		{
 			aDists[ToCID].ToCID = ToCID;
 			aDists[ToCID].Dist = 0.0f;
+
+			if(ToCID == FromCID)
+				continue;
 
 			if(!Server()->ClientIngame(ToCID) || !GameServer()->m_apPlayers[ToCID])
 			{
@@ -335,7 +341,7 @@ void CGameWorld::UpdatePlayerMappings()
 			// copypasted chunk from character.cpp Snap() follows
 			CPlayer *pPlayer = GameServer()->m_apPlayers[FromCID];
 			CCharacter *pSnapChar = GameServer()->GetPlayerChar(FromCID);
-			if(pSnapChar &&  pPlayer->GetTeam() != -1 /*&&
+			if(pSnapChar && pPlayer->GetTeam() != -1 /*&&
 				!pPlayer->IsPaused() && !pSnapChar->m_Super &&
 				!pChr->CanCollide(i) &&
 				(!pPlayer ||
@@ -344,100 +350,25 @@ void CGameWorld::UpdatePlayerMappings()
 					!pPlayer->m_ShowOthers
 					)
 				)*/
-			)
+					)
 				aDists[ToCID].Dist = DIST_OUTOFRANGE;
 			else
 				aDists[ToCID].Dist = 0.0f;
 
-			aDists[ToCID].Dist += distance(GameServer()->m_apPlayers[FromCID]->m_ViewPos, GameServer()->m_apPlayers[ToCID]->GetCharacter()->m_Pos);
+			aDists[ToCID].Dist = distance(GameServer()->m_apPlayers[FromCID]->m_ViewPos, GameServer()->m_apPlayers[ToCID]->GetCharacter()->m_Pos);
 		}
 
 		// always send the player himself
 		aDists[FromCID].Dist = 0;
 
-		// compute reverse map
 
-		IDMapT aReverseMap[MAX_CLIENTS];
+		// sort and assign
+		std::qsort(aDists, MAX_CLIENTS, sizeof(SClientDist), distCompare);
+
 		IDMapT *aMap = Server()->GetIdMap(FromCID);
-
 		for(int i = 0; i < DDNET_MAX_CLIENTS; i++)
 		{
-			if(aMap[i] == IDMapT::DEFAULT)
-				continue;
-
-			int MappedTo = aMap[i];
-			if(aDists[MappedTo].Dist > 5e9)
-				aMap[i] = IDMapT::DEFAULT;
-			else
-				aReverseMap[MappedTo] = i;
-		}
-
-		// seperate all the IDs for vanilla, ddnet and extended from each others
-		const int DDNET_HIGHEST_ID = DDNET_MAX_CLIENTS-1;
-		const int VANILLA_HIGHEST_ID = VANILLA_MAX_CLIENTS-1;
-		std::nth_element(&aDists[0], &aDists[DDNET_HIGHEST_ID], &aDists[MAX_CLIENTS], distCompare);
-		std::nth_element(&aDists[0], &aDists[VANILLA_HIGHEST_ID], &aDists[DDNET_MAX_CLIENTS - 1], distCompare);
-
-
-		// do calculations for vanilla
-
-		int Demand = 0;
-		for(int i = 0; i < VANILLA_MAX_CLIENTS - 1; i++)
-		{
-			int ToCID = aDists[i].ToCID;
-			if(aReverseMap[ToCID] != IDMapT::DEFAULT || aDists[i].Dist > 5e9)
-				continue;
-
-			// search first free slot
-			int mapc = 0;
-			while(mapc < VANILLA_MAX_CLIENTS && aMap[mapc] != IDMapT::DEFAULT)
-				mapc++;
-
-			if(mapc < VANILLA_MAX_CLIENTS - 1)
-				aMap[mapc] = ToCID;
-			else if(aDists[i].Dist < 1300.0f)
-				Demand++;
-		}
-
-		for(int i = DDNET_HIGHEST_ID; i > VANILLA_HIGHEST_ID - 1; i--)
-		{
-			int ToCID = aDists[i].ToCID;
-			int ReverseID = aReverseMap[ToCID];
-
-			if(ReverseID != IDMapT::DEFAULT && Demand-- > 0)
-				aMap[ReverseID] = IDMapT::DEFAULT;
-		}
-		aMap[VANILLA_HIGHEST_ID] = IDMapT::DEFAULT; // player with empty name to say chat msgs
-
-
-		// do calculations again for ddnet
-
-		Demand = 0;
-		for(int i = VANILLA_MAX_CLIENTS; i < DDNET_MAX_CLIENTS - 1; i++)
-		{
-			int ToCID = aDists[i].ToCID;
-			if(aReverseMap[ToCID] != IDMapT::DEFAULT || aDists[i].Dist > 5e9)
-				continue;
-
-			// search first free slot
-			int mapc = 0;
-			while(mapc < DDNET_MAX_CLIENTS && aMap[mapc] != IDMapT::DEFAULT)
-				mapc++;
-
-			if(mapc < DDNET_HIGHEST_ID)
-				aMap[mapc] = ToCID;
-			else if(aDists[i].Dist < 1300.0f)
-				Demand++;
-		}
-
-		const int EXTENDED_HIGHEST_ID = MAX_CLIENTS-1;
-		for(int i = EXTENDED_HIGHEST_ID; i > DDNET_HIGHEST_ID; i--)
-		{
-			int ToCID = aDists[i].ToCID;
-			int ReverseID = aReverseMap[ToCID];
-
-			if(aReverseMap[ToCID] != IDMapT::DEFAULT && Demand-- > 0)
-				aMap[ReverseID] = IDMapT::DEFAULT;
+			aMap[i] = aDists[i].ToCID;
 		}
 	}
 }
