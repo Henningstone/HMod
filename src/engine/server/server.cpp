@@ -556,6 +556,12 @@ const char *CServer::ClientName(int ClientID)
 		return "(invalid)";
 	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
 		return m_aClients[ClientID].m_aName;
+	else if(m_aClients[ClientID].m_State == CServer::CClient::STATE_DUMMY)
+	{
+		static char aID[16];
+		str_formatb(aID, "Dummy %i", ClientID);
+		return aID;
+	}
 	else
 		return "(connecting)";
 
