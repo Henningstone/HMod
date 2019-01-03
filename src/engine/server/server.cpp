@@ -549,6 +549,19 @@ void CServer::GetClientAddr(int ClientID, char *pAddrStr, int Size)
 		net_addr_str(m_NetServer.ClientAddr(ClientID), pAddrStr, Size, false);
 }
 
+std::string CServer::GetClientAddrLua(int ClientID)
+{
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State != CServer::CClient::STATE_INGAME)
+		return "(invalid)";
+	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME) {
+		char s[NETADDR_MAXSTRSIZE] = {0};
+		GetClientAddr(ClientID, s, sizeof(s));
+
+		return s;
+	}
+	return "(invalid)";
+}
+
 
 const char *CServer::ClientName(int ClientID)
 {

@@ -125,6 +125,52 @@ void CPlayer::PostTick()
 		m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->m_ViewPos;
 }
 
+
+bool CPlayer::AddClientInfoSnap(const char* Name, const char* ClanName, int Country, const char* SkinName, int UseCustomColor, int ColorBody, int ColorFeet)
+{
+    int SentCID = m_ClientID;
+
+    CNetObj_ClientInfo *pClientInfo = static_cast<CNetObj_ClientInfo *>(Server()->SnapNewItem(NETOBJTYPE_CLIENTINFO, SentCID, sizeof(CNetObj_ClientInfo)));
+    if(!pClientInfo)
+        return false;
+
+    StrToInts(&pClientInfo->m_Name0, 4, Name);
+    StrToInts(&pClientInfo->m_Clan0, 3, ClanName);
+    pClientInfo->m_Country = Country;
+    StrToInts(&pClientInfo->m_Skin0, 6, SkinName);
+    pClientInfo->m_UseCustomColor = UseCustomColor;
+    pClientInfo->m_ColorBody = ColorBody;
+    pClientInfo->m_ColorFeet = ColorFeet;
+
+    return true;
+}
+bool CPlayer::AddPlayerInfoSnap(int ClientID, int Score, int Team, int m_Latency, int m_Local)
+{
+    CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, ClientID, sizeof(CNetObj_PlayerInfo)));
+    if(!pPlayerInfo)
+        return false;
+
+    pPlayerInfo->m_Latency = m_Latency;
+    pPlayerInfo->m_Local = m_Local;
+    pPlayerInfo->m_ClientID = ClientID;
+    pPlayerInfo->m_Score = Score;
+    pPlayerInfo->m_Team = Team;
+
+    return true;
+}
+bool CPlayer::AddSpectatorInfoSnap(int SpectatorID, int m_X, int m_Y)
+{
+    CNetObj_SpectatorInfo *pSpectatorInfo = static_cast<CNetObj_SpectatorInfo *>(Server()->SnapNewItem(NETOBJTYPE_SPECTATORINFO, m_ClientID, sizeof(CNetObj_SpectatorInfo)));
+    if(!pSpectatorInfo)
+        return false;
+
+    pSpectatorInfo->m_SpectatorID = SpectatorID;
+    pSpectatorInfo->m_X = m_X;
+    pSpectatorInfo->m_Y = m_Y;
+
+    return true;
+}
+
 void CPlayer::Snap(int SnappingClient)
 {
 #ifdef CONF_DEBUG
@@ -133,7 +179,7 @@ void CPlayer::Snap(int SnappingClient)
 	if(!Server()->ClientIngame(m_ClientID))
 		return;
 
-	MACRO_LUA_EVENT()
+	MACRO_LUA_EVENT(SnappingClient)
 
 	int SentCID = m_ClientID;
 	if(!Server()->IDTranslate(&SentCID, SnappingClient))

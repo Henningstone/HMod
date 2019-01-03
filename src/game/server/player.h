@@ -38,6 +38,11 @@ public:
 	CCharacter *GetCharacter();
 	bool IsBot() const { return m_pBotController != NULL; }
 
+
+	bool AddClientInfoSnap(const char* Name, const char* ClanName, int Country, const char* SkinName, int UseCustomColor, int ColorBody, int ColorFeet);
+	bool AddPlayerInfoSnap(int ClientID, int Score, int Team, int m_Latency, int m_Local);
+	bool AddSpectatorInfoSnap(int SpectatorID, int m_X, int m_Y);
+
 	//---------------------------------------------------------
 	// this is used for snapping so we know how we can clip the view for the player
 	vec2 m_ViewPos;

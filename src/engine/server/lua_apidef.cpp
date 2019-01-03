@@ -274,6 +274,8 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("CreateEntityPickup", &CGameContext::CreateEntityPickup)
 			.addFunction("CreateEntityProjectile", &CGameContext::CreateEntityProjectile)
 			.addFunction("CreateEntityCustom", &CGameContext::CreateEntityCustom)
+			.addFunction("CreateBot", &CGameContext::CreateBot)
+			.addFunction("RemoveBot", &CGameContext::RemoveBot)
 
 			.addFunction("GameType", &CGameContext::GameType)
 			.addFunction("Version", &CGameContext::Version)
@@ -291,7 +293,7 @@ void CLua::RegisterLuaCallbacks()
 			.addProperty("MaxClients", &IServer::MaxClients)
 			.addFunction("ClientIngame", &IServer::ClientIngame)
 			.addFunction("GetClientInfo", &IServer::GetClientInfo)
-			.addFunction("GetClientAddr", &IServer::GetClientAddr)
+			.addFunction("GetClientAddr", &IServer::GetClientAddrLua)
 
 			.addFunction("GetClientName", &IServer::ClientName)
 			.addFunction("GetClientClan", &IServer::ClientClan)
@@ -341,6 +343,10 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("Tick", &CPlayer::Tick)
 			.addFunction("PostTick", &CPlayer::PostTick)
 			.addFunction("Snap", &CPlayer::Snap)
+			// Needed for manual lua snapping!
+			.addFunction("AddClientInfoSnap", &CPlayer::AddClientInfoSnap)
+			.addFunction("AddPlayerInfoSnap", &CPlayer::AddPlayerInfoSnap)
+			.addFunction("AddSpectatorInfoSnap", &CPlayer::AddSpectatorInfoSnap)
 
 			.addFunction("OnDirectInput", &CPlayer::OnDirectInput)
 			.addFunction("OnPredictedInput", &CPlayer::OnPredictedInput)
@@ -378,6 +384,8 @@ void CLua::RegisterLuaCallbacks()
 			.addData("ForceBalanced", &CPlayer::m_ForceBalanced)
 			.addData("LastActionTick", &CPlayer::m_LastActionTick)
 			.addData("TeamChangeTick", &CPlayer::m_TeamChangeTick)
+
+			.addFunction("IsBot", &CPlayer::IsBot)
 
 			// TODO add struct m_LatestActivity
 
