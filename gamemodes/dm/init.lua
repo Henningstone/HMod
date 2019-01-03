@@ -37,6 +37,28 @@ Srv.Console:Register("tele_all_here", "", "some legit shit SeemsGood", function(
 
 end)
 
+Srv.Console:Register("create_bot", "i", "create a brainless tee", function(result)
+    local BotID = result:GetInteger(0)
+
+    if Srv.Game:CreateBot(BotID) then
+        -- Brainless Tee was successfully created
+        Srv.Console:Print("create_bot", "Bot was created successfully c:") 
+    else
+        Srv.Console:Print("create_bot", "Better you dont ask what happened :c") 
+    end
+end)
+
+Srv.Console:Register("remove_bot", "i", "remove a brainless tee", function(result)
+    local BotID = result:GetInteger(0)
+
+    if Srv.Game:RemoveBot(BotID) then
+        -- Brainless Tee was successfully created
+        Srv.Console:Print("remove_bot", "Bot was removed successfully c:") 
+    else
+        Srv.Console:Print("remove_bot", "Better you dont ask what happened :c") 
+    end
+end)
+
 Srv.Console:Register("make_dennis", "", "dew it!", function(result)
     local ninjadude = Srv.Game:CreateEntityPickup(2, 3) -- 3 5
     ninjadude:BindClass("Dennis")
