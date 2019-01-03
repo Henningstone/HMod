@@ -20,15 +20,6 @@ static const json_serialize_opts json_opts_packed = {
 };
 
 
-void CJsonValue::Destroy(lua_State *L)
-{
-	CheckValid(L);
-
-	if(m_pValue)
-		json_value_free(m_pValue);
-	m_pValue = NULL;
-}
-
 CJsonValue CLuaJson::Parse(const char *pJsonString, lua_State *L)
 {
 	json_settings settings = {};
@@ -65,6 +56,53 @@ std::string CLuaJson::Serialize(const CJsonValue& json_value, bool shorten, lua_
 	std::string Result(pJsonBuf);
 	mem_free(pJsonBuf);
 	return Result;
+}
+
+luabridge::LuaRef CLuaJson::Read(const char *pJsonString, lua_State *L)
+{
+	CJsonValue json_value = Parse(pJsonString, L);
+
+	json_value.CheckValid(L);
+	switch(json_value.m_pValue->type)
+	{
+		case json_object:
+			return json_value.ToObject(L);
+		case json_array:
+			return json_value.ToTable(L);
+		case json_integer:
+		case json_double:
+			return luabridge::LuaRef(L, json_value.ToNumber(L));
+		case json_string:
+			return luabridge::LuaRef(L, json_value.ToString(L));
+		case json_boolean:
+			return luabridge::LuaRef(L, json_value.ToBoolean(L));
+		case json_none:
+		case json_null:
+			return luabridge::LuaRef(L, luabridge::Nil());
+	}
+
+	luaL_error(L, "Automatic conversion of json string failed: %s", pJsonString);
+	return luabridge::LuaRef(L);
+}
+
+
+//
+// CJsonValue
+//
+
+CJsonValue::~CJsonValue()
+{
+	if(m_pValue)
+		json_value_free(m_pValue);
+}
+
+void CJsonValue::Destroy(lua_State *L)
+{
+	CheckValid(L);
+
+	if(m_pValue)
+		json_value_free(m_pValue);
+	m_pValue = NULL;
 }
 
 std::string CJsonValue::GetType(lua_State *L) const

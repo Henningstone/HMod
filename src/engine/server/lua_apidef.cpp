@@ -113,6 +113,7 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("Parse", &CLuaJson::Parse)
 			.addFunction("Convert", &CLuaJson::Convert)
 			.addFunction("Serialize", &CLuaJson::Serialize)
+			.addFunction("Read", &CLuaJson::Read)
 		.endNamespace()
 
 		// sql

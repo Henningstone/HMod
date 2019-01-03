@@ -17,6 +17,8 @@ public:
 		m_pValue = NULL;
 	}
 
+	~CJsonValue();
+
 	void Destroy(lua_State *L);
 
 	std::string GetType(lua_State *L) const;
@@ -69,6 +71,8 @@ public:
 	/** json to string */
 	static std::string Serialize(const CJsonValue& json_value, bool shorten, lua_State *L);
 	/* (json to lua is in CJsonValue) */
+	/** string to lua: low-level function for automatic conversion */
+	static luabridge::LuaRef Read(const char *pJsonString, lua_State *L);
 };
 
 #endif
