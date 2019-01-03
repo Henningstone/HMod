@@ -13,7 +13,7 @@
 
 // the actual definitions
 
-REGISTER_RESSOURCE(CLuaSqlConn *, LuaSqlConn,
+REGISTER_RESSOURCE(CLuaSqlite *, LuaSqlite,
 				   delete ELEM;
 )
 

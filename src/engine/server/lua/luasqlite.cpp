@@ -2,10 +2,10 @@
 #include <engine/server/luaresman.h>
 #include <engine/storage.h>
 #include <engine/shared/config.h>
-#include "luasql.h"
+#include "luasqlite.h"
 
 
-CLuaSqlConn *CLuaSql::Open(const char *pFilename, lua_State *L)
+CLuaSqlite *CLuaSql::Open(const char *pFilename, lua_State *L)
 {
 	char aBuf[512];
 	str_copyb(aBuf, pFilename);
@@ -13,18 +13,18 @@ CLuaSqlConn *CLuaSql::Open(const char *pFilename, lua_State *L)
 
 	dbg_msg("lua/sql/debug", "opening db '%s'", pFilename);
 
-	CLuaSqlConn *pConn = new CLuaSqlConn(pFilename);
-	CLua::Lua()->GetResMan()->RegisterLuaSqlConn(pConn);
+	CLuaSqlite *pConn = new CLuaSqlite(pFilename);
+	CLua::Lua()->GetResMan()->RegisterLuaSqlite(pConn);
 	return pConn;
 }
 
-CLuaSqlConn::~CLuaSqlConn()
+CLuaSqlite::~CLuaSqlite()
 {
 	delete m_pDb;
-	CLua::Lua()->GetResMan()->DeregisterLuaSqlConn(this);
+	CLua::Lua()->GetResMan()->DeregisterLuaSqlite(this);
 }
 
-void CLuaSqlConn::Execute(const char *pStatement, LuaRef Callback, lua_State *L)
+void CLuaSqlite::Execute(const char *pStatement, LuaRef Callback, lua_State *L)
 {
 	if(Callback.isString())
 	{
@@ -56,7 +56,9 @@ void CLuaSqlQuery::OnData()
 	int i = 0;
 	while(Next())
 	{
-		if(!m_GotCb) // it's down in here because we have to call Next() at least once
+		// if there is not callback we don't care about any returned rows,
+		// but we must call Next() at least once!
+		if(!m_GotCb)
 			return;
 
 		// call lua

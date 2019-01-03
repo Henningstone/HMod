@@ -20,7 +20,7 @@
 #include "luabinding.h"
 #include "lua/lua_config.h"
 #include "lua/luajson.h"
-#include "lua/luasql.h"
+#include "engine/server/lua/luasqlite.h"
 #include "lua_class.h"
 #include "lua.h"
 
@@ -137,13 +137,13 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("GetSizeN", &CQuery::GetSizeN)
 		.endClass()
 
-		.beginClass< CLuaSqlConn >("CLuaSqlConn")
+		.beginClass< CLuaSqlite >("CLuaSqlite")
 			//.addConstructor <void (*) (const char *)> ()
-			.addFunction("Execute", &CLuaSqlConn::Execute)
-			.addFunction("Flush", &CLuaSqlConn::Flush)
-			.addFunction("Work", &CLuaSqlConn::Work)
-			.addFunction("Clear", &CLuaSqlConn::Clear)
-			.addFunction("GetDatabasePath", &CLuaSqlConn::GetDatabasePath)
+			.addFunction("Execute", &CLuaSqlite::Execute)
+			.addFunction("Flush", &CLuaSqlite::Flush)
+			.addFunction("Work", &CLuaSqlite::Work)
+			.addFunction("Clear", &CLuaSqlite::Clear)
+			.addFunction("GetDatabasePath", &CLuaSqlite::GetDatabasePath)
 		.endClass()
 
 		.beginClass< CLuaSql >("CLuaSql")

@@ -1,5 +1,5 @@
 #include <string>
-#include "lua/luasql.h"
+#include "engine/server/lua/luasqlite.h"
 #include <engine/console.h>
 
 #include "luaresman.h"

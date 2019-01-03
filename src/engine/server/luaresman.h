@@ -5,7 +5,7 @@
 #include <string>
 #include <base/system.h>
 
-class CLuaSqlConn;
+class CLuaSqlite;
 
 
 class CLuaRessourceMgr
