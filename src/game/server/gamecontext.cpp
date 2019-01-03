@@ -1762,7 +1762,7 @@ bool CGameContext::IsClientPlayer(int ClientID)
 
 const char *CGameContext::GameType() { return m_pController && m_pController->m_pGameType ? m_pController->m_pGameType : ""; }
 const char *CGameContext::Version() { return GAME_VERSION; }
-const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
+const char *CGameContext::NetVersion(bool Is07) { return Is07 ? GAME_NETVERSION_07 : GAME_NETVERSION_06; }
 
 CCharacter *CGameContext::CreateEntityCharacter(int ClientID)
 {

@@ -290,6 +290,8 @@ set(SOURCE_FILES
     src/engine/shared/packer.cpp
     src/engine/shared/packer.h
     src/engine/shared/protocol.h
+    src/engine/shared/protocol06.h
+    src/engine/shared/protocol07.h
     src/engine/shared/ringbuffer.cpp
     src/engine/shared/ringbuffer.h
     src/engine/shared/snapshot.cpp
@@ -396,7 +398,7 @@ set(SOURCE_FILES
     src/game/editor/layer_tiles.cpp
     src/game/editor/popups.cpp
     src/game/generated/nethash.cpp
-    src/game/generated/protocol.cpp
+        src/game/generated/protocol06.cpp
     src/game/generated/protocol.h
     src/game/generated/server_data.cpp
     src/game/generated/server_data.h

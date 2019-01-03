@@ -84,6 +84,8 @@ enum
 typedef int (*NETFUNC_DELCLIENT)(int ClientID, const char* pReason, void *pUser);
 typedef int (*NETFUNC_NEWCLIENT)(int ClientID, void *pUser);
 
+typedef unsigned int TOKEN;
+
 struct CNetChunk
 {
 	// -1 means that it's a stateless packet
@@ -121,6 +123,8 @@ public:
 class CNetPacketConstruct
 {
 public:
+	TOKEN m_Token;
+	TOKEN m_ResponseToken; // only used in connless packets
 	int m_Flags;
 	int m_Ack;
 	int m_NumChunks;
@@ -273,8 +277,8 @@ public:
 	int Close();
 
 	//
-	int Recv(CNetChunk *pChunk);
-	int Send(CNetChunk *pChunk);
+	int Recv(CNetChunk *pChunk, TOKEN *pResponseToken);
+	int Send(CNetChunk *pChunk, TOKEN *pResponseToken);
 	int Update();
 
 	//
@@ -379,9 +383,9 @@ public:
 	static int Compress(const void *pData, int DataSize, void *pOutput, int OutputSize);
 	static int Decompress(const void *pData, int DataSize, void *pOutput, int OutputSize);
 
-	static void SendControlMsg(NETSOCKET Socket, NETADDR *pAddr, int Ack, int ControlMsg, const void *pExtra, int ExtraSize);
+	static void SendControlMsg(NETSOCKET Socket, const NETADDR *pAddr, TOKEN Token, int Ack, int ControlMsg, const void *pExtra, int ExtraSize);
 	static void SendPacketConnless(NETSOCKET Socket, NETADDR *pAddr, const void *pData, int DataSize);
-	static void SendPacket(NETSOCKET Socket, NETADDR *pAddr, CNetPacketConstruct *pPacket);
+	static void SendPacket(NETSOCKET Socket, const NETADDR *pAddr, CNetPacketConstruct *pPacket);
 	static int UnpackPacket(unsigned char *pBuffer, int Size, CNetPacketConstruct *pPacket);
 
 	// The backroom is ack-NET_MAX_SEQUENCE/2. Used for knowing if we acked a packet or not

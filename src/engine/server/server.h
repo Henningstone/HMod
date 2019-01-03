@@ -66,6 +66,9 @@ public:
 };
 
 
+#define PROTO_SRV_ID(CID, WHAT) Is07(CID) ? proto07::WHAT : proto06::WHAT
+#define PROTO_S(WHAT) PROTO_SRV_ID(ClientID, WHAT)
+
 class CServer : public IServer
 {
 	class IGameServer *m_pGameServer;
@@ -132,11 +135,16 @@ public:
 		int m_AuthTries;
 		int m_AccessLevel;
 
+		// 0.7
+		int m_Version;
+		int m_MapChunk;
+
 		enum
 		{
 			SUPPORTS_64P    = 1U << 0U,
 			SUPPORTS_128P   = 1U << 1U,
 			SUPPORTS_NETGUI = 1U << 2U, //dummy; still unused
+			SUPPORTS_TW07     = 1U << 3U,
 		};
 
 		unsigned int m_ClientSupportFlags;
@@ -182,10 +190,17 @@ public:
 	int64 m_Lastheartbeat;
 	//static NETADDR4 master_server;
 
+	// map
+	enum
+	{
+		MAP_CHUNK_SIZE=NET_MAX_PAYLOAD-NET_MAX_CHUNKHEADERSIZE-4, // msg type
+	};
+
 	char m_aCurrentMap[64];
 	unsigned m_CurrentMapCrc;
 	unsigned char *m_pCurrentMapData;
 	unsigned m_CurrentMapSize;
+	int m_MapChunksPerRequest; // 0.7
 
 	CDemoRecorder m_DemoRecorder;
 	CRegister m_Register;
@@ -212,20 +227,20 @@ public:
 
 	int Init();
 
+	bool Is07(int ClientID) const { return m_aClients[ClientID].Supports(CClient::SUPPORTS_TW07); }
 	void SetRconCID(int ClientID);
-	bool IsAuthed(int ClientID);
-	bool HasAccess(int ClientID, int AccessLevel);
-	int GetClientInfo(int ClientID, CClientInfo *pInfo);
-	void GetClientAddr(int ClientID, char *pAddrStr, int Size);
-	const char *ClientName(int ClientID);
-	const char *ClientClan(int ClientID);
-	int ClientCountry(int ClientID);
-	bool ClientIngame(int ClientID);
-	bool ClientIsDummy(int ClientID);
+	bool IsAuthed(int ClientID) const;
+	bool HasAccess(int ClientID, int AccessLevel) const;
+	int GetClientInfo(int ClientID, CClientInfo *pInfo) const;
+	void GetClientAddr(int ClientID, char *pAddrStr, int Size) const;
+	const char *ClientName(int ClientID) const;
+	const char *ClientClan(int ClientID) const;
+	int ClientCountry(int ClientID) const;
+	bool ClientIngame(int ClientID) const;
+	bool ClientIsDummy(int ClientID) const;
 	int MaxClients() const;
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID);
-	int SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System);
 
 	IDMapT *GetIdMap(int ClientID);
 
@@ -250,12 +265,14 @@ public:
 
 	enum
 	{
-		SRVINFO_VANILLA,
+		SRVINFO_VANILLA_TW06,
 		SRVINFO_EXTENDED_64,
 		SRVINFO_EXTENDED_128
 	};
 
-	void SendServerInfo(const NETADDR *pAddr, int Token, int InfoType=SRVINFO_VANILLA, int Offset=0);
+	void GenerateServerInfo07(CPacker *pPacker, int Token);
+	void SendServerInfo07(int ClientID);
+	void SendServerInfo06(const NETADDR *pAddr, int Token, int InfoType, int Offset=0);
 	void UpdateServerInfo();
 
 	void PumpNetwork();

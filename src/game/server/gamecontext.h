@@ -177,7 +177,7 @@ public:
 
 	virtual const char *GameType();
 	virtual const char *Version();
-	virtual const char *NetVersion();
+	virtual const char *NetVersion(bool Is07);
 
 	// some haxx cuz luabridge ._,
 	CCollision *LuaGetCollision() const { return const_cast<CCollision*>((const CCollision *)&m_Collision); }
