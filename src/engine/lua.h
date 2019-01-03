@@ -8,6 +8,7 @@ class ILua : public IInterface
 	MACRO_INTERFACE("lua", 0)
 public:
 	virtual void FirstInit() = 0;
+	virtual void OnMapLoaded() = 0;
 };
 
 extern ILua *CreateLua();

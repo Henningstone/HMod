@@ -25,6 +25,7 @@
 #include "lua.h"
 
 #include <engine/server/server.h>
+#include <engine/server/mapconverter.h>
 
 
 void CLua::RegisterLuaCallbacks()
@@ -590,6 +591,25 @@ void CLua::RegisterLuaCallbacks()
 			//.addFunction("ExecuteLine", &IConsole::ExecuteLine) // peeps pls no use dis hacky shit
 		.endClass()
 
+		/// Srv.MapConverter
+		.beginClass<CMapConverter>("CMapConverter")
+			.addFunction("InitState", &CMapConverter::InitState)
+			.addFunction("CreateCircle", &CMapConverter::CreateCircle)
+			.addFunction("InitQuad", &CMapConverter::InitQuadLua)
+			.addFunction("InitQuadPos", &CMapConverter::InitQuadPosLua)
+			.addFunction("CopyVersion", &CMapConverter::CopyVersion)
+			.addFunction("CopyMapInfo", &CMapConverter::CopyMapInfo)
+			.addFunction("CopyImages", &CMapConverter::CopyImages)
+			.addFunction("CopyGameLayer", &CMapConverter::CopyGameLayer)
+			.addFunction("CopyLayers", &CMapConverter::CopyLayers)
+			//.addFunction("AddImageQuad", &CMapConverter::AddImageQuad)
+			.addFunction("AddTeeLayer", &CMapConverter::AddTeeLayer)
+			.addFunction("AddExternalImage", &CMapConverter::AddExternalImage)
+			.addFunction("Finalize", &CMapConverter::Finalize)
+			.addFunction("Load", &CMapConverter::Load)
+			.addFunction("CreateMap", &CMapConverter::CreateMap)
+		.endClass()
+
 
 		.beginNamespace("Srv")
 			.addVariable("Console", &CLua::ms_pSelf->m_pConsole, false)
@@ -597,6 +617,7 @@ void CLua::RegisterLuaCallbacks()
 			.addVariable("Game", &CLua::ms_pSelf->m_pGameServer, false)
 			.addVariable("Server", &CLua::ms_pSelf->m_pServer, false)
 			.addVariable("Storage", &CLua::ms_pSelf->m_pStorage, false)
+			.addVariable("MapConverter", &CLua::ms_pSelf->m_pMapConverter, false)
 		.endNamespace()
 
 		/// Config.<var_name>

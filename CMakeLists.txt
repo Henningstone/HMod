@@ -467,6 +467,8 @@ set(SOURCE_FILES
         src/engine/server/luaresman.cpp
         src/engine/server/luaresman.h
         src/engine/server/luaresmandef.h
+        src/engine/server/mapconverter.cpp
+        src/engine/server/mapconverter.h
         src/engine/lua.h
         src/game/server/entities/lua_entity.cpp
         src/game/server/entities/lua_entity.h

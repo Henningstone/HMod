@@ -11,6 +11,7 @@
 
 #include <game/server/gamecontext.h>
 
+#include "mapconverter.h"
 #include "lua.h"
 #include "luabinding.h"
 
@@ -20,6 +21,7 @@ CLua * CLua::ms_pSelf = NULL;
 CLua::CLua()
 {
 	m_pLuaState = NULL;
+	m_pMapConverter = NULL;
 }
 
 void CLua::FirstInit()
@@ -34,6 +36,10 @@ bool CLua::InitAndStartGametype()
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pGameServer = dynamic_cast<CGameContext *>(Kernel()->RequestInterface<IGameServer>());
+
+	if(m_pMapConverter)
+		delete m_pMapConverter;
+	m_pMapConverter = new CMapConverter(Storage(), Kernel()->RequestInterface<IEngineMap>(), Console());
 
 	return CleanLaunchLua();
 }
@@ -50,6 +56,7 @@ void CLua::OpenLua()
 	InitializeLuaState();
 	RegisterLuaCallbacks();
 	InjectOverrides();
+	ReseedRandomizer();
 }
 
 void CLua::InitializeLuaState()
@@ -92,6 +99,14 @@ void CLua::InjectOverrides()
 
 	// now override it with our own function
 	luaL_dostring(m_pLuaState, "io.open = _io_open");
+}
+
+void CLua::ReseedRandomizer()
+{
+	// lazy but works
+	char aLine[128];
+	str_formatb(aLine, "math.randomseed(%i)", rand()); // our randomizer is already seeded
+	luaL_dostring(m_pLuaState, aLine);
 }
 
 bool CLua::CleanLaunchLua()
@@ -220,6 +235,20 @@ void CLua::ReloadSingleObject(int ObjectID)
 	{
 		RegisterScript(m_lLuaClasses[ObjectID].path.c_str(), m_lLuaClasses[ObjectID].name.c_str(), true);
 		Console()->Printf(0, "luaserver", "reloading %s", m_lLuaClasses[ObjectID].GetIdent().c_str());
+	}
+}
+
+void CLua::OnMapLoaded()
+{
+	LuaRef CallbackFunc = LuaRef::getGlobal(m_pLuaState, "OnMapLoaded");
+	if(CallbackFunc.isFunction())
+	{
+		try
+		{
+			CallbackFunc();
+		} catch (luabridge::LuaException& e) {
+			HandleException(e);
+		}
 	}
 }
 

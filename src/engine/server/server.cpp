@@ -1676,6 +1676,7 @@ int CServer::Run()
 					Kernel()->ReregisterInterface(GameServer());
 					GameServer()->OnInit();
 					UpdateServerInfo();
+					CLua::Lua()->OnMapLoaded();
 				}
 				else
 				{

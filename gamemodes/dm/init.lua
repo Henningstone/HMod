@@ -6,6 +6,16 @@ config = require "modconfig"
 config.CreateRconInt("dennisness", 0, 9001, 10, "set teh dennisness to over 9000!!")
 
 
+-- this is an automatic callback
+function OnMapLoaded()
+    Srv.Console:Print("dennis", "MAP LOADED!")
+    if not Srv.MapConverter:Load() then
+        error("Fuck!")
+    end
+    if Srv.MapConverter:CreateMap(Config.map) then
+        Srv.MapConverter:Finalize()
+    end
+end
 
 
 Srv.Console:Print("dennis", "blub, init running!")
@@ -26,8 +36,9 @@ Srv.Console:Register("tele_all_here", "", "some legit shit SeemsGood", function(
         local chr = Srv.Game:GetPlayerChar(CID)
         if chr ~= nil then
             print("tele " .. CID .. " from " .. tostring(chr.Pos) .. " to " .. tostring(me.Pos))
-            chr.Pos = me.Pos
-            chr.Core.Pos = me.Core.Pos
+            local offset = vec2(math.random(10)-5, -math.random(5))
+            chr.Pos = me.Pos + offset
+            chr.Core.Pos = me.Core.Pos + offset
             --chr:Tick()
             num = num + 1
         end

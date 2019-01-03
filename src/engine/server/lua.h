@@ -132,11 +132,13 @@ private:
 	class IConsole *m_pConsole;
 	class IServer *m_pServer;
 	class CGameContext *m_pGameServer;
+	class CMapConverter *m_pMapConverter;
 
 	IStorage *Storage() { return m_pStorage; }
 	IConsole *Console() { return m_pConsole; }
 	IServer *Server() { return m_pServer; }
 	CGameContext *GameServer() { return m_pGameServer; }
+	CMapConverter *MapConverter() { return m_pMapConverter; }
 
 	lua_State *m_pLuaState;
 
@@ -146,6 +148,7 @@ private:
 	void InitializeLuaState();
 	void RegisterLuaCallbacks();
 	void InjectOverrides();
+	void ReseedRandomizer();
 
 	bool LoadGametype();
 	bool RegisterScript(const char *pFullPath, const char *pObjName, bool Reloading = false);
@@ -176,6 +179,7 @@ public:
 	void FirstInit();
 	bool InitAndStartGametype();
 	void ReloadSingleObject(int ObjectID);
+	void OnMapLoaded();
 
 	int NumLoadedClasses() const { return (int)m_lLuaClasses.size(); }
 	std::string GetObjectIdentifier(int ID) const { return m_lLuaClasses[ID].GetIdent(); }
