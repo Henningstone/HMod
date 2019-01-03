@@ -329,6 +329,14 @@ void CLua::RegisterLuaCallbacks()
 			.addData("PrevWeapon", &CNetObj_PlayerInput::m_PrevWeapon)
 		.endClass()
 
+		// [CPlayer].TeeInfos
+		.beginClass<CPlayer::CTeeInfos>("CPlayer_CTeeInfos")
+			.addProperty("SkinName", &CPlayer::CTeeInfos::GetSkinName, &CPlayer::CTeeInfos::SetSkinName)
+			.addData("UseCustomColor", &CPlayer::CTeeInfos::m_UseCustomColor)
+			.addData("ColorBody", &CPlayer::CTeeInfos::m_ColorBody)
+			.addData("ColorFeet", &CPlayer::CTeeInfos::m_ColorFeet)
+		.endClass()
+
 		/// Srv.Game:GetPlayer(CID)
 		/// [CCharacter].GetPlayer()
 		.deriveClass<CPlayer, CLuaClass>("CPlayer")
@@ -370,7 +378,7 @@ void CLua::RegisterLuaCallbacks()
 			.addData("LastEmote", &CPlayer::m_LastEmote)
 			.addData("LastKill", &CPlayer::m_LastKill)
 
-			// TODO add struct m_TeeInfos
+			.addData("TeeInfos", &CPlayer::m_TeeInfos)
 
 			.addData("RespawnTick", &CPlayer::m_RespawnTick)
 			.addData("DieTick", &CPlayer::m_DieTick)

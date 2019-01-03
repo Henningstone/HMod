@@ -73,12 +73,16 @@ public:
 	int m_LastKill;
 
 	// TODO: clean this up
-	struct
+	struct CTeeInfos
 	{
-		char m_SkinName[64];
+		char m_aSkinName[64];
 		int m_UseCustomColor;
 		int m_ColorBody;
 		int m_ColorFeet;
+
+		// for lua
+		const char *GetSkinName() const { return m_aSkinName; }
+		void SetSkinName(const char *pSkinName) { str_copyb(m_aSkinName, pSkinName); }
 	} m_TeeInfos;
 
 	int m_RespawnTick;
