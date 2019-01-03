@@ -1794,38 +1794,6 @@ CLuaEntity *CGameContext::CreateEntityCustom(const char *pClass)
 	return new CLuaEntity(&m_World, pClass);
 }
 
-/*
- * if(g_Config.m_DbgDummies > s_LastNumDummies)
-		{
-			// add new
-			int added = 0;
-			for(int i = s_LastNumDummies; i < g_Config.m_DbgDummies; i++)
-			{
-				int DummyCID = MAX_CLIENTS - i - 1;
-				try {
-					OnClientConnected(DummyCID);
-				} catch(CTWException&) {
-					break;
-				}
-				Server()->InitDummy(DummyCID);
-				added++;
-			}
-			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies added", added);
-		}
-		else if(g_Config.m_DbgDummies < s_LastNumDummies)
-		{
-			// remove some
-			int removed = 0;
-			for(int i = MAX_CLIENTS-(s_LastNumDummies-g_Config.m_DbgDummies); i < MAX_CLIENTS-g_Config.m_DbgDummies; i++)
-			{
-				OnClientDrop(i, "dummy purged"); // TODO: this doesn't clean it up properly
-				Server()->PurgeDummy(i);
-				removed++;
-			}
-			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies removed", removed);
-		}
- */
-
 bool CGameContext::CreateBot(int ClientID)
 {
 	if (m_apPlayers[ClientID])
@@ -1838,8 +1806,6 @@ bool CGameContext::CreateBot(int ClientID)
 		const int StartTeam = g_Config.m_SvTournamentMode ? TEAM_SPECTATORS : m_pController->GetAutoTeam(ClientID);
 
 		m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, StartTeam, true);
-		//players[client_id].init(client_id);
-		//players[client_id].client_id = client_id;
 
 		(void)m_pController->CheckTeamBalance();
 
