@@ -14,48 +14,83 @@ Srv.Console:Register("dennis_is_krass", "r", "much dennis!", function(result)
     Srv.Console:Print("you dennissed!", "with: " .. result:GetString(0)) 
 end)
 
-Srv.Console:Register("tele_all_here", "", "some legit shit SeemsGood", function(result)
-    local me = Srv.Game:GetPlayerChar(result:GetCID())
-    if me == nil then
-        Srv.Console:Print("tele_all_here", "you must be alive") 
+-- command tele_all
+Srv.Console:Register("tele_all", "?i", "Tele all players to ID (default yourself)", function(result)
+    local TargetID = result:OptInteger(0, result:GetCID())
+    local target = Srv.Game:GetPlayerChar(TargetID)
+
+    -- check if target exists
+    if target == nil then
+        Srv.Console:Print("tele_all", "target player must exist and be ALIVE")
         return
     end
 
+    -- teleport all
     local num = 0
     for CID = 0, 128 do
         local chr = Srv.Game:GetPlayerChar(CID)
         if chr ~= nil then
-            print("tele " .. CID .. " from " .. tostring(chr.Pos) .. " to " .. tostring(me.Pos))
-            chr.Pos = me.Pos
-            chr.Core.Pos = me.Core.Pos
+            print("tele " .. CID .. " from " .. tostring(chr.Pos) .. " to " .. tostring(target.Pos))
+            chr.Pos = target.Pos
+            chr.Core.Pos = target.Core.Pos
             --chr:Tick()
             num = num + 1
         end
     end
 
-    Srv.Console:Print("tele_all_here", "teleported " .. num .. " people to you!") 
-
+    Srv.Console:Print("tele_all", "teleported " .. num .. " people to " .. Srv.Server:GetClientName(TargetID))
 end)
 
-Srv.Console:Register("create_bot", "i", "create a brainless tee", function(result)
-    local BotID = result:GetInteger(0)
+-- command tele
+Srv.Console:Register("tele", "i?i", "tele ID to ID (default to yourself)", function(result)
+    local VictimID = result:GetInteger(0)
+    local victim = Srv.Game:GetPlayerChar(VictimID)
+    local TargetID = result:OptInteger(1, result:GetCID())
+    local target = Srv.Game:GetPlayerChar(TargetID)
 
-    if Srv.Game:CreateBot(BotID) then
+    print("tele " .. VictimID .. " -> " .. TargetID)
+
+    -- check if victim exists
+    if victim == nil then
+        Srv.Console:Print("tele", "victim player must exist and be ALIVE")
+        return
+    end
+
+    -- check if target exists
+    if target == nil then
+        Srv.Console:Print("tele", "target player must exist and be ALIVE")
+        return
+    end
+
+    -- teleport victim to target
+    print("tele " .. VictimID .. " from " .. tostring(victim.Pos) .. " to " .. tostring(target.Pos))
+    victim.Pos = target.Pos + vec2(0, -5)
+    victim.Core.Pos = target.Core.Pos + vec2(0, -5)
+
+    Srv.Console:Print("tele", "teleported " .. Srv.Server:GetClientName(VictimID) .. " to " .. Srv.Server:GetClientName(TargetID))
+end)
+
+-- command create_bot
+Srv.Console:Register("create_bot", "", "create a brainless tee", function(result)
+    local BotID = Srv.Game:CreateBot()
+    if BotID > -1 then
         -- Brainless Tee was successfully created
-        Srv.Console:Print("create_bot", "Bot was created successfully c:") 
+        Srv.Server:SetClientName(BotID, "Bot " .. BotID)
+        Srv.Console:Print("create_bot", "Bot with ID=" .. BotID .. " was created successfully c:")
     else
-        Srv.Console:Print("create_bot", "Better you dont ask what happened :c") 
+        Srv.Console:Print("create_bot", "Failed to add bot, is the server full?")
     end
 end)
 
-Srv.Console:Register("remove_bot", "i", "remove a brainless tee", function(result)
+-- command remove_bot
+Srv.Console:Register("remove_bot", "i?s", "remove a brainless tee with an optional leave message", function(result)
     local BotID = result:GetInteger(0)
 
-    if Srv.Game:RemoveBot(BotID) then
+    if Srv.Game:RemoveBot(BotID, result:OptString(1, "Bot removed")) then
         -- Brainless Tee was successfully created
         Srv.Console:Print("remove_bot", "Bot was removed successfully c:") 
     else
-        Srv.Console:Print("remove_bot", "Better you dont ask what happened :c") 
+        Srv.Console:Print("remove_bot", "Invalid bot ID " .. BotID)
     end
 end)
 
