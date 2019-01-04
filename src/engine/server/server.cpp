@@ -312,9 +312,6 @@ int CServer::TrySetClientName(int ClientID, const char *pName)
 	if(m_aClients[ClientID].m_aName[0] && str_comp(m_aClients[ClientID].m_aName, aTrimmedName) == 0)
 		return 0;
 
-	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "'%s' -> '%s'", pName, aTrimmedName);
-	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBuf);
 	pName = aTrimmedName;
 
 	// make sure that two clients doesn't have the same name
@@ -327,6 +324,7 @@ int CServer::TrySetClientName(int ClientID, const char *pName)
 
 	// set the client name
 	str_copy(m_aClients[ClientID].m_aName, pName, MAX_NAME_LENGTH);
+	Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "server", "'%s' -> '%s'='%s'", ClientName(ClientID), pName, aTrimmedName);
 	return 0;
 }
 
@@ -554,14 +552,8 @@ const char *CServer::ClientName(int ClientID)
 {
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
 		return "(invalid)";
-	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
+	if(m_aClients[ClientID].m_State >= CServer::CClient::STATE_INGAME)
 		return m_aClients[ClientID].m_aName;
-	else if(m_aClients[ClientID].m_State == CServer::CClient::STATE_DUMMY)
-	{
-		static char aID[16];
-		str_formatb(aID, "Dummy %i", ClientID);
-		return aID;
-	}
 	else
 		return "(connecting)";
 
@@ -884,6 +876,10 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 void CServer::InitDummy(int ClientID)
 {
 	m_aClients[ClientID].m_State = CClient::STATE_DUMMY;
+
+	char aDummyName[MAX_NAME_LENGTH];
+	str_formatb(aDummyName, "Dummy %i", ClientID);
+	SetClientName(ClientID, aDummyName);
 }
 
 void CServer::PurgeDummy(int ClientID)
