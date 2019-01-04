@@ -191,8 +191,8 @@ public:
 	class CPickup *CreateEntityPickup(int Type, int SubType);
 	class CProjectile *CreateEntityProjectile(int Type, int Owner, vec2 Pos, vec2 Dir, CProjectileProperties Props, int SoundImpact, int Weapon);
 	class CLuaEntity *CreateEntityCustom(const char *pClass);
-	bool CreateBot(int ClientID);
-	bool RemoveBot(int ClientID);
+	int CreateBot();
+	bool RemoveBot(lua_State *L); // args: (Number ClientID [, String LeaveMsg])
 
 };
 

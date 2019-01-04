@@ -19,6 +19,7 @@
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"
+#include <engine/server/luabinding.h>
 
 enum
 {
@@ -1794,53 +1795,77 @@ CLuaEntity *CGameContext::CreateEntityCustom(const char *pClass)
 	return new CLuaEntity(&m_World, pClass);
 }
 
-bool CGameContext::CreateBot(int ClientID)
+int CGameContext::CreateBot()
 {
-	if (m_apPlayers[ClientID])
-		return false;
+	int ClientID = -1;
 
-	// add new
-
-	try {
-		// Check which team the player should be on
-		const int StartTeam = g_Config.m_SvTournamentMode ? TEAM_SPECTATORS : m_pController->GetAutoTeam(ClientID);
-
-		m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, StartTeam, true);
-
-		(void)m_pController->CheckTeamBalance();
-
-		// send active vote
-		if(m_VoteCloseTime)
-			SendVoteSet(ClientID);
-
-		// send motd
-		CNetMsg_Sv_Motd Msg;
-		Msg.m_pMessage = g_Config.m_SvMotd;
-		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
-
-	} catch(CTWException&) {
-		return false;
+	// search for free slot
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if(m_apPlayers[i] == NULL)
+		{
+			ClientID = i;
+			break;
+		}
 	}
+
+	// no free slots
+	if(ClientID == -1)
+		return -1;
+
+	// Check which team the player should be on
+	const int StartTeam = g_Config.m_SvTournamentMode ? TEAM_SPECTATORS : m_pController->GetAutoTeam(ClientID);
+
+	m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, StartTeam, true);
+
+	(void)m_pController->CheckTeamBalance();
+
+	// send active vote
+	if(m_VoteCloseTime)
+		SendVoteSet(ClientID);
+
+	// send motd
+	CNetMsg_Sv_Motd Msg;
+	Msg.m_pMessage = g_Config.m_SvMotd;
+	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
+
 	Server()->InitDummy(ClientID);
 
-	Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "BOTS", "Bot (ID = %i) got added.",ClientID);
+	Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "bots", "Bot (ID = %i) got added.", ClientID);
 
-	return m_apPlayers[ClientID]->IsBot();
-
+	return ClientID;
 }
 
-bool CGameContext::RemoveBot(int ClientID)
+bool CGameContext::RemoveBot(lua_State *L)
 {
-	if (!m_apPlayers[ClientID])
+	lua_remove(L, 1); // remove 'self'
+
+	int nargs = lua_gettop(L);
+	if(nargs != 1 && nargs != 2)
+		luaL_error(L, "RemoveBot expects 1 or 2 arguments, got %d", nargs);
+
+	argcheck(lua_isnumber(L, 1), 1, "number 0..63");
+
+	if(nargs == 2)
+		argcheck(lua_isstring(L, 2), 2, "string");
+
+	int ClientID = (int)lua_tonumber(L, 1);
+
+	if(!m_apPlayers[ClientID] || !m_apPlayers[ClientID]->IsBot())
 		return false;
 
-	if (!m_apPlayers[ClientID]->IsBot())
-		return false;
+	// leave message
+	const char *pReason = NULL;
+	if(nargs == 2)
+		pReason = lua_tostring(L, 2);
 
-	OnClientDrop(ClientID, "Bot removed"); // TODO: this doesn't clean it up properly
+	// remove bot
+	OnClientDrop(ClientID, pReason); // TODO: this doesn't clean it up properly
 	Server()->PurgeDummy(ClientID);
 
-	Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "BOTS", "Bot (ID = %i) got removed.",ClientID);
+	Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "bots", "Bot (ID = %i) got removed.", ClientID);
+
+	return true;
 }
 
 
