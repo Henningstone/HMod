@@ -538,44 +538,6 @@ void CGameContext::SwapTeams()
 
 void CGameContext::OnTick()
 {
-	#ifdef CONF_DEBUG
-	static int s_LastNumDummies = 0;
-	if(g_Config.m_DbgDummies)
-	{
-		if(g_Config.m_DbgDummies > s_LastNumDummies)
-		{
-			// add new
-			int added = 0;
-			for(int i = s_LastNumDummies; i < g_Config.m_DbgDummies; i++)
-			{
-				int DummyCID = MAX_CLIENTS - i - 1;
-				try {
-					OnClientConnected(DummyCID);
-				} catch(CTWException&) {
-					break;
-				}
-				Server()->InitDummy(DummyCID);
-				added++;
-			}
-			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies added", added);
-		}
-		else if(g_Config.m_DbgDummies < s_LastNumDummies)
-		{
-			// remove some
-			int removed = 0;
-			for(int i = MAX_CLIENTS-(s_LastNumDummies-g_Config.m_DbgDummies); i < MAX_CLIENTS-g_Config.m_DbgDummies; i++)
-			{
-				OnClientDrop(i, "dummy purged"); // TODO: this doesn't clean it up properly
-				Server()->PurgeDummy(i);
-				removed++;
-			}
-			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies removed", removed);
-		}
-	}
-	s_LastNumDummies = g_Config.m_DbgDummies;
-	#endif
-
-
 	// check tuning
 	CheckPureTuning();
 
@@ -674,21 +636,6 @@ void CGameContext::OnTick()
 		}
 	}
 
-
-#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies)
-	{
-		for(int i = 0; i < g_Config.m_DbgDummies ; i++)
-		{
-			CNetObj_PlayerInput Input;
-			mem_zero(&Input, sizeof(Input));
-			//Input.m_Direction = (i&1)?-1:1;
-			if(!m_apPlayers[MAX_CLIENTS-i-1])
-				continue;
-			m_apPlayers[MAX_CLIENTS-i-1]->OnPredictedInput(&Input);
-		}
-	}
-#endif
 }
 
 // Server hooks
@@ -729,22 +676,18 @@ void CGameContext::OnClientConnected(int ClientID)
 
 	(void)m_pController->CheckTeamBalance();
 
-#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies)
+	if(!Server()->ClientIsDummy(ClientID))
 	{
-		if(ClientID >= MAX_CLIENTS-g_Config.m_DbgDummies)
-			return;
+		// send active vote
+		if(m_VoteCloseTime)
+			SendVoteSet(ClientID);
+
+		// send motd
+		CNetMsg_Sv_Motd Msg;
+		Msg.m_pMessage = g_Config.m_SvMotd;
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
 	}
-#endif
 
-	// send active vote
-	if(m_VoteCloseTime)
-		SendVoteSet(ClientID);
-
-	// send motd
-	CNetMsg_Sv_Motd Msg;
-	Msg.m_pMessage = g_Config.m_SvMotd;
-	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
 }
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
@@ -1813,22 +1756,8 @@ int CGameContext::CreateBot()
 	if(ClientID == -1)
 		return -1;
 
-	// Check which team the player should be on
-	const int StartTeam = g_Config.m_SvTournamentMode ? TEAM_SPECTATORS : m_pController->GetAutoTeam(ClientID);
-
-	m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, StartTeam, true);
-
-	(void)m_pController->CheckTeamBalance();
-
-	// send active vote
-	if(m_VoteCloseTime)
-		SendVoteSet(ClientID);
-
-	// send motd
-	CNetMsg_Sv_Motd Msg;
-	Msg.m_pMessage = g_Config.m_SvMotd;
-	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
-
+	// create new dummy
+	OnClientConnected(ClientID);
 	Server()->InitDummy(ClientID);
 
 	Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "bots", "Bot (ID = %i) got added.", ClientID);

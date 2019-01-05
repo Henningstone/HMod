@@ -536,46 +536,53 @@ void IGameController::Tick()
 	{
 		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
-		#ifdef CONF_DEBUG
-			if(g_Config.m_DbgDummies)
+			if(!GameServer()->m_apPlayers[i])
+				continue;
+
+			// don't take action on inactive dummies (Lol)
+			if(Server()->ClientIsDummy(i))
+				continue;
+
+			// don't take action on inactive spectators
+			if(GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
+				continue;
+
+			// don't take action on inactive admins
+			if(Server()->IsAuthed(i))
+				continue;
+
+			// check if the player is still active
+			if(Server()->Tick() <= GameServer()->m_apPlayers[i]->m_LastActionTick + g_Config.m_SvInactiveKickTime * Server()->TickSpeed() * 60)
+				continue;
+
+			switch(g_Config.m_SvInactiveKick)
 			{
-				if(i >= MAX_CLIENTS-g_Config.m_DbgDummies)
-					break;
-			}
-		#endif
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS && !Server()->IsAuthed(i))
-			{
-				if(Server()->Tick() > GameServer()->m_apPlayers[i]->m_LastActionTick+g_Config.m_SvInactiveKickTime*Server()->TickSpeed()*60)
+			case 0:
 				{
-					switch(g_Config.m_SvInactiveKick)
-					{
-					case 0:
-						{
-							// move player to spectator
-							GameServer()->m_apPlayers[i]->SetTeam(TEAM_SPECTATORS);
-						}
-						break;
-					case 1:
-						{
-							// move player to spectator if the reserved slots aren't filled yet, kick him otherwise
-							int Spectators = 0;
-							for(int j = 0; j < MAX_CLIENTS; ++j)
-								if(GameServer()->m_apPlayers[j] && GameServer()->m_apPlayers[j]->GetTeam() == TEAM_SPECTATORS)
-									++Spectators;
-							if(Spectators >= g_Config.m_SvSpectatorSlots)
-								Server()->Kick(i, "Kicked for inactivity");
-							else
-								GameServer()->m_apPlayers[i]->SetTeam(TEAM_SPECTATORS);
-						}
-						break;
-					case 2:
-						{
-							// kick the player
-							Server()->Kick(i, "Kicked for inactivity");
-						}
-					}
-				}
+					// move player to spectator
+					GameServer()->m_apPlayers[i]->SetTeam(TEAM_SPECTATORS);
+				} break;
+
+			case 1:
+				{
+					// move player to spectator if the reserved slots aren't filled yet, kick him otherwise
+					int Spectators = 0;
+					for(int j = 0; j < MAX_CLIENTS; ++j)
+						if(GameServer()->m_apPlayers[j] && GameServer()->m_apPlayers[j]->GetTeam() == TEAM_SPECTATORS)
+							++Spectators;
+					if(Spectators >= g_Config.m_SvSpectatorSlots)
+						Server()->Kick(i, "Kicked for inactivity");
+					else
+						GameServer()->m_apPlayers[i]->SetTeam(TEAM_SPECTATORS);
+				} break;
+
+			case 2:
+				{
+					// kick the player
+					Server()->Kick(i, "Kicked for inactivity");
+				} break;
 			}
+
 		}
 	}
 
