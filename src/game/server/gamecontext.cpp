@@ -1744,7 +1744,11 @@ void CGameContext::OnSnap(int ClientID)
 	if(ClientID > -1)
 		m_apPlayers[ClientID]->FakeSnap();
 }
-void CGameContext::OnPreSnap() {}
+void CGameContext::OnPreSnap()
+{
+	MACRO_LUA_EVENT()
+}
+
 void CGameContext::OnPostSnap()
 {
 	m_Events.Clear();

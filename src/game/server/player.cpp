@@ -181,12 +181,15 @@ void CPlayer::FakeSnap()
 	// This is problematic when it's sent before we know whether it's a non-64-player-client
 	// Then we can't spectate players at the start
 
+	int SnappingClient = m_ClientID;
+
 	IServer::CClientInfo Info;
-	Server()->GetClientInfo(m_ClientID, &Info);
-	if(Info.m_Is64 || Info.m_Is128)
+	Server()->GetClientInfo(SnappingClient, &Info);
+
+	if(Info.m_Is128)
 		return;
 
-	int FakeID = VANILLA_MAX_CLIENTS - 1;
+	int FakeID = Info.m_Is64 ? FAKE_ID_DDNET : FAKE_ID_VANILLA;
 
 	CNetObj_ClientInfo *pClientInfo = static_cast<CNetObj_ClientInfo *>(Server()->SnapNewItem(NETOBJTYPE_CLIENTINFO, FakeID, sizeof(CNetObj_ClientInfo)));
 

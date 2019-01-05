@@ -8,7 +8,7 @@ Entity:
   - Destroy()
   - Reset()
   - Tick()
-  - TickDefend()
+  - TickDefered()
   - TickPaused()
   - Snap(int SnappingClient)
 
@@ -26,17 +26,17 @@ Entity:
 
   - Laser:
     - inherit all but:
-      - TickDefend
+      - TickDefered
 
   - Pickup:
     - inherit all but:
-      - TickDefend
+      - TickDefered
       - OnPickedUp(CCharacter Pickuper)  # called, when the pickup has intersected with a player
       - OnRespawn()  # called when the pickup respawns after having been picked up
 
   - Projectile:
     - inherit all but:
-      - TickDefend
+      - TickDefered
 
   - CustomEntity:
     - inherit all
@@ -56,6 +56,7 @@ Gameserver:
   - OnVote(int ClientID, int Vote)  # Vote := { -1; 1 }
   - OnSetTeam(int ClientID, int Team)
   - OnEmote(int ClientID, int Emote)
+  - OnPreSnap()
 
 Server:
   - OnRconAuth(int ClientID, string GivenPassword)  # return: nothing = handle natively, true = admin, false = rejected, number = custom access level
