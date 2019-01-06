@@ -123,7 +123,7 @@ void CPlayer::PostTick()
 }
 
 
-bool CPlayer::AddClientInfoSnap(const char* Name, const char* ClanName, int Country, const char* SkinName, int UseCustomColor, int ColorBody, int ColorFeet)
+bool CPlayer::AddClientInfoSnap(const char *pName, const char *pClanName, int Country, const char *pSkinName, bool UseCustomColor, int ColorBody, int ColorFeet)
 {
     int SentCID = m_ClientID;
 
@@ -131,39 +131,41 @@ bool CPlayer::AddClientInfoSnap(const char* Name, const char* ClanName, int Coun
     if(!pClientInfo)
         return false;
 
-    StrToInts(&pClientInfo->m_Name0, 4, Name);
-    StrToInts(&pClientInfo->m_Clan0, 3, ClanName);
+    StrToInts(&pClientInfo->m_Name0, 4, pName);
+    StrToInts(&pClientInfo->m_Clan0, 3, pClanName);
     pClientInfo->m_Country = Country;
-    StrToInts(&pClientInfo->m_Skin0, 6, SkinName);
+    StrToInts(&pClientInfo->m_Skin0, 6, pSkinName);
     pClientInfo->m_UseCustomColor = UseCustomColor;
     pClientInfo->m_ColorBody = ColorBody;
     pClientInfo->m_ColorFeet = ColorFeet;
 
     return true;
 }
-bool CPlayer::AddPlayerInfoSnap(int ClientID, int Score, int Team, int m_Latency, int m_Local)
+
+bool CPlayer::AddPlayerInfoSnap(int ClientID, int Score, int Team, int Latency, bool Local)
 {
     CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, ClientID, sizeof(CNetObj_PlayerInfo)));
     if(!pPlayerInfo)
         return false;
 
-    pPlayerInfo->m_Latency = m_Latency;
-    pPlayerInfo->m_Local = m_Local;
+    pPlayerInfo->m_Latency = Latency;
+    pPlayerInfo->m_Local = Local;
     pPlayerInfo->m_ClientID = ClientID;
     pPlayerInfo->m_Score = Score;
     pPlayerInfo->m_Team = Team;
 
     return true;
 }
-bool CPlayer::AddSpectatorInfoSnap(int SpectatorID, int m_X, int m_Y)
+
+bool CPlayer::AddSpectatorInfoSnap(int SpectatorID, int X, int Y)
 {
     CNetObj_SpectatorInfo *pSpectatorInfo = static_cast<CNetObj_SpectatorInfo *>(Server()->SnapNewItem(NETOBJTYPE_SPECTATORINFO, m_ClientID, sizeof(CNetObj_SpectatorInfo)));
     if(!pSpectatorInfo)
         return false;
 
     pSpectatorInfo->m_SpectatorID = SpectatorID;
-    pSpectatorInfo->m_X = m_X;
-    pSpectatorInfo->m_Y = m_Y;
+    pSpectatorInfo->m_X = X;
+    pSpectatorInfo->m_Y = Y;
 
     return true;
 }
