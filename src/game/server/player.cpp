@@ -142,15 +142,15 @@ bool CPlayer::AddClientInfoSnap(const char *pName, const char *pClanName, int Co
     return true;
 }
 
-bool CPlayer::AddPlayerInfoSnap(int ClientID, int Score, int Team, int Latency, bool Local)
+bool CPlayer::AddPlayerInfoSnap(int Score, int Team, int Latency, bool Local)
 {
-    CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, ClientID, sizeof(CNetObj_PlayerInfo)));
+    CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, m_ClientID, sizeof(CNetObj_PlayerInfo)));
     if(!pPlayerInfo)
         return false;
 
     pPlayerInfo->m_Latency = Latency;
     pPlayerInfo->m_Local = Local;
-    pPlayerInfo->m_ClientID = ClientID;
+    pPlayerInfo->m_ClientID = m_ClientID;
     pPlayerInfo->m_Score = Score;
     pPlayerInfo->m_Team = Team;
 

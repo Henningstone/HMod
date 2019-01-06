@@ -40,7 +40,7 @@ public:
 
 
 	bool AddClientInfoSnap(const char *pName, const char *pClanName, int Country, const char *pSkinName, bool UseCustomColor, int ColorBody, int ColorFeet);
-	bool AddPlayerInfoSnap(int ClientID, int Score, int Team, int Latency, bool Local);
+	bool AddPlayerInfoSnap(int Score, int Team, int Latency, bool Local);
 	bool AddSpectatorInfoSnap(int SpectatorID, int X, int Y);
 
 	//---------------------------------------------------------
