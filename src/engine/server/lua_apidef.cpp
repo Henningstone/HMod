@@ -367,8 +367,6 @@ void CLua::RegisterLuaCallbacks()
 			.addData("SpectatorID", &CPlayer::m_SpectatorID)
 			.addData("IsReady", &CPlayer::m_IsReady)
 			.addFunction("GetActLatency", &CPlayer::GetActLatency)
-			.addData("SpectatorID", &CPlayer::m_SpectatorID)
-			.addData("IsReady", &CPlayer::m_IsReady)
 
 			.addData("Vote", &CPlayer::m_Vote)
 			.addData("VotePos", &CPlayer::m_VotePos)
