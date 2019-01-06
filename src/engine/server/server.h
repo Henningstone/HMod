@@ -230,7 +230,9 @@ public:
 
 	// id translation
 	bool IDTranslate(int *pInOutInternalID, int ForClientID) const;
-	bool IDTranslateReverse(int *pInOutTargetID, int ForClientID) const;
+	bool IDTranslateReverse(int *pInOutInternalID, int ForClientID) const;
+	int IDTranslateLua(int InternalID, int ForClientID) const;
+	int IDTranslateReverseLua(int InternalID, int ForClientID) const;
 	const IDMapT *GetIdMap(int ClientID) const { return m_aaIDMap[ClientID]; };
 	const IDMapT *GetRevMap(int ClientID) const { return m_aaIDMapReverse[ClientID]; };
 	void WriteIdMap(int ClientID, int IdTakingSlot, int ChosenSlot);

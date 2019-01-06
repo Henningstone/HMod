@@ -61,6 +61,8 @@ public:
 
 	virtual bool IDTranslate(int *pInOutTargetID, int ForClientID) const = 0;
 	virtual bool IDTranslateReverse(int *pInOutTargetID, int ForClientID) const = 0;
+	virtual int IDTranslateLua(int InternalID, int ForClientID) const = 0;
+	virtual int IDTranslateReverseLua(int InternalID, int ForClientID) const = 0;
 
 	virtual const IDMapT *GetIdMap(int ClientID) const = 0;
 	virtual const IDMapT *GetRevMap(int ClientID) const = 0;

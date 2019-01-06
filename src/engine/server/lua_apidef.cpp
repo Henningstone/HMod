@@ -310,6 +310,9 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("Kick", &IServer::Kick)
 
 			.addFunction("SendRconLine", &IServer::SendRconLine)
+
+			.addFunction("IDTranslate", &IServer::IDTranslateLua)
+			.addFunction("IDTranslateReverse", &IServer::IDTranslateReverseLua)
 		.endClass()
 
 		.deriveClass<CServer, IServer>("CServer")

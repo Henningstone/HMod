@@ -708,9 +708,9 @@ bool CServer::IDTranslate(int *pInOutInternalID, int ForClientID) const
 	return true;
 }
 
-bool CServer::IDTranslateReverse(int *pInOutTargetID, int ForClientID) const
+bool CServer::IDTranslateReverse(int *pInOutInternalID, int ForClientID) const
 {
-	if(dbg_assert_strict(*pInOutTargetID >= 0 && *pInOutTargetID < MAX_CLIENTS, "invalid ID to be translated")) return false;
+	if(dbg_assert_strict(*pInOutInternalID >= 0 && *pInOutInternalID < MAX_CLIENTS, "invalid ID to be translated")) return false;
 	if(dbg_assert_strict(ForClientID >= 0 && ForClientID < MAX_CLIENTS, "ID to translate for is invalid")) return false;
 
 	CClientInfo Info;
@@ -721,18 +721,18 @@ bool CServer::IDTranslateReverse(int *pInOutTargetID, int ForClientID) const
 		return true;
 
 	// local player always has ID 0
-	if(*pInOutTargetID == ForClientID)
+	if(*pInOutInternalID == ForClientID)
 	{
-		*pInOutTargetID = 0;
+		*pInOutInternalID = 0;
 		return true;
 	}
 
 	// this info can be read right out of the id map
 	const IDMapT *aMap = GetIdMap(ForClientID);
-	if (aMap[*pInOutTargetID] == IDMapT::DEFAULT)
+	if (aMap[*pInOutInternalID] == IDMapT::DEFAULT)
 		return false;
 
-	*pInOutTargetID = aMap[*pInOutTargetID];
+	*pInOutInternalID = aMap[*pInOutInternalID];
 
 	return true;
 }
@@ -754,6 +754,20 @@ void CServer::DumpIdMap(int ForClientID) const
 	}
 
 	dbg_msg("debug", "end ID map");
+}
+
+int CServer::IDTranslateLua(int InternalID, int ForClientID) const
+{
+	if(!IDTranslate(&InternalID, ForClientID))
+		return -1;
+	return InternalID;
+}
+
+int CServer::IDTranslateReverseLua(int InternalID, int ForClientID) const
+{
+	if(!IDTranslateReverse(&InternalID, ForClientID))
+		return -1;
+	return InternalID;
 }
 
 int CServer::SendMsg(CMsgPacker *pMsg, int Flags, int ClientID)
