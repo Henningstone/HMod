@@ -26,10 +26,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team, bool IsBot)
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
 
-	IDMapT *aIDMap = Server()->GetIdMap(ClientID);
-	for(int i = 1; i < DDNET_MAX_CLIENTS; i++)
-		aIDMap[i].reset();
-	aIDMap[0] = ClientID;
+	Server()->ResetIdMap(ClientID);
 
 	MACRO_LUA_CALLBACK("Player")
 }
@@ -245,7 +242,7 @@ void CPlayer::OnDisconnect(const char *pReason)
 	}
 }
 
-void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
+void CPlayer::OnPredictedInput(const CNetObj_PlayerInput *NewInput)
 {
 	// skip the input if chat is active
 	if((m_PlayerFlags&PLAYERFLAG_CHATTING) && (NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING))
@@ -255,7 +252,7 @@ void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
 		m_pCharacter->OnPredictedInput(NewInput);
 }
 
-void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
+void CPlayer::OnDirectInput(const CNetObj_PlayerInput *NewInput)
 {
 	if(NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING)
 	{

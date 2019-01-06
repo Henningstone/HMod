@@ -44,8 +44,8 @@ public:
 	void HandleWeapons();
 	void HandleNinja();
 
-	void OnPredictedInput(CNetObj_PlayerInput *pNewInput);
-	void OnDirectInput(CNetObj_PlayerInput *pNewInput);
+	void OnPredictedInput(const CNetObj_PlayerInput *pNewInput);
+	void OnDirectInput(const CNetObj_PlayerInput *pNewInput);
 	void ResetInput();
 	void FireWeapon();
 

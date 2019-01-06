@@ -150,7 +150,8 @@ public:
 	};
 
 	CClient m_aClients[MAX_CLIENTS];
-	IDMapT m_aaIDMap[MAX_CLIENTS][DDNET_MAX_CLIENTS];
+	IDMapT m_aaIDMap[MAX_CLIENTS][DDNET_MAX_CLIENTS]; // for each client: Index=TranslatedID, Data=InternalID  --  "who is displayed as X?"
+	IDMapT m_aaIDMapReverse[MAX_CLIENTS][MAX_CLIENTS]; // reverse map for quick access: Index=InternalID, Data=MappedID  --  "as what is CID displayed?"
 
 	CSnapshotDelta m_SnapshotDelta;
 	CSnapshotBuilder m_SnapshotBuilder;
@@ -215,7 +216,7 @@ public:
 	void SetRconCID(int ClientID);
 	bool IsAuthed(int ClientID);
 	bool HasAccess(int ClientID, int AccessLevel);
-	int GetClientInfo(int ClientID, CClientInfo *pInfo);
+	int GetClientInfo(int ClientID, CClientInfo *pInfo) const;
 	void GetClientAddr(int ClientID, char *pAddrStr, int Size);
 	const char *ClientName(int ClientID);
 	const char *ClientClan(int ClientID);
@@ -227,7 +228,15 @@ public:
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID);
 	int SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System);
 
-	IDMapT *GetIdMap(int ClientID);
+	// id translation
+	bool IDTranslate(int *pInOutInternalID, int ForClientID) const;
+	bool IDTranslateReverse(int *pInOutTargetID, int ForClientID) const;
+	const IDMapT *GetIdMap(int ClientID) const { return m_aaIDMap[ClientID]; };
+	const IDMapT *GetRevMap(int ClientID) const { return m_aaIDMapReverse[ClientID]; };
+	void WriteIdMap(int ClientID, int IdTakingSlot, int ChosenSlot);
+	void ResetIdMap(int ClientID);
+	int ResetIdMapSlotOf(int ClientID, int SlotOfWhom);
+	void DumpIdMap(int ForClientID) const;
 
 	void DoSnapshot();
 

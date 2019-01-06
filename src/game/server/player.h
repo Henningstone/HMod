@@ -30,8 +30,8 @@ public:
 	void Snap(int SnappingClient);
 	void FakeSnap();
 
-	void OnDirectInput(CNetObj_PlayerInput *NewInput);
-	void OnPredictedInput(CNetObj_PlayerInput *NewInput);
+	void OnDirectInput(const CNetObj_PlayerInput *NewInput);
+	void OnPredictedInput(const CNetObj_PlayerInput *NewInput);
 	void OnDisconnect(const char *pReason);
 
 	void KillCharacter(int Weapon = WEAPON_GAME);

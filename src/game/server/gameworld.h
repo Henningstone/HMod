@@ -38,6 +38,7 @@ private:
 	class IServer *m_pServer;
 
 	void UpdatePlayerMappings();
+	void FindAltSlot(int ForCID, int LargestAssignableID, int WhoIsSearching); // helper
 
 public:
 	class CGameContext *GameServer() { return m_pGameServer; }

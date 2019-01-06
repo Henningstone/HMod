@@ -46,7 +46,7 @@ public:
 	virtual int ClientCountry(int ClientID) = 0;
 	virtual bool ClientIngame(int ClientID) = 0;
 	virtual bool ClientIsDummy(int ClientID) = 0;
-	virtual int GetClientInfo(int ClientID, CClientInfo *pInfo) = 0;
+	virtual int GetClientInfo(int ClientID, CClientInfo *pInfo) const = 0;
 	virtual void GetClientAddr(int ClientID, char *pAddrStr, int Size) = 0;
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID) = 0;
@@ -59,10 +59,15 @@ public:
 	int SendPackMsgTranslate(CNetMsg_Sv_Chat *pMsg, int Flags, int ClientID);
 	int SendPackMsgTranslate(CNetMsg_Sv_KillMsg *pMsg, int Flags, int ClientID);*/
 
-	bool IDTranslate(int *pTarget, int ForClientID);
-	bool IDTranslateReverse(int *pTarget, int ForClientID);
+	virtual bool IDTranslate(int *pInOutTargetID, int ForClientID) const = 0;
+	virtual bool IDTranslateReverse(int *pInOutTargetID, int ForClientID) const = 0;
 
-	virtual IDMapT *GetIdMap(int ClientID) = 0;
+	virtual const IDMapT *GetIdMap(int ClientID) const = 0;
+	virtual const IDMapT *GetRevMap(int ClientID) const = 0;
+	virtual void WriteIdMap(int ClientID, int IdTakingSlot, int ChosenSlot) = 0;
+	virtual void ResetIdMap(int ClientID) = 0;
+	virtual int ResetIdMapSlotOf(int ClientID, int IdTakingSlot) = 0;
+	virtual void DumpIdMap(int ClientID) const = 0;
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;

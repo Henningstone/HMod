@@ -1056,9 +1056,18 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			CNetMsg_Cl_SetSpectatorMode *pMsg = (CNetMsg_Cl_SetSpectatorMode *)pRawMsg;
 
-			if(pPlayer->GetTeam() != TEAM_SPECTATORS || pPlayer->m_SpectatorID == pMsg->m_SpectatorID || ClientID == pMsg->m_SpectatorID ||
-				(g_Config.m_SvSpamprotection && pPlayer->m_LastSetSpectatorMode && pPlayer->m_LastSetSpectatorMode+Server()->TickSpeed()*g_Config.m_SvSpamprotectionTeam > Server()->Tick()))
+			if(pMsg->m_SpectatorID >= 0)
+			{
+				if(!Server()->IDTranslateReverse(&pMsg->m_SpectatorID, ClientID))
+					return;
+			}
+
+			if(pPlayer->GetTeam() != TEAM_SPECTATORS || pPlayer->m_SpectatorID == pMsg->m_SpectatorID || ClientID == pMsg->m_SpectatorID)
 				return;
+
+			// XXX this spamprotection doesn't really make sense does it? there is no spam, is there?
+//			if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetSpectatorMode && pPlayer->m_LastSetSpectatorMode+Server()->TickSpeed()*g_Config.m_SvSpamprotectionTeam > Server()->Tick())
+//				return;
 
 			pPlayer->m_LastSetSpectatorMode = Server()->Tick();
 			if(pMsg->m_SpectatorID != SPEC_FREEVIEW && (!m_apPlayers[pMsg->m_SpectatorID] || m_apPlayers[pMsg->m_SpectatorID]->GetTeam() == TEAM_SPECTATORS))

@@ -306,69 +306,202 @@ void CGameWorld::UpdatePlayerMappings()
 		return;
 
 	// calculate for everyone
-	for(int FromCID = 0; FromCID < MAX_CLIENTS; FromCID++)
+	for(int ForCID = 0; ForCID < MAX_CLIENTS; ForCID++)
 	{
-		if(!Server()->ClientIngame(FromCID) || GameServer()->m_apPlayers[FromCID] == NULL)
+		// only calculate maps for existing players
+		if(GameServer()->m_apPlayers[ForCID] == NULL || !Server()->ClientIngame(ForCID) || Server()->ClientIsDummy(ForCID))
 			continue;
 
-		SClientDist aDists[MAX_CLIENTS];
-		const float DIST_INVALID = 1e10;
-		const float DIST_DEAD = 1e9;
-		const float DIST_OUTOFRANGE = 1e8;
+		/*
+		 * Algorithm:
+		 *
+		 * OwnID = 0
+		 * MappedID = (InternalID % LargestAssignableID) + 1  // InternalID is the server's, LargestAssignableID = (16||64)-1
+		 * if MappedID collides:
+		 *   decide by considering priority criteria:
+		 *     - hooked players (top priority)
+		 *     - has character
+		 *     - smaller distance
+		 *
+		 * ID MAP: [0..InternalID] -> [0..LargestAssignableID-1]
+		 *
+		 */
 
-		// compute distances
-		for(int ToCID = 0; ToCID < MAX_CLIENTS; ToCID++)
+		IServer::CClientInfo Info;
+		Server()->GetClientInfo(ForCID, &Info);
+
+		// the largest ID our 'ForCID' client can handle
+		const int LargestAssignableID = (Info.m_Is128 ? MAX_CLIENTS : Info.m_Is64 ? DDNET_MAX_CLIENTS-1 : VANILLA_MAX_CLIENTS-1) - 1; // one space for chat-fakeid
+
+		// calculate mappings
+		#define TAKE_SLOT(ID_TAKING_SLOT, CHOSEN_SLOT) \
+				Server()->WriteIdMap(ForCID, ID_TAKING_SLOT, CHOSEN_SLOT);
+
+		CCharacter *pOwnChr = GameServer()->GetPlayerChar(ForCID);
+		const IDMapT *aIDMap = Server()->GetIdMap(ForCID);
+		const IDMapT *aRevMap = Server()->GetRevMap(ForCID); // RevMap holds the indices of IDMap at InternalID
+		for(int InternalID = 0; InternalID < MAX_CLIENTS; InternalID++)
 		{
-			aDists[ToCID].ToCID = ToCID;
-			aDists[ToCID].Dist = 0.0f;
-
-			if(ToCID == FromCID)
-				continue;
-
-			if(!Server()->ClientIngame(ToCID) || !GameServer()->m_apPlayers[ToCID])
+			// reset slot
+			if(aRevMap[InternalID] != IDMapT::DEFAULT)
 			{
-				aDists[ToCID].Dist = DIST_INVALID;
+				Server()->ResetIdMapSlotOf(ForCID, InternalID);
+			}
+
+			// check if player is local
+			if(InternalID == ForCID)
+			{
+				// OwnID = 0
+				TAKE_SLOT(InternalID, 0);
 				continue;
 			}
 
-			CCharacter *pChr = GameServer()->m_apPlayers[ToCID]->GetCharacter();
-			if(!pChr)
-			{
-				aDists[ToCID].Dist = DIST_DEAD;
+			// only calculate mapping for existing players
+			if(!Server()->ClientIngame(InternalID) || GameServer()->m_apPlayers[InternalID] == NULL)
 				continue;
-			}
 
-			// copypasted chunk from character.cpp Snap() follows
-			CPlayer *pPlayer = GameServer()->m_apPlayers[FromCID];
-			CCharacter *pSnapChar = GameServer()->GetPlayerChar(FromCID);
-			if(pSnapChar && pPlayer->GetTeam() != -1 /*&&
-				!pPlayer->IsPaused() && !pSnapChar->m_Super &&
-				!pChr->CanCollide(i) &&
-				(!pPlayer ||
-					pPlayer->m_ClientVersion == VERSION_VANILLA ||
-					(pPlayer->m_ClientVersion >= VERSION_DDRACE &&
-					!pPlayer->m_ShowOthers
-					)
-				)*/
-					)
-				aDists[ToCID].Dist = DIST_OUTOFRANGE;
+			CCharacter *pCurrChr = GameServer()->GetPlayerChar(InternalID);
+
+			// only create mapping for players with a character  XXX DON'T, but TODO use as criteria mb!
+			/*if(!pCurrChr)
+				continue;
+
+			// only calculate for characters in view range  XXX DON'T, but TODO use as criteria mb!
+			if(pCurrChr->NetworkClipped(ForCID))
+				continue;*/
+
+			// map internal id range onto client's id range uniformly
+			int MappedID = (InternalID % LargestAssignableID) + 1; // [1..14] or [1..62], 0 and 15/63 are reserved
+
+			// look for conflicts
+			if(aIDMap[MappedID] == IDMapT::DEFAULT) // aIDMap[MappedID] means "who is displayed as MappedID?"
+			{
+				// slot is still free, take it
+				// aIDMap[MappedID] = InternalID; // "display InternalID as MappedID"
+				// aRevMap[InternalID] = MappedID; // "InternalID is displayed as MappedID"
+				TAKE_SLOT(InternalID, MappedID);
+			}
 			else
-				aDists[ToCID].Dist = 0.0f;
+			{
+				FindAltSlot(ForCID, LargestAssignableID, InternalID);
 
-			aDists[ToCID].Dist = distance(GameServer()->m_apPlayers[FromCID]->m_ViewPos, GameServer()->m_apPlayers[ToCID]->GetCharacter()->m_Pos);
+				/*
+				 * conflict resolution technique:
+				 * - hooked player gets priority over non-hooked player
+				 * - closer player gets priority over farther player
+				 */
+			/*	int ConflictingCID = aIDMap[MappedID];
+				CCharacter *pConflictingChr = GameServer()->GetPlayerChar(ConflictingCID);
+
+				const vec2& OwnPos = GameServer()->m_apPlayers[ForCID]->m_ViewPos;
+				const vec2& CurrPos = GameServer()->m_apPlayers[InternalID]->m_ViewPos;  XXX bad
+				const vec2& ConfPos = GameServer()->m_apPlayers[ConflictingCID]->m_ViewPos;  XXX bad
+
+				// TODO implement hooked player check
+				//  (problem: we don't know whom we are hooked by, only whom we are hooking ourselves)
+				if(distance(OwnPos, CurrPos) < distance(OwnPos, ConfPos))
+				{
+					// current player is closer than player in slot, take the slot away
+					TAKE_SLOT(InternalID, MappedID);
+
+					// situation: player who _had_ the slot (ConflictingCID) does not have one anymore!
+					// solution: search for one. kick out the farthest away player if nothing is free.
+					FindAltSlot(ForCID, LargestAssignableID, ConflictingCID);
+				}
+				else
+				{
+					// player in slot is closer
+					// this is the case, so no need to assign here:
+					//   aIDMap[MappedID] == ConflictingCID;
+					//   aRevMap[ConflictingCID] == MappedID;
+
+					// situation: current player (with InternalID) does NOT have a slot!
+					// solution: search for one. kick out the farthest away player if nothing's free.
+					FindAltSlot(ForCID, LargestAssignableID, InternalID);
+				}*/
+			}
 		}
 
-		// always send the player himself
-		aDists[FromCID].Dist = 0;
+		//Server()->DumpIdMap(ForCID);
+	}
+}
 
+void CGameWorld::FindAltSlot(int ForCID, int LargestAssignableID, int WhoIsSearching)
+{
+	const IDMapT *aIDMap = Server()->GetIdMap(ForCID);
+	const IDMapT *aRevMap = Server()->GetRevMap(ForCID);
+	const vec2& OwnPos = GameServer()->m_apPlayers[ForCID]->m_ViewPos;
 
-		// sort and assign
-		std::qsort(aDists, MAX_CLIENTS, sizeof(SClientDist), distCompare);
-
-		IDMapT *aMap = Server()->GetIdMap(FromCID);
-		for(int i = 0; i < DDNET_MAX_CLIENTS; i++)
+	// search for the next free slot
+	for(int AltSlot = 1; AltSlot <= LargestAssignableID; AltSlot++)
+	{
+		// if the slot is free, take it
+		if(aIDMap[AltSlot] == IDMapT::DEFAULT)
 		{
-			aMap[i] = aDists[i].ToCID;
+			TAKE_SLOT(WhoIsSearching, AltSlot);
+			return;
+		}
+	}
+
+	// no free slot, decide whom to kick out
+	CCharacter *pCurrChr = GameServer()->GetPlayerChar(WhoIsSearching);
+	if(!pCurrChr)
+	{
+		// who doesn't have a character shall not get the slot
+		return;
+	}
+
+	// kick out who's the farthest from 'ForID'
+	{
+		float MaxDist = distance(OwnPos, pCurrChr->m_Pos);
+		int FarthestID = WhoIsSearching;
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(!Server()->ClientIngame(i) || GameServer()->m_apPlayers[i] == NULL)
+			{
+				// there should be no slot taken up by non-existent players
+				// DEBUG: verify
+				dbg_assert(aRevMap[i] == IDMapT::DEFAULT, "non-existent player DOES take up a slot?!");
+				continue;
+			}
+
+			if(i == WhoIsSearching)
+				continue;
+
+			CCharacter *pChr = GameServer()->GetPlayerChar(i);
+			if(!pChr)
+				continue;
+
+			// check if he's at all using up a slot
+			if(aRevMap[i] == IDMapT::DEFAULT)
+				continue;
+
+			// only consider who is actually IN the usable part of the id map
+			// DEBUG: if someone is OUTSIDE of the map, that would be a bug then.
+			dbg_assert(aRevMap[i] <= LargestAssignableID, "ip map went out of range somehow");
+
+			// calculate and check distance
+			float Dist = distance(OwnPos, pChr->GetCore()->m_Pos);
+			if(Dist > MaxDist)
+			{
+				MaxDist = Dist;
+				FarthestID = i;
+			}
+		}
+
+		if(FarthestID == WhoIsSearching)
+		{
+			// player WhoIsSearching is the farthest, drop him.
+			return;
+		}
+		else
+		{
+			// take the farthest player's slot, kicking him out
+			dbg_msg("idmap/debug", "CID %i stealing slot %i from CID %i", WhoIsSearching, aRevMap[FarthestID], FarthestID);
+			int SlotID = Server()->ResetIdMapSlotOf(ForCID, FarthestID);
+			TAKE_SLOT(WhoIsSearching, SlotID);
 		}
 	}
 }
+
+#undef TAKE_SLOT
