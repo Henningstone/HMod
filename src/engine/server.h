@@ -97,64 +97,75 @@ public:
 	virtual void DemoRecorder_HandleAutoStart() = 0;
 	virtual bool DemoRecorder_IsRecording() = 0;
 
-
+	// smart send function; automatically decides how to handle translation
 	template <class T>
-	int SendPackMsg(T *pMsg, int Flags, int ClientID)
+	void SendPackMsg(const T *pMsg, int Flags, int ClientID)
 	{
-		int result = 0;
-		T tmp;
 		if (ClientID == -1)
 		{
 			for(int i = 0; i < MAX_CLIENTS; i++)
 			{
 				if(ClientIngame(i))
 				{
-					mem_copy(&tmp, pMsg, sizeof(T));
-					result = SendPackMsgTranslate(&tmp, Flags, i);
+					T MsgCopy;
+					mem_copy(&MsgCopy, pMsg, sizeof(T));
+					SendPackMsgTranslate(&MsgCopy, Flags, i);
 				}
 			}
 		}
 		else
 		{
-			mem_copy(&tmp, pMsg, sizeof(T));
-			result = SendPackMsgTranslate(&tmp, Flags, ClientID);
+			T MsgCopy;
+			mem_copy(&MsgCopy, pMsg, sizeof(T));
+			SendPackMsgTranslate(&MsgCopy, Flags, ClientID);
 		}
-		return result;
 	}
 
+private:
+
+	// for generic messages that don't require translation
 	template<class T>
 	int SendPackMsgTranslate(T *pMsg, int Flags, int ClientID)
 	{
 		return SendPackMsgOne(pMsg, Flags, ClientID);
 	}
 
+	// emoticon
 	int SendPackMsgTranslate(CNetMsg_Sv_Emoticon *pMsg, int Flags, int ClientID)
 	{
-		return IDTranslate(&pMsg->m_ClientID, ClientID) && SendPackMsgOne(pMsg, Flags, ClientID);
+		if(!IDTranslate(&pMsg->m_ClientID, ClientID))
+			return 0;
+		return SendPackMsgOne(pMsg, Flags, ClientID);
 	}
 
-
+	// chat message
 	int SendPackMsgTranslate(CNetMsg_Sv_Chat *pMsg, int Flags, int ClientID)
 	{
 		if (pMsg->m_ClientID >= 0 && !IDTranslate(&pMsg->m_ClientID, ClientID))
 		{
+			CClientInfo Info;
+			GetClientInfo(ClientID, &Info);
+
 			char aMsgBuf[1024];
 			str_format(aMsgBuf, sizeof(aMsgBuf), "%s: %s", ClientName(pMsg->m_ClientID), pMsg->m_pMessage);
 			pMsg->m_pMessage = aMsgBuf;
-			pMsg->m_ClientID = VANILLA_MAX_CLIENTS - 1;
+			pMsg->m_ClientID = Info.m_Is64 ? FAKE_ID_DDNET : FAKE_ID_VANILLA;
 		}
 		return SendPackMsgOne(pMsg, Flags, ClientID);
 	}
 
+	// kill message
 	int SendPackMsgTranslate(CNetMsg_Sv_KillMsg *pMsg, int Flags, int ClientID)
 	{
-		if (!IDTranslate(&pMsg->m_Victim, ClientID))
+		if(!IDTranslate(&pMsg->m_Victim, ClientID))
 			return 0;
-		if (!IDTranslate(&pMsg->m_Killer, ClientID))
+		if(!IDTranslate(&pMsg->m_Killer, ClientID))
 			pMsg->m_Killer = pMsg->m_Victim;
+
 		return SendPackMsgOne(pMsg, Flags, ClientID);
 	}
 
+	// pack a message and send it
 	template<class T>
 	int SendPackMsgOne(T *pMsg, int Flags, int ClientID)
 	{
