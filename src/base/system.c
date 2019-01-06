@@ -102,7 +102,8 @@ void dbg_assert_imp(const char *filename, int line, int test, const char *msg)
 }
 int dbg_assert_strict_imp(const char *filename, int line, int test, const char *msg)
 {
-	// strict debugging assertion: only perform the test if this is a debug build. Otherwise return adequately.
+	// strict debugging assertion: only perform the test if this is a debug build.
+	// Otherwise return true if the assertion *would have* been triggered.
 	#if defined(CONF_DEBUG)
 	dbg_assert_imp(filename, line, test, msg);
 	#endif

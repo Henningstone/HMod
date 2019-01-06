@@ -288,17 +288,6 @@ CCharacter *CGameWorld::ClosestCharacter(vec2 Pos, float Radius, CEntity *pNotTh
 	return pClosest;
 }
 
-struct SClientDist{
-	float Dist;
-	int ToCID;
-};
-
-static int distCompare(const void *pa, const void *pb)
-{
-	const SClientDist& a = *static_cast<const SClientDist*>(pa);
-	const SClientDist& b = *static_cast<const SClientDist*>(pb);
-	return a.Dist < b.Dist ? -1 : a.Dist > b.Dist ? 1 : 0;
-}
 
 void CGameWorld::UpdatePlayerMappings()
 {
@@ -337,7 +326,6 @@ void CGameWorld::UpdatePlayerMappings()
 		#define TAKE_SLOT(ID_TAKING_SLOT, CHOSEN_SLOT) \
 				Server()->WriteIdMap(ForCID, ID_TAKING_SLOT, CHOSEN_SLOT);
 
-		CCharacter *pOwnChr = GameServer()->GetPlayerChar(ForCID);
 		const IDMapT *aIDMap = Server()->GetIdMap(ForCID);
 		const IDMapT *aRevMap = Server()->GetRevMap(ForCID); // RevMap holds the indices of IDMap at InternalID
 		for(int InternalID = 0; InternalID < MAX_CLIENTS; InternalID++)
@@ -360,16 +348,6 @@ void CGameWorld::UpdatePlayerMappings()
 			if(!Server()->ClientIngame(InternalID) || GameServer()->m_apPlayers[InternalID] == NULL)
 				continue;
 
-			CCharacter *pCurrChr = GameServer()->GetPlayerChar(InternalID);
-
-			// only create mapping for players with a character  XXX DON'T, but TODO use as criteria mb!
-			/*if(!pCurrChr)
-				continue;
-
-			// only calculate for characters in view range  XXX DON'T, but TODO use as criteria mb!
-			if(pCurrChr->NetworkClipped(ForCID))
-				continue;*/
-
 			// map internal id range onto client's id range uniformly
 			int MappedID = (InternalID % LargestAssignableID) + 1; // [1..14] or [1..62], 0 and 15/63 are reserved
 
@@ -377,48 +355,12 @@ void CGameWorld::UpdatePlayerMappings()
 			if(aIDMap[MappedID] == IDMapT::DEFAULT) // aIDMap[MappedID] means "who is displayed as MappedID?"
 			{
 				// slot is still free, take it
-				// aIDMap[MappedID] = InternalID; // "display InternalID as MappedID"
-				// aRevMap[InternalID] = MappedID; // "InternalID is displayed as MappedID"
 				TAKE_SLOT(InternalID, MappedID);
 			}
 			else
 			{
+				// try to find an alternative slot
 				FindAltSlot(ForCID, LargestAssignableID, InternalID);
-
-				/*
-				 * conflict resolution technique:
-				 * - hooked player gets priority over non-hooked player
-				 * - closer player gets priority over farther player
-				 */
-			/*	int ConflictingCID = aIDMap[MappedID];
-				CCharacter *pConflictingChr = GameServer()->GetPlayerChar(ConflictingCID);
-
-				const vec2& OwnPos = GameServer()->m_apPlayers[ForCID]->m_ViewPos;
-				const vec2& CurrPos = GameServer()->m_apPlayers[InternalID]->m_ViewPos;  XXX bad
-				const vec2& ConfPos = GameServer()->m_apPlayers[ConflictingCID]->m_ViewPos;  XXX bad
-
-				// TODO implement hooked player check
-				//  (problem: we don't know whom we are hooked by, only whom we are hooking ourselves)
-				if(distance(OwnPos, CurrPos) < distance(OwnPos, ConfPos))
-				{
-					// current player is closer than player in slot, take the slot away
-					TAKE_SLOT(InternalID, MappedID);
-
-					// situation: player who _had_ the slot (ConflictingCID) does not have one anymore!
-					// solution: search for one. kick out the farthest away player if nothing is free.
-					FindAltSlot(ForCID, LargestAssignableID, ConflictingCID);
-				}
-				else
-				{
-					// player in slot is closer
-					// this is the case, so no need to assign here:
-					//   aIDMap[MappedID] == ConflictingCID;
-					//   aRevMap[ConflictingCID] == MappedID;
-
-					// situation: current player (with InternalID) does NOT have a slot!
-					// solution: search for one. kick out the farthest away player if nothing's free.
-					FindAltSlot(ForCID, LargestAssignableID, InternalID);
-				}*/
 			}
 		}
 
@@ -461,7 +403,7 @@ void CGameWorld::FindAltSlot(int ForCID, int LargestAssignableID, int WhoIsSearc
 			{
 				// there should be no slot taken up by non-existent players
 				// DEBUG: verify
-				dbg_assert(aRevMap[i] == IDMapT::DEFAULT, "non-existent player DOES take up a slot?!");
+				dbg_assert_strict(aRevMap[i] == IDMapT::DEFAULT, "non-existent player DOES take up a slot?!");
 				continue;
 			}
 
@@ -478,7 +420,7 @@ void CGameWorld::FindAltSlot(int ForCID, int LargestAssignableID, int WhoIsSearc
 
 			// only consider who is actually IN the usable part of the id map
 			// DEBUG: if someone is OUTSIDE of the map, that would be a bug then.
-			dbg_assert(aRevMap[i] <= LargestAssignableID, "ip map went out of range somehow");
+			dbg_assert_strict(aRevMap[i] <= LargestAssignableID, "ip map went out of range somehow");
 
 			// calculate and check distance
 			float Dist = distance(OwnPos, pChr->GetCore()->m_Pos);
@@ -497,9 +439,10 @@ void CGameWorld::FindAltSlot(int ForCID, int LargestAssignableID, int WhoIsSearc
 		else
 		{
 			// take the farthest player's slot, kicking him out
-			dbg_msg("idmap/debug", "CID %i stealing slot %i from CID %i", WhoIsSearching, aRevMap[FarthestID], FarthestID);
+			//dbg_msg("idmap/debug", "CID %i stealing slot %i from CID %i", WhoIsSearching, aRevMap[FarthestID], FarthestID);
 			int SlotID = Server()->ResetIdMapSlotOf(ForCID, FarthestID);
-			TAKE_SLOT(WhoIsSearching, SlotID);
+			if(SlotID >= 0)
+				TAKE_SLOT(WhoIsSearching, SlotID);
 		}
 	}
 }

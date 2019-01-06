@@ -596,8 +596,8 @@ int CServer::MaxClients() const
 
 void CServer::WriteIdMap(int ClientID, int IdTakingSlot, int ChosenSlot)
 {
-	dbg_assert(ClientID >= 0 && ClientID < MAX_CLIENTS, "Invalid ClientID");
-	dbg_assert(IdTakingSlot >= 0 && IdTakingSlot < MAX_CLIENTS, "Invalid IdTakingSlot");
+	if(dbg_assert_strict(ClientID >= 0 && ClientID < MAX_CLIENTS, "Invalid ClientID")) return;
+	if(dbg_assert_strict(IdTakingSlot >= 0 && IdTakingSlot < MAX_CLIENTS, "Invalid IdTakingSlot")) return;
 
 	const int LargestAssignableID = (
 			m_aClients[ClientID].Supports(CClient::SUPPORTS_128P)
@@ -607,23 +607,23 @@ void CServer::WriteIdMap(int ClientID, int IdTakingSlot, int ChosenSlot)
 			  : VANILLA_MAX_CLIENTS-1
 	) - 1; // one space for chat-fakeid
 
-	dbg_assert(ChosenSlot >= 0 && ChosenSlot <= LargestAssignableID, "Invalid ChosenSlot");
+	if(dbg_assert_strict(ChosenSlot >= 0 && ChosenSlot <= LargestAssignableID, "Invalid ChosenSlot")) return;
 
 	// debug: make sure we don't overwrite shit
 	if(IdTakingSlot == ClientID)
-		dbg_assert(ChosenSlot == 0, "self going into wrong slot?!?");
-	dbg_assert(m_aaIDMap[ClientID][ChosenSlot] == IDMapT::DEFAULT, "writing into non-empty slot");
-	dbg_assert(m_aaIDMapReverse[ClientID][IdTakingSlot] == IDMapT::DEFAULT, "assigning player into a second slot!?");
+		dbg_assert_strict(ChosenSlot == 0, "self going into wrong slot?!?");
+	dbg_assert_strict(m_aaIDMap[ClientID][ChosenSlot] == IDMapT::DEFAULT, "writing into non-empty slot");
+	dbg_assert_strict(m_aaIDMapReverse[ClientID][IdTakingSlot] == IDMapT::DEFAULT, "assigning player into a second slot!?");
 
-	m_aaIDMap[ClientID][ChosenSlot] = IdTakingSlot;
-	m_aaIDMapReverse[ClientID][IdTakingSlot] = ChosenSlot;
+	m_aaIDMap[ClientID][ChosenSlot] = IdTakingSlot; // "as ChosenSlot we display IdTakingSlot"
+	m_aaIDMapReverse[ClientID][IdTakingSlot] = ChosenSlot; // "IdTakingSlot is displayed as ChosenSlot"
 
 //	dbg_msg("debug", "writing into IDMap of %i: Client %i taking slot %i", ClientID, IdTakingSlot, ChosenSlot);
 }
 
 void CServer::ResetIdMap(int ClientID)
 {
-	dbg_assert(ClientID >= 0 && ClientID < MAX_CLIENTS, "Invalid ClientID");
+	if(dbg_assert_strict(ClientID >= 0 && ClientID < MAX_CLIENTS, "Invalid ClientID")) return;
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -640,11 +640,11 @@ void CServer::ResetIdMap(int ClientID)
 
 int CServer::ResetIdMapSlotOf(int ClientID, int SlotOfWhom)
 {
-	dbg_assert(ClientID >= 0 && ClientID < MAX_CLIENTS, "Invalid ClientID");
-	dbg_assert(SlotOfWhom >= 0 && SlotOfWhom < MAX_CLIENTS, "Invalid SlotOfWhom");
+	if(dbg_assert_strict(ClientID >= 0 && ClientID < MAX_CLIENTS, "Invalid ClientID")) return -1;
+	if(dbg_assert_strict(SlotOfWhom >= 0 && SlotOfWhom < MAX_CLIENTS, "Invalid SlotOfWhom")) return -1;
 
 	int SlotID = m_aaIDMapReverse[ClientID][SlotOfWhom];
-	dbg_assert(SlotID >= 0 && SlotID < DDNET_MAX_CLIENTS, "id does not have a slot / broken reverse map");
+	if(dbg_assert_strict(SlotID >= 0 && SlotID < DDNET_MAX_CLIENTS, "ID does not have a slot / broken reverse map")) return -1;
 
 	m_aaIDMap[ClientID][SlotID].reset();
 	m_aaIDMapReverse[ClientID][SlotOfWhom].reset();
@@ -656,8 +656,8 @@ int CServer::ResetIdMapSlotOf(int ClientID, int SlotOfWhom)
 
 bool CServer::IDTranslate(int *pInOutInternalID, int ForClientID) const
 {
-	dbg_assert(*pInOutInternalID >= 0 && *pInOutInternalID < MAX_CLIENTS, "invalid ID to be translated");
-	dbg_assert(ForClientID >= 0 && ForClientID < MAX_CLIENTS, "ID to translate for is invalid");
+	if(dbg_assert_strict(*pInOutInternalID >= 0 && *pInOutInternalID < MAX_CLIENTS, "invalid ID to be translated")) return false;
+	if(dbg_assert_strict(ForClientID >= 0 && ForClientID < MAX_CLIENTS, "ID to translate for is invalid")) return false;
 
 	CClientInfo Info;
 	GetClientInfo(ForClientID, &Info);
@@ -666,15 +666,8 @@ bool CServer::IDTranslate(int *pInOutInternalID, int ForClientID) const
 	if(Info.m_Is128)
 		return true;
 
-	// local player always has ID 0 TODO should be removable, the revmap also holds this info
-	if(*pInOutInternalID == ForClientID)
-	{
-		*pInOutInternalID = 0;
-		return true;
-	}
-
 	// we need to translate
-	const int DbgOldTarget = *pInOutInternalID;
+	/*const int DbgOldTarget = *pInOutInternalID;
 
 	const IDMapT *aMap = GetIdMap(ForClientID);
 	bool Found = false;
@@ -693,35 +686,32 @@ bool CServer::IDTranslate(int *pInOutInternalID, int ForClientID) const
 
 	// XXX just for dbg
 	if(!Found)
-		*pInOutInternalID = IDMapT::DEFAULT;
+		*pInOutInternalID = IDMapT::DEFAULT;*/
 
-	// the reverse map holds the information we need, avoiding the linear search XXX TODO why doesn't this work?
+	// the reverse map holds the information we need, avoiding the linear search
 	const IDMapT *aRevMap = GetRevMap(ForClientID);
-	int MappedID = aRevMap[DbgOldTarget];
+	int MappedID = aRevMap[*pInOutInternalID/*DbgOldTarget*/];
 
+	/*#ifdef CONF_DEBUG
 	if(*pInOutInternalID != MappedID)
 	{
 		DumpIdMap(ForClientID);
-
-		/*dbg_msg("debug", "------------------[ REVERSE MAP OF %i ]-----------------------", ForClientID);
-		for(int i = 0; i < MAX_CLIENTS/2; i++)
-		{
-			dbg_msg("debug", "  %3i -> %3i        %3i -> %3i", aRevMap[i],i , aRevMap[i+MAX_CLIENTS/2],i+MAX_CLIENTS/2);
-		}*/
-		dbg_msg("debug", "asdfasdfasdf");
+		dbg_assert(*pInOutInternalID == MappedID, "IDMap linear search disagrees with reverse map lookup");
 	}
+	#endif*/
 
 	if(MappedID == IDMapT::DEFAULT)
 		return false;
 
+	*pInOutInternalID = MappedID;
 
 	return true;
 }
 
 bool CServer::IDTranslateReverse(int *pInOutTargetID, int ForClientID) const
 {
-	dbg_assert(*pInOutTargetID >= 0 && *pInOutTargetID < MAX_CLIENTS, "invalid ID to be translated");
-	dbg_assert(ForClientID >= 0 && ForClientID < MAX_CLIENTS, "ID to translate for is invalid");
+	if(dbg_assert_strict(*pInOutTargetID >= 0 && *pInOutTargetID < MAX_CLIENTS, "invalid ID to be translated")) return false;
+	if(dbg_assert_strict(ForClientID >= 0 && ForClientID < MAX_CLIENTS, "ID to translate for is invalid")) return false;
 
 	CClientInfo Info;
 	GetClientInfo(ForClientID, &Info);
