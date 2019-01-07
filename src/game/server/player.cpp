@@ -2,7 +2,6 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <new>
 #include <engine/shared/config.h>
-#include "dummy.h"
 
 #include "player.h"
 
@@ -13,7 +12,6 @@ IServer *CPlayer::Server() const { return m_pGameServer->Server(); }
 
 CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team, bool IsBot)
 		: CLuaClass("Player")
-		, m_pBotController(IsBot ? new CPlayerDummy(this) : NULL)
 {
 	m_pGameServer = pGameServer;
 	m_RespawnTick = Server()->Tick();
@@ -334,6 +332,11 @@ CCharacter *CPlayer::GetCharacter()
 	if(m_pCharacter && m_pCharacter->IsAlive())
 		return m_pCharacter;
 	return 0;
+}
+
+bool CPlayer::IsBot() const
+{
+	return Server()->ClientIsDummy(m_ClientID);
 }
 
 void CPlayer::KillCharacter(int Weapon)

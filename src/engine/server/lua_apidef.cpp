@@ -292,6 +292,7 @@ void CLua::RegisterLuaCallbacks()
 
 			.addProperty("MaxClients", &IServer::MaxClients)
 			.addFunction("ClientIngame", &IServer::ClientIngame)
+			.addFunction("ClientIsDummy", &IServer::ClientIsDummy)
 			.addFunction("GetClientInfo", &IServer::GetClientInfo)
 			.addFunction("GetClientAddr", &IServer::GetClientAddrLua)
 

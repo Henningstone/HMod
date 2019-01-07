@@ -1779,6 +1779,7 @@ bool CGameContext::RemoveBot(lua_State *L)
 		argcheck(lua_isstring(L, 2), 2, "string");
 
 	int ClientID = (int)lua_tonumber(L, 1);
+	argcheck(ClientID >= 0 && ClientID < MAX_CLIENTS, 1, "number 0..127");
 
 	if(!m_apPlayers[ClientID] || !m_apPlayers[ClientID]->IsBot())
 		return false;
