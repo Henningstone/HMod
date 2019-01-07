@@ -508,7 +508,8 @@ void CLua::RegisterLuaCallbacks()
 
 			.addData("PhysicsEnabled", &CCharacter::m_PhysicsEnabled)
 			.addFunction("GetCore", &CCharacter::GetCore) // -> [CCharacterCore]
-			.addProperty("Core", &CCharacter::GetCore)
+            .addProperty("Core", &CCharacter::GetCore)
+            .addFunction("GetInput", &CCharacter::GetInput)
 			.addProperty("Tuning", &CCharacter::LuaGetTuning, &CCharacter::LuaWriteTuning)
 
 			.addData("Health", &CCharacter::m_Health)

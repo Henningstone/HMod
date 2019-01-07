@@ -79,6 +79,8 @@ Srv.Console:Register("create_bot", "", "create a brainless tee", function(result
         -- Brainless Tee was successfully created
         Srv.Server:SetClientName(BotID, "Bot " .. BotID)
         Srv.Console:Print("create_bot", "Bot with ID=" .. BotID .. " was created successfully c:")
+        --bot.snapController:Append(100, function(Snap, MaxSnap, Extras) print(Snap.." - "..MaxSnap) end)
+        bot:MoveTo(vec2(600,2000),true,true)
     else
         Srv.Console:Print("create_bot", "Failed to add bot, is the server full?")
     end

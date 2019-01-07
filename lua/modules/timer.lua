@@ -45,7 +45,7 @@ end
 --- This needs to be called in a Tick event. It will update timers
 --- and fire callback functions for timers that ran out.
 function Tick()
-    local now = Srv.Server:Tick()
+    local now = Srv.Server.Tick
     local finished = {}
 
     for i,t in next,_timers do

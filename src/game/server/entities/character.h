@@ -114,6 +114,9 @@ public:
 	CTuningParams *LuaGetTuning() const { return const_cast<CTuningParams*>((const CTuningParams *)&m_TuningDiff.m_Data); }
 	void LuaWriteTuning(const CTuningParams& NewTuning) { m_TuningDiff.m_Data = NewTuning; }
 
+    CNetObj_PlayerInput *GetInput() {return &m_Input; }
+
+
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;
@@ -149,8 +152,8 @@ private:
 	CNetObj_PlayerInput m_LatestInput;
 
 	// input
+    CNetObj_PlayerInput m_Input;
 	CNetObj_PlayerInput m_PrevInput;
-	CNetObj_PlayerInput m_Input;
 	int m_NumInputs;
 //	int m_Jumped;
 
