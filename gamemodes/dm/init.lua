@@ -2,6 +2,7 @@
 
 
 config = require "modconfig"
+require("botlife")
 
 config.CreateRconInt("dennisness", 0, 9001, 10, "set teh dennisness to over 9000!!")
 
@@ -72,8 +73,9 @@ end)
 
 -- command create_bot
 Srv.Console:Register("create_bot", "", "create a brainless tee", function(result)
-    local BotID = Srv.Game:CreateBot()
-    if BotID > -1 then
+    local bot = botlife.BotController:new("BOTTER " .. math.random())
+    if bot then
+        local BotID = bot:GetCID()
         -- Brainless Tee was successfully created
         Srv.Server:SetClientName(BotID, "Bot " .. BotID)
         Srv.Console:Print("create_bot", "Bot with ID=" .. BotID .. " was created successfully c:")
@@ -85,10 +87,20 @@ end)
 -- command remove_bot
 Srv.Console:Register("remove_bot", "i?s", "remove a brainless tee with an optional leave message", function(result)
     local BotID = result:GetInteger(0)
+    local bot = botlife.GetByCID(BotID)
 
-    if Srv.Game:RemoveBot(BotID, result:OptString(1, "Bot removed")) then
-        -- Brainless Tee was successfully created
-        Srv.Console:Print("remove_bot", "Bot was removed successfully c:") 
+    if bot ~= nil and bot:Delete(false, result:OptString(1, "cya nabs")) then
+        Srv.Console:Print("remove_bot", "Bot was removed successfully c:")
+    else
+        Srv.Console:Print("remove_bot", "Invalid bot ID " .. BotID)
+    end
+end)
+
+Srv.Console:Register("walk_bot", "iii", "make a bot walk towards a point", function(result)
+    local BotID = result:GetInteger(0)
+    local bot = botlife.GetByCID(BotID)
+    if bot ~= nil then
+        bot:WalkTowards(vec2(result:GetInteger(1), result:GetInteger(2)))
     else
         Srv.Console:Print("remove_bot", "Invalid bot ID " .. BotID)
     end

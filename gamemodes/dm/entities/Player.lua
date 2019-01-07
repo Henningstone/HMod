@@ -1,4 +1,6 @@
 
+botlife = require 'botlife'
+
 
 Player.myDennis = nil
 Player.isCaptured = false
@@ -8,8 +10,14 @@ function Player.Player()
 end
 
 
+function Player.Tick()
+	this:Tick()
+	botlife.BotController:tickAll()
+end
+
 
 function Player.OnDisconnect(Reason)
+    Reason = Reason or "(no reason given)"
 	print(Srv.Server:GetClientName(this:GetCID()) .." disconnected with reason " .. Reason)
 
 	self:destroyDennis()
