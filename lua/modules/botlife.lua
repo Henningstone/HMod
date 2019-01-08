@@ -167,9 +167,9 @@ function Bot:MoveTo( Point, UseHooks, UseJumps )
 
     local function move(CurSnap, MaxSnaps, ExtraInfo)
         local chr = self.player:GetCharacter()
-        if Point.x < chr.Pos.x - 5 then
+        if Point.x < chr.Pos.x - 16 then
             chr:GetInput().Direction = -1
-        elseif Point.x > chr.Pos.x + 5 then
+        elseif Point.x > chr.Pos.x + 16 then
             chr:GetInput().Direction = 1
         else
             chr:GetInput().Direction = 0
