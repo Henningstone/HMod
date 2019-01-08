@@ -79,8 +79,6 @@ Srv.Console:Register("create_bot", "", "create a brainless tee", function(result
         -- Brainless Tee was successfully created
         Srv.Server:SetClientName(BotID, "Bot " .. BotID)
         Srv.Console:Print("create_bot", "Bot with ID=" .. BotID .. " was created successfully c:")
-        --bot.snapController:Append(100, function(Snap, MaxSnap, Extras) print(Snap.." - "..MaxSnap) end)
-        bot:MoveTo(vec2(600,2000),true,true)
     else
         Srv.Console:Print("create_bot", "Failed to add bot, is the server full?")
     end
@@ -102,7 +100,7 @@ Srv.Console:Register("walk_bot", "iii", "make a bot walk towards a point", funct
     local BotID = result:GetInteger(0)
     local bot = botlife.GetByCID(BotID)
     if bot ~= nil then
-        bot:WalkTowards(vec2(result:GetInteger(1), result:GetInteger(2)))
+        bot:MoveTo(vec2(result:GetInteger(1), result:GetInteger(2)),true,true)
     else
         Srv.Console:Print("remove_bot", "Invalid bot ID " .. BotID)
     end
