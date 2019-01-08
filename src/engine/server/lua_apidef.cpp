@@ -318,6 +318,7 @@ void CLua::RegisterLuaCallbacks()
 		.endClass()
 
 		/// [CCharacterCore].Input
+		/// [CCharacter]:GetInput()
 		.beginClass<CNetObj_PlayerInput>("CNetObj_PlayerInput")
 			.addData("Direction", &CNetObj_PlayerInput::m_Direction)
 			.addData("TargetX", &CNetObj_PlayerInput::m_TargetX)

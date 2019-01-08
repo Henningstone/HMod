@@ -156,7 +156,7 @@ end
 ---     Bot do a simple jump
 ---   Bot:Shoot( [OPT] Angle, [OPT] WeaponId )
 ---     Bot shoots with a given (or current) angle and a given (or current active) weapon
----   Bot:Hook( [OPT] Angle )
+---   Bot:Hook( seconds, [OPT] Angle )
 ---     Bot hooks with a given (or current) angle
 ---   Bot:SetAngle( Angle )
 ---     Sets the angle of the bot
@@ -207,6 +207,52 @@ function Bot:Jump()
                     chr:GetInput().Jump = 0
                 end
             end)
+end
+
+function Bot:Shoot(angle)
+    local chr = self.player:GetCharacter()
+    self.snapController:Append(1, function(Snap)
+            chr:GetInput().Fire = (chr:GetInput().Fire + 1) % 64
+        end)
+end
+
+function Bot:Hook(secs, angle)
+    local time = secs * Srv.Server.TickSpeed
+    local chr = self.player:GetCharacter()
+
+    local function s(Snap)
+        chr:GetInput().Hook = 1
+    end
+
+    local function e()
+        chr:GetInput().Hook = 0
+    end
+
+    self.snapController:Append(time, s, nil, e)
+end
+
+function Bot:SetAngle(angle)
+
+    local pos = vec2(0,0)
+    if type(angle) == "userdata" and angle.x and angle.y then
+        pos = angle
+    elseif type(angle) == "number" then
+        local a = angle % 360
+        pos = vec2(math.cos(a), math.sin(a))
+    end
+    local chr = self.player:GetCharacter()
+    -- U don't even need to use the SnapController! Just overwrite the input like this if its just a 1 time snap :)
+    chr:GetInput().TargetX = pos.x
+    chr:GetInput().TargetY = pos.y
+end
+
+function Bot:Say(Text, ToId)
+
+    ToId = tonumber(ToId)
+    if type(ToId == "number") then
+        Text = Srv.Server:GetClientName(ToId)..": "..Text
+    end
+    Srv.Game:SendChat(self.player:GetCID(),tostring(Text))
 end
 
 ----------------------------------------------------
