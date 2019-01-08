@@ -127,7 +127,7 @@ end
 
 --- @return Bot
 function GetByCID(ClientID)
-    return _bots[ClientID]
+    return Bots[ClientID]
 end
 
 
