@@ -92,11 +92,6 @@ MACRO_CONFIG_INT(SvVoteKickBantime, sv_vote_kick_bantime, 5, 0, 1440, CFGFLAG_SE
 
 MACRO_CONFIG_INT(SvIDMapUpdateRate, sv_idmap_update_rate, 5, 1, 100, CFGFLAG_SERVER, "real id <-> vanilla id players map update rate")
 
-// debug
-#ifdef CONF_DEBUG // this one can crash the server if not used correctly
-	MACRO_CONFIG_INT(DbgDummies, dbg_dummies, 0, 0, 120, CFGFLAG_SERVER, "")
-#endif
-
 MACRO_CONFIG_INT(DbgFocus, dbg_focus, 0, 0, 1, CFGFLAG_CLIENT, "")
 MACRO_CONFIG_INT(DbgTuning, dbg_tuning, 0, 0, 1, CFGFLAG_CLIENT, "")
 #endif

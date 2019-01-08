@@ -2,7 +2,6 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <new>
 #include <engine/shared/config.h>
-#include "dummy.h"
 
 #include "player.h"
 
@@ -13,7 +12,6 @@ IServer *CPlayer::Server() const { return m_pGameServer->Server(); }
 
 CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team, bool IsBot)
 		: CLuaClass("Player")
-		, m_pBotController(IsBot ? new CPlayerDummy(this) : NULL)
 {
 	m_pGameServer = pGameServer;
 	m_RespawnTick = Server()->Tick();
@@ -39,9 +37,6 @@ CPlayer::~CPlayer()
 
 void CPlayer::Tick()
 {
-#ifdef CONF_DEBUG
-	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS-g_Config.m_DbgDummies)
-#endif
 	if(!Server()->ClientIngame(m_ClientID))
 		return;
 
@@ -122,15 +117,60 @@ void CPlayer::PostTick()
 		m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->m_ViewPos;
 }
 
+
+bool CPlayer::AddClientInfoSnap(const char *pName, const char *pClanName, int Country, const char *pSkinName, bool UseCustomColor, int ColorBody, int ColorFeet)
+{
+    int SentCID = m_ClientID;
+
+    CNetObj_ClientInfo *pClientInfo = static_cast<CNetObj_ClientInfo *>(Server()->SnapNewItem(NETOBJTYPE_CLIENTINFO, SentCID, sizeof(CNetObj_ClientInfo)));
+    if(!pClientInfo)
+        return false;
+
+    StrToInts(&pClientInfo->m_Name0, 4, pName);
+    StrToInts(&pClientInfo->m_Clan0, 3, pClanName);
+    pClientInfo->m_Country = Country;
+    StrToInts(&pClientInfo->m_Skin0, 6, pSkinName);
+    pClientInfo->m_UseCustomColor = UseCustomColor;
+    pClientInfo->m_ColorBody = ColorBody;
+    pClientInfo->m_ColorFeet = ColorFeet;
+
+    return true;
+}
+
+bool CPlayer::AddPlayerInfoSnap(int Score, int Team, int Latency, bool Local)
+{
+    CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, m_ClientID, sizeof(CNetObj_PlayerInfo)));
+    if(!pPlayerInfo)
+        return false;
+
+    pPlayerInfo->m_Latency = Latency;
+    pPlayerInfo->m_Local = Local;
+    pPlayerInfo->m_ClientID = m_ClientID;
+    pPlayerInfo->m_Score = Score;
+    pPlayerInfo->m_Team = Team;
+
+    return true;
+}
+
+bool CPlayer::AddSpectatorInfoSnap(int SpectatorID, int X, int Y)
+{
+    CNetObj_SpectatorInfo *pSpectatorInfo = static_cast<CNetObj_SpectatorInfo *>(Server()->SnapNewItem(NETOBJTYPE_SPECTATORINFO, m_ClientID, sizeof(CNetObj_SpectatorInfo)));
+    if(!pSpectatorInfo)
+        return false;
+
+    pSpectatorInfo->m_SpectatorID = SpectatorID;
+    pSpectatorInfo->m_X = X;
+    pSpectatorInfo->m_Y = Y;
+
+    return true;
+}
+
 void CPlayer::Snap(int SnappingClient)
 {
-#ifdef CONF_DEBUG
-	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS-g_Config.m_DbgDummies)
-#endif
 	if(!Server()->ClientIngame(m_ClientID))
 		return;
 
-	MACRO_LUA_EVENT()
+	MACRO_LUA_EVENT(SnappingClient)
 
 	int SentCID = m_ClientID;
 	if(!Server()->IDTranslate(&SentCID, SnappingClient))
@@ -292,6 +332,11 @@ CCharacter *CPlayer::GetCharacter()
 	if(m_pCharacter && m_pCharacter->IsAlive())
 		return m_pCharacter;
 	return 0;
+}
+
+bool CPlayer::IsBot() const
+{
+	return Server()->ClientIsDummy(m_ClientID);
 }
 
 void CPlayer::KillCharacter(int Weapon)

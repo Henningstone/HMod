@@ -275,6 +275,8 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("CreateEntityPickup", &CGameContext::CreateEntityPickup)
 			.addFunction("CreateEntityProjectile", &CGameContext::CreateEntityProjectile)
 			.addFunction("CreateEntityCustom", &CGameContext::CreateEntityCustom)
+			.addFunction("CreateBot", &CGameContext::CreateBot)
+			.addFunction("RemoveBot", &CGameContext::RemoveBot)
 
 			.addFunction("GameType", &CGameContext::GameType)
 			.addFunction("Version", &CGameContext::Version)
@@ -291,8 +293,9 @@ void CLua::RegisterLuaCallbacks()
 
 			.addProperty("MaxClients", &IServer::MaxClients)
 			.addFunction("ClientIngame", &IServer::ClientIngame)
+			.addFunction("ClientIsDummy", &IServer::ClientIsDummy)
 			.addFunction("GetClientInfo", &IServer::GetClientInfo)
-			.addFunction("GetClientAddr", &IServer::GetClientAddr)
+			.addFunction("GetClientAddr", &IServer::GetClientAddrLua)
 
 			.addFunction("GetClientName", &IServer::ClientName)
 			.addFunction("GetClientClan", &IServer::ClientClan)
@@ -319,6 +322,7 @@ void CLua::RegisterLuaCallbacks()
 		.endClass()
 
 		/// [CCharacterCore].Input
+		/// [CCharacter]:GetInput()
 		.beginClass<CNetObj_PlayerInput>("CNetObj_PlayerInput")
 			.addConstructor <void (*) ()> ()
 			.addData("Direction", &CNetObj_PlayerInput::m_Direction)
@@ -354,6 +358,10 @@ void CLua::RegisterLuaCallbacks()
 			.addFunction("Tick", &CPlayer::Tick)
 			.addFunction("PostTick", &CPlayer::PostTick)
 			.addFunction("Snap", &CPlayer::Snap)
+			// Needed for manual lua snapping!
+			.addFunction("AddClientInfoSnap", &CPlayer::AddClientInfoSnap)
+			.addFunction("AddPlayerInfoSnap", &CPlayer::AddPlayerInfoSnap)
+			.addFunction("AddSpectatorInfoSnap", &CPlayer::AddSpectatorInfoSnap)
 
 			.addFunction("OnDirectInput", &CPlayer::OnDirectInput)
 			.addFunction("OnPredictedInput", &CPlayer::OnPredictedInput)
@@ -389,6 +397,8 @@ void CLua::RegisterLuaCallbacks()
 			.addData("ForceBalanced", &CPlayer::m_ForceBalanced)
 			.addData("LastActionTick", &CPlayer::m_LastActionTick)
 			.addData("TeamChangeTick", &CPlayer::m_TeamChangeTick)
+
+			.addFunction("IsBot", &CPlayer::IsBot)
 
 			// TODO add struct m_LatestActivity
 
@@ -511,6 +521,7 @@ void CLua::RegisterLuaCallbacks()
 			.addData("PhysicsEnabled", &CCharacter::m_PhysicsEnabled)
 			.addFunction("GetCore", &CCharacter::GetCore) // -> [CCharacterCore]
 			.addProperty("Core", &CCharacter::GetCore)
+			.addFunction("GetInput", &CCharacter::GetInput)
 			.addProperty("Tuning", &CCharacter::LuaGetTuning, &CCharacter::LuaWriteTuning)
 
 			.addData("Health", &CCharacter::m_Health)

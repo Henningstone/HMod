@@ -476,6 +476,10 @@ set(SOURCE_FILES
         src/engine/server/lua/luajson.h
         src/engine/server/lua/luasqlite.cpp
         src/engine/server/lua/luasqlite.h
-        src/engine/lua_include.h src/game/server/dummy.cpp src/game/server/dummy.h src/base/system++/typewrapper.h src/game/server/cmask.h src/game/server/cmask.cpp)
+        src/engine/lua_include.h
+        src/base/system++/typewrapper.h
+        src/game/server/cmask.h
+        src/game/server/cmask.cpp
+)
 
 add_executable(HMod ${SOURCE_FILES})

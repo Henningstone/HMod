@@ -19,6 +19,7 @@
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"
+#include <engine/server/luabinding.h>
 
 enum
 {
@@ -537,44 +538,6 @@ void CGameContext::SwapTeams()
 
 void CGameContext::OnTick()
 {
-	#ifdef CONF_DEBUG
-	static int s_LastNumDummies = 0;
-	if(g_Config.m_DbgDummies)
-	{
-		if(g_Config.m_DbgDummies > s_LastNumDummies)
-		{
-			// add new
-			int added = 0;
-			for(int i = s_LastNumDummies; i < g_Config.m_DbgDummies; i++)
-			{
-				int DummyCID = MAX_CLIENTS - i - 1;
-				try {
-					OnClientConnected(DummyCID);
-				} catch(CTWException&) {
-					break;
-				}
-				Server()->InitDummy(DummyCID);
-				added++;
-			}
-			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies added", added);
-		}
-		else if(g_Config.m_DbgDummies < s_LastNumDummies)
-		{
-			// remove some
-			int removed = 0;
-			for(int i = MAX_CLIENTS-(s_LastNumDummies-g_Config.m_DbgDummies); i < MAX_CLIENTS-g_Config.m_DbgDummies; i++)
-			{
-				OnClientDrop(i, "dummy purged"); // TODO: this doesn't clean it up properly
-				Server()->PurgeDummy(i);
-				removed++;
-			}
-			Console()->Printf(IConsole::OUTPUT_LEVEL_STANDARD, "dbg_dummies", "%i dummies removed", removed);
-		}
-	}
-	s_LastNumDummies = g_Config.m_DbgDummies;
-	#endif
-
-
 	// check tuning
 	CheckPureTuning();
 
@@ -673,21 +636,6 @@ void CGameContext::OnTick()
 		}
 	}
 
-
-#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies)
-	{
-		for(int i = 0; i < g_Config.m_DbgDummies ; i++)
-		{
-			CNetObj_PlayerInput Input;
-			mem_zero(&Input, sizeof(Input));
-			//Input.m_Direction = (i&1)?-1:1;
-			if(!m_apPlayers[MAX_CLIENTS-i-1])
-				continue;
-			m_apPlayers[MAX_CLIENTS-i-1]->OnPredictedInput(&Input);
-		}
-	}
-#endif
 }
 
 // Server hooks
@@ -728,22 +676,18 @@ void CGameContext::OnClientConnected(int ClientID)
 
 	(void)m_pController->CheckTeamBalance();
 
-#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies)
+	if(!Server()->ClientIsDummy(ClientID))
 	{
-		if(ClientID >= MAX_CLIENTS-g_Config.m_DbgDummies)
-			return;
+		// send active vote
+		if(m_VoteCloseTime)
+			SendVoteSet(ClientID);
+
+		// send motd
+		CNetMsg_Sv_Motd Msg;
+		Msg.m_pMessage = g_Config.m_SvMotd;
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
 	}
-#endif
 
-	// send active vote
-	if(m_VoteCloseTime)
-		SendVoteSet(ClientID);
-
-	// send motd
-	CNetMsg_Sv_Motd Msg;
-	Msg.m_pMessage = g_Config.m_SvMotd;
-	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
 }
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
@@ -1805,6 +1749,66 @@ CProjectile *CGameContext::CreateEntityProjectile(int Type, int Owner, vec2 Pos,
 CLuaEntity *CGameContext::CreateEntityCustom(const char *pClass)
 {
 	return new CLuaEntity(&m_World, pClass);
+}
+
+int CGameContext::CreateBot()
+{
+	int ClientID = -1;
+
+	// search for free slot
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if(m_apPlayers[i] == NULL)
+		{
+			ClientID = i;
+			break;
+		}
+	}
+
+	// no free slots
+	if(ClientID == -1)
+		return -1;
+
+	// create new dummy
+	OnClientConnected(ClientID);
+	Server()->InitDummy(ClientID);
+
+	Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "bots", "Bot (ID = %i) got added.", ClientID);
+
+	return ClientID;
+}
+
+bool CGameContext::RemoveBot(lua_State *L)
+{
+	lua_remove(L, 1); // remove 'self'
+
+	int nargs = lua_gettop(L);
+	if(nargs != 1 && nargs != 2)
+		luaL_error(L, "RemoveBot expects 1 or 2 arguments, got %d", nargs);
+
+	argcheck(lua_isnumber(L, 1), 1, "number 0..63");
+
+	if(nargs == 2)
+		argcheck(lua_isstring(L, 2), 2, "string");
+
+	int ClientID = (int)lua_tonumber(L, 1);
+	argcheck(ClientID >= 0 && ClientID < MAX_CLIENTS, 1, "number 0..127");
+
+	if(!m_apPlayers[ClientID] || !m_apPlayers[ClientID]->IsBot())
+		return false;
+
+	// leave message
+	const char *pReason = NULL;
+	if(nargs == 2)
+		pReason = lua_tostring(L, 2);
+
+	// remove bot
+	OnClientDrop(ClientID, pReason); // TODO: this doesn't clean it up properly
+	Server()->PurgeDummy(ClientID);
+
+	Console()->Printf(IConsole::OUTPUT_LEVEL_ADDINFO, "bots", "Bot (ID = %i) got removed.", ClientID);
+
+	return true;
 }
 
 

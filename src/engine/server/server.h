@@ -218,6 +218,7 @@ public:
 	bool HasAccess(int ClientID, int AccessLevel);
 	int GetClientInfo(int ClientID, CClientInfo *pInfo) const;
 	void GetClientAddr(int ClientID, char *pAddrStr, int Size);
+	std::string GetClientAddrLua(int ClientID);
 	const char *ClientName(int ClientID);
 	const char *ClientClan(int ClientID);
 	int ClientCountry(int ClientID);

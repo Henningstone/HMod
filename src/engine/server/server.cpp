@@ -547,6 +547,19 @@ void CServer::GetClientAddr(int ClientID, char *pAddrStr, int Size)
 		net_addr_str(m_NetServer.ClientAddr(ClientID), pAddrStr, Size, false);
 }
 
+std::string CServer::GetClientAddrLua(int ClientID)
+{
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State != CServer::CClient::STATE_INGAME)
+		return "(invalid)";
+	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME) {
+		char s[NETADDR_MAXSTRSIZE] = {0};
+		GetClientAddr(ClientID, s, sizeof(s));
+
+		return s;
+	}
+	return "(invalid)";
+}
+
 
 const char *CServer::ClientName(int ClientID)
 {
@@ -781,13 +794,8 @@ int CServer::SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System)
 	if(!pMsg)
 		return -1;
 
-#ifdef CONF_DEBUG
-	if(g_Config.m_DbgDummies)
-	{
-		if(ClientID >= MAX_CLIENTS-g_Config.m_DbgDummies)
-			return 1;
-	}
-#endif
+	if(ClientIsDummy(ClientID))
+		return 1;
 
 	mem_zero(&Packet, sizeof(CNetChunk));
 
@@ -850,7 +858,7 @@ void CServer::DoSnapshot()
 	// create snapshots for all clients
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		// client must be ingame to recive snapshots
+		// client must be ingame (and not a dummy) to recive snapshots
 		if(m_aClients[i].m_State != CClient::STATE_INGAME)
 			continue;
 

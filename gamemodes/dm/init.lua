@@ -2,6 +2,7 @@
 
 
 config = require "modconfig"
+require("botlife")
 
 config.CreateRconInt("dennisness", 0, 9001, 10, "set teh dennisness to over 9000!!")
 
@@ -14,27 +15,95 @@ Srv.Console:Register("dennis_is_krass", "r", "much dennis!", function(result)
     Srv.Console:Print("you dennissed!", "with: " .. result:GetString(0)) 
 end)
 
-Srv.Console:Register("tele_all_here", "", "some legit shit SeemsGood", function(result)
-    local me = Srv.Game:GetPlayerChar(result:GetCID())
-    if me == nil then
-        Srv.Console:Print("tele_all_here", "you must be alive") 
+-- command tele_all
+Srv.Console:Register("tele_all", "?i", "Tele all players to ID (default yourself)", function(result)
+    local TargetID = result:OptInteger(0, result:GetCID())
+    local target = Srv.Game:GetPlayerChar(TargetID)
+
+    -- check if target exists
+    if target == nil then
+        Srv.Console:Print("tele_all", "target player must exist and be ALIVE")
         return
     end
 
+    -- teleport all
     local num = 0
     for CID = 0, 128 do
         local chr = Srv.Game:GetPlayerChar(CID)
         if chr ~= nil then
-            print("tele " .. CID .. " from " .. tostring(chr.Pos) .. " to " .. tostring(me.Pos))
-            chr.Pos = me.Pos
-            chr.Core.Pos = me.Core.Pos
+            print("tele " .. CID .. " from " .. tostring(chr.Pos) .. " to " .. tostring(target.Pos))
+            chr.Pos = target.Pos
+            chr.Core.Pos = target.Core.Pos
             --chr:Tick()
             num = num + 1
         end
     end
 
-    Srv.Console:Print("tele_all_here", "teleported " .. num .. " people to you!") 
+    Srv.Console:Print("tele_all", "teleported " .. num .. " people to " .. Srv.Server:GetClientName(TargetID))
+end)
 
+-- command tele
+Srv.Console:Register("tele", "i?i", "tele ID to ID (default to yourself)", function(result)
+    local VictimID = result:GetInteger(0)
+    local victim = Srv.Game:GetPlayerChar(VictimID)
+    local TargetID = result:OptInteger(1, result:GetCID())
+    local target = Srv.Game:GetPlayerChar(TargetID)
+
+    print("tele " .. VictimID .. " -> " .. TargetID)
+
+    -- check if victim exists
+    if victim == nil then
+        Srv.Console:Print("tele", "victim player must exist and be ALIVE")
+        return
+    end
+
+    -- check if target exists
+    if target == nil then
+        Srv.Console:Print("tele", "target player must exist and be ALIVE")
+        return
+    end
+
+    -- teleport victim to target
+    print("tele " .. VictimID .. " from " .. tostring(victim.Pos) .. " to " .. tostring(target.Pos))
+    victim.Pos = target.Pos + vec2(0, -5)
+    victim.Core.Pos = target.Core.Pos + vec2(0, -5)
+
+    Srv.Console:Print("tele", "teleported " .. Srv.Server:GetClientName(VictimID) .. " to " .. Srv.Server:GetClientName(TargetID))
+end)
+
+-- command create_bot
+Srv.Console:Register("create_bot", "", "create a brainless tee", function(result)
+    local bot = botlife.BotController:new("BOTTER " .. math.random())
+    if bot then
+        local BotID = bot:GetCID()
+        -- Brainless Tee was successfully created
+        Srv.Server:SetClientName(BotID, "Bot " .. BotID)
+        Srv.Console:Print("create_bot", "Bot with ID=" .. BotID .. " was created successfully c:")
+    else
+        Srv.Console:Print("create_bot", "Failed to add bot, is the server full?")
+    end
+end)
+
+-- command remove_bot
+Srv.Console:Register("remove_bot", "i?s", "remove a brainless tee with an optional leave message", function(result)
+    local BotID = result:GetInteger(0)
+    local bot = botlife.GetByCID(BotID)
+
+    if bot ~= nil and bot:Delete(false, result:OptString(1, "cya nabs")) then
+        Srv.Console:Print("remove_bot", "Bot was removed successfully c:")
+    else
+        Srv.Console:Print("remove_bot", "Invalid bot ID " .. BotID)
+    end
+end)
+
+Srv.Console:Register("walk_bot", "iii", "make a bot walk towards a point", function(result)
+    local BotID = result:GetInteger(0)
+    local bot = botlife.GetByCID(BotID)
+    if bot ~= nil then
+        bot:MoveTo(vec2(result:GetInteger(1), result:GetInteger(2)),true,true)
+    else
+        Srv.Console:Print("remove_bot", "Invalid bot ID " .. BotID)
+    end
 end)
 
 Srv.Console:Register("make_dennis", "", "dew it!", function(result)

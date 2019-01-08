@@ -36,7 +36,12 @@ public:
 
 	void KillCharacter(int Weapon = WEAPON_GAME);
 	CCharacter *GetCharacter();
-	bool IsBot() const { return m_pBotController != NULL; }
+	bool IsBot() const;
+
+
+	bool AddClientInfoSnap(const char *pName, const char *pClanName, int Country, const char *pSkinName, bool UseCustomColor, int ColorBody, int ColorFeet);
+	bool AddPlayerInfoSnap(int Score, int Team, int Latency, bool Local);
+	bool AddSpectatorInfoSnap(int SpectatorID, int X, int Y);
 
 	//---------------------------------------------------------
 	// this is used for snapping so we know how we can clip the view for the player
@@ -112,8 +117,6 @@ public:
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;
-
-	class CPlayerDummy * const m_pBotController;
 
 	//
 	bool m_Spawning;
