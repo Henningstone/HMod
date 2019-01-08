@@ -28,8 +28,8 @@ Bots = {}
 ---     Bot do a simple jump
 ---   Bot:Shoot( [OPT] Angle, [OPT] WeaponId )
 ---     Bot shoots with a given (or current) angle and a given (or current active) weapon
----   Bot:Hook( [OPT] Angle )
----     Bot hooks with a given (or current) angle
+---   Bot:Hook( snaps, [OPT] Angle )
+---     Bot hooks with for the given snaps with a given (or current) angle
 ---   Bot:SetAngle( Angle )
 ---     Sets the angle of the bot
 ---   Bot:Say( Text, [OPT] ToId )
@@ -210,15 +210,25 @@ function Bot:Jump()
 end
 
 function Bot:Shoot(angle)
+
+    self:SetAngle(angle)
+
     local chr = self.player:GetCharacter()
     self.snapController:Append(1, function(Snap)
             chr:GetInput().Fire = (chr:GetInput().Fire + 1) % 64
         end)
 end
 
-function Bot:Hook(secs, angle)
-    local time = secs * Srv.Server.TickSpeed
+function Bot:Hook(snaps, angle)
+    local time = tostring(snaps)
+
+    if type(time) ~= "number" then
+        error("Hook-Snap count must be a number value!")
+    end
+
     local chr = self.player:GetCharacter()
+
+    self:SetAngle(angle)
 
     local function s(Snap)
         chr:GetInput().Hook = 1
@@ -238,7 +248,7 @@ function Bot:SetAngle(angle)
         pos = angle
     elseif type(angle) == "number" then
         local a = angle % 360
-        pos = vec2(math.cos(a), math.sin(a))
+        pos = vec2(math.cos(a) * 50, math.sin(a) * 50)
     end
     local chr = self.player:GetCharacter()
     -- U don't even need to use the SnapController! Just overwrite the input like this if its just a 1 time snap :)
