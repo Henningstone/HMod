@@ -1062,6 +1062,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 		else if (MsgID == NETMSGTYPE_CL_KILL && !m_World.m_Paused)
 		{
+			MACRO_LUA_CALLBACK_RESULT_REF("OnSelfkill", Result, ClientID)
+			if(MACRO_LUA_RESULT_BOOL(Result, false, false))
+				return;
+
 			if(pPlayer->m_LastKill && pPlayer->m_LastKill+Server()->TickSpeed()*3 > Server()->Tick())
 				return;
 
